@@ -1,0 +1,28 @@
+# Object files
+*.o
+
+# Emacs backup files
+*~
+
+# Executables
+addwcs
+fitsheader
+fitskey
+pgm2fits
+plotfits
+rde2iod
+reduce
+residuals
+runsched
+satfit
+satid
+satmap
+satorbit
+skymap
+tleinfo
+uk2iod
+viewer
+wcsfit
+
+# TLE dir
+tle/
