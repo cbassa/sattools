@@ -34,6 +34,7 @@ int main(int argc,char *argv[])
   img=read_fits(argv[1]);
 
   write_pgm("avg.pgm",img);
+
   return 0;
 }
 
