@@ -101,6 +101,21 @@ void get_site(int site_id);
 
 void usage()
 {
+  
+  printf("skymap t:c:i:R:D:hs:d:l:P:r:V:\n\n");
+  printf("t    date/time (yyyy-mm-ddThh:mm:ss.sss) [default: now]\n");
+  printf("c    TLE catalog file [default: classfd.tle]\n");
+  printf("i    satellite ID (NORAD) [default: all]\n");
+  printf("R    R.A.\n");
+  printf("D    Decl.\n");
+  printf("h    this help\n");
+  printf("s    site (COSPAR)\n");
+  printf("d    IOD observations\n");
+  printf("l    trail length [default: 60s]\n");
+  printf("P    planar search satellite ID\n");
+  printf("r    planar search altitude\n");
+  printf("V    altitude for visibility contours\n");
+
   return;
 }
 
@@ -256,7 +271,7 @@ int main(int argc,char *argv[])
   init_skymap();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:r:d:hs:I:l:P:R:V:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:R:D:hs:d:l:P:r:V:"))!=-1) {
     switch(arg) {
 
     case 't':
@@ -268,7 +283,7 @@ int main(int argc,char *argv[])
       strcpy(m.tlefile,optarg);
       break;
 
-    case 'I':
+    case 'd':
       strcpy(m.iodfile,optarg);
       m.iodpoint=0;
       m.leoflag=0;
@@ -297,7 +312,7 @@ int main(int argc,char *argv[])
       m.psnr=8;
       break;
 
-    case 'R':
+    case 'r':
       m.psrmin=atof(optarg);
       m.psrmax=atof(optarg);
       m.psnr=1;
@@ -308,13 +323,13 @@ int main(int argc,char *argv[])
       m.rvis=atof(optarg);
       break;
 
-    case 'r':
+    case 'R':
       m.ra0=15.0*sex2dec(optarg);
       strcpy(m.orientation,"equatorial");
       m.level=5;
       break;
 
-    case 'd':
+    case 'D':
       m.de0=sex2dec(optarg);
       strcpy(m.orientation,"equatorial");
       m.level=5;
