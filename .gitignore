@@ -23,6 +23,8 @@ tleinfo
 uk2iod
 viewer
 wcsfit
+faketle
+imgstat
 
 # TLE dir
 tle/
