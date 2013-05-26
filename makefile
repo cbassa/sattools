@@ -11,10 +11,7 @@ CC = gcc
 F77 = gfortran
 
 all:
-	make satfit uk2iod rde2iod viewer residuals tleinfo satmap satorbit runsched fitskey fitsheader satid skymap addwcs reduce wcsfit plotfits pgm2fits
-
-devel:	
-	make faketle imgstat
+	make satfit uk2iod rde2iod viewer residuals tleinfo satmap satorbit runsched fitskey fitsheader satid skymap addwcs reduce wcsfit plotfits pgm2fits faketle imgstat
 
 faketle: faketle.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o faketle faketle.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
