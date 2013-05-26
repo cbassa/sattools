@@ -341,7 +341,7 @@ void track_plot_track(char *tlefile,long satno,double mjd0)
 
       // Plot
       if (i==0) {
-	sprintf(norad," %5ld",Isat);
+	sprintf(norad," %ld",Isat);
 	cpgsch(0.6);
 	cpgtext(l,b,norad);
 	cpgsch(isch);

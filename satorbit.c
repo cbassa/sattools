@@ -286,7 +286,7 @@ void plot_track(void)
       if (i==0) {
 	plot_footprint(s);
 	if (!(sqrt(x*x+y*y)<XKMPER && z<0.0)) {
-	  sprintf(norad," %5ld",Isat);
+	  sprintf(norad," %ld",Isat);
 	  cpgsch(0.6);
 	  cpgtext(x,y,norad);
 	  cpgsch(isch);
