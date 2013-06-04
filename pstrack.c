@@ -29,8 +29,8 @@ struct map {
 } m;
 struct image {
   char filename[64];
-  int naxis1,naxis2,nframes;
-  float *zavg,*zstd,*zmax,*znum;
+  int naxis1,naxis2,naxis3,nframes;
+  float *zavg,*zstd,*zmax,*znum,*zd;
   double ra0,de0;
   float x0,y0;
   float a[3],b[3],xrms,yrms;
@@ -52,6 +52,9 @@ struct sat {
   double azi,alt;
   double rx,ry;
 };
+struct track {
+  float x0,y0,x1,y1;
+};
 struct image read_fits(char *filename);
 struct sat apparent_position(double mjd);
 double modulo(double,double);
@@ -61,157 +64,6 @@ double gmst(double);
 double dgmst(double);
 void forward(double ra0,double de0,double ra,double de,double *x,double *y);
 void reverse(double ra0,double de0,double x,double y,double *ra,double *de);
-
-// Precess a celestial position
-void precess(double mjd0,double ra0,double de0,double mjd,double *ra,double *de)
-{
-  double t0,t;
-  double zeta,z,theta;
-  double a,b,c;
-
-  // Angles in radians
-  ra0*=D2R;
-  de0*=D2R;
-
-  // Time in centuries
-  t0=(mjd0-51544.5)/36525.0;
-  t=(mjd-mjd0)/36525.0;
-
-  // Precession angles
-  zeta=(2306.2181+1.39656*t0-0.000139*t0*t0)*t;
-  zeta+=(0.30188-0.000344*t0)*t*t+0.017998*t*t*t;
-  zeta*=D2R/3600.0;
-  z=(2306.2181+1.39656*t0-0.000139*t0*t0)*t;
-  z+=(1.09468+0.000066*t0)*t*t+0.018203*t*t*t;
-  z*=D2R/3600.0;
-  theta=(2004.3109-0.85330*t0-0.000217*t0*t0)*t;
-  theta+=-(0.42665+0.000217*t0)*t*t-0.041833*t*t*t;
-  theta*=D2R/3600.0;
-  
-  a=cos(de0)*sin(ra0+zeta);
-  b=cos(theta)*cos(de0)*cos(ra0+zeta)-sin(theta)*sin(de0);
-  c=sin(theta)*cos(de0)*cos(ra0+zeta)+cos(theta)*sin(de0);
-
-  *ra=(atan2(a,b)+z)*R2D;
-  *de=asin(c)*R2D;
-
-  if (*ra<360.0)
-    *ra+=360.0;
-  if (*ra>360.0)
-    *ra-=360.0;
-
-  return;
-}
-
-void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float dt,int color)
-{
-  int i;
-  orbit_t orb;
-  struct sat s;
-  int imode,flag,textflag;
-  FILE *fp=NULL,*file;;
-  xyz_t satpos,obspos,satvel,sunpos;
-  double mjd,jd,dx,dy,dz;
-  double rx,ry,ra,de,azi,alt,r,t,d;
-  float x,y,x0,y0;
-  char norad[7],satname[30];
-  float isch;
-  float rsun,rearth,psun,pearth,p;
-  char filename[128];
-
-  cpgqch(&isch);
-
-  // Image determinant
-  d=img.a[1]*img.b[2]-img.a[2]*img.b[1];
-
-  // Open TLE file
-  fp=fopen(tlefile,"rb");
-  if (fp==NULL)
-    fatal_error("File open failed for reading %s\n",tlefile);
-
-  cpgsci(color);
-
-  // Open file
-  sprintf(filename,"%s.id",img.filename);
-  file=fopen(filename,"a");
-
-  // Read TLEs
-  while (read_twoline(fp,satno,&orb)==0) {
-    Isat=orb.satno;
-    imode=init_sgdp4(&orb);
-
-    sprintf(norad," %05ld",Isat);
-
-    if (imode==SGDP4_ERROR)
-      continue;
-
-    for (flag=0,textflag=0,i=0;i<MMAX;i++) {
-      t=img.exptime*(float) i/(float) (MMAX-1);
-      mjd=mjd0+t/86400.0;
-
-      // Compute apparent position
-      s=apparent_position(mjd);
-
-      // Adjust for stationary camera
-      s.ra+=gmst(img.mjd+0.5*img.exptime/86400.0)-gmst(mjd);
-
-      // Convert to rx,ry
-      r=acos(sin(img.de0*D2R)*sin(s.de*D2R)+cos(img.de0*D2R)*cos(s.de*D2R)*cos((img.ra0-s.ra)*D2R))*R2D;
-      if (r<90.0)
-	forward(img.ra0,img.de0,s.ra,s.de,&s.rx,&s.ry);
-      else
-	continue;
-
-      // Convert image position
-      dx=s.rx-img.a[0];
-      dy=s.ry-img.b[0];
-      x=(img.b[2]*dx-img.a[2]*dy)/d+img.x0;
-      y=(img.a[1]*dy-img.b[1]*dx)/d+img.y0;
-
-      // Visibility
-      if (s.p-s.pearth<-s.psun) {
-	cpgsls(4);
-      } else if (s.p-s.pearth>-s.psun && s.p-s.pearth<s.psun) {
-	cpgsls(2);
-      } else if (s.p-s.pearth>s.psun) {
-	cpgsls(1);
-      }
-
-      // Print name if in viewport
-      if (x>0.0 && x<img.naxis1 && y>0.0 && y<img.naxis2 && textflag==0) {
-	if (flag!=0)
-	  cpgdraw(x,y);
-	cpgsch(0.65);
-	cpgtext(x,y,norad);
-	cpgsch(isch);
-	cpgmove(x,y);
-	textflag=1;
-      }
-
-      if (i==0) {
-	x0=x;
-	y0=y;
-      }
-
-      // Plot satellites
-      if (flag==0) {
-	cpgpt1(x,y,17);
-	cpgmove(x,y);
-	flag=1;
-      } else {
-	cpgdraw(x,y);
-      }
-    }
-    if (textflag==1)
-      fprintf(file,"%.23s %8.3f %8.3f %8.3f %8.3f %8.5f %s %s\n",img.nfd+1,x0,y0,x,y,img.exptime,norad,tlefile);
-
-  }
-  fclose(fp);
-  fclose(file);
-  cpgsci(1); 
-
-  return;
-}
 
 // Get observing site
 void get_site(int site_id)
@@ -261,6 +113,228 @@ void get_site(int site_id)
   return;
 }
 
+// Precess a celestial position
+void precess(double mjd0,double ra0,double de0,double mjd,double *ra,double *de)
+{
+  double t0,t;
+  double zeta,z,theta;
+  double a,b,c;
+
+  // Angles in radians
+  ra0*=D2R;
+  de0*=D2R;
+
+  // Time in centuries
+  t0=(mjd0-51544.5)/36525.0;
+  t=(mjd-mjd0)/36525.0;
+
+  // Precession angles
+  zeta=(2306.2181+1.39656*t0-0.000139*t0*t0)*t;
+  zeta+=(0.30188-0.000344*t0)*t*t+0.017998*t*t*t;
+  zeta*=D2R/3600.0;
+  z=(2306.2181+1.39656*t0-0.000139*t0*t0)*t;
+  z+=(1.09468+0.000066*t0)*t*t+0.018203*t*t*t;
+  z*=D2R/3600.0;
+  theta=(2004.3109-0.85330*t0-0.000217*t0*t0)*t;
+  theta+=-(0.42665+0.000217*t0)*t*t-0.041833*t*t*t;
+  theta*=D2R/3600.0;
+  
+  a=cos(de0)*sin(ra0+zeta);
+  b=cos(theta)*cos(de0)*cos(ra0+zeta)-sin(theta)*sin(de0);
+  c=sin(theta)*cos(de0)*cos(ra0+zeta)+cos(theta)*sin(de0);
+
+  *ra=(atan2(a,b)+z)*R2D;
+  *de=asin(c)*R2D;
+
+  if (*ra<360.0)
+    *ra+=360.0;
+  if (*ra>360.0)
+    *ra-=360.0;
+
+  return;
+}
+
+orbit_t find_tle(char *tlefile,struct image img,int satno)
+{
+  int i;
+  orbit_t orb;
+  struct sat s;
+  int imode,flag,textflag;
+  FILE *fp=NULL;
+  xyz_t satpos,obspos,satvel,sunpos;
+  double mjd,jd,dx,dy,dz;
+  double rx,ry,ra,de,azi,alt,r,t,d;
+  float x[MMAX],y[MMAX],x0,y0;
+  char norad[7],satname[30];
+  float isch;
+  float rsun,rearth,psun,pearth,p;
+  char filename[128];
+  double mnan,mnanmin,rmin;
+
+  // Open TLE file
+  fp=fopen(tlefile,"rb");
+  if (fp==NULL)
+    fatal_error("File open failed for reading %s\n",tlefile);
+
+  // Read TLEs
+  if (satno!=0) {
+    read_twoline(fp,satno,&orb);
+    fclose(fp);
+    return orb;
+  }
+
+  read_twoline(fp,0,&orb);
+  fclose(fp);
+
+  for (i=0,mnan=0.0;mnan<360.0;mnan+=0.01,i++) {
+    orb.mnan=mnan*D2R;
+    Isat=orb.satno;
+    imode=init_sgdp4(&orb);
+  
+    mjd=img.mjd+0.5*img.exptime/86400.0;
+
+    // Compute apparent position
+    s=apparent_position(mjd);
+    
+    r=acos(sin(img.de0*D2R)*sin(s.de*D2R)+cos(img.de0*D2R)*cos(s.de*D2R)*cos((img.ra0-s.ra)*D2R))*R2D;
+    if (r<10.0) {
+      forward(img.ra0,img.de0,s.ra,s.de,&s.rx,&s.ry);
+      r=sqrt(s.rx*s.rx+s.ry*s.ry)/3600.0;
+    }
+    
+    if (i==0 || r<rmin) {
+      mnanmin=mnan;
+      rmin=r;
+    }
+  }
+  orb.mnan=mnanmin*D2R;
+
+  return orb;
+}
+struct track plot_satellite(orbit_t orb,struct image img)
+{
+  int i;
+  struct sat s;
+  int imode,flag,textflag;
+  FILE *fp=NULL,*file;;
+  xyz_t satpos,obspos,satvel,sunpos;
+  double mjd,jd,dx,dy,dz;
+  double rx,ry,ra,de,azi,alt,r,t,d;
+  float x[MMAX],y[MMAX];
+  char norad[7],satname[30];
+  float isch;
+  float rsun,rearth,psun,pearth,p;
+  char filename[128];
+  struct track trk;
+
+  // Image determinant
+  d=img.a[1]*img.b[2]-img.a[2]*img.b[1];
+
+  // Read TLEs
+  Isat=orb.satno;
+  imode=init_sgdp4(&orb);
+  
+  if (imode==SGDP4_ERROR)
+    return;
+  
+  for (flag=0,textflag=0,i=0;i<MMAX;i++) {
+    t=img.exptime*(float) i/(float) (MMAX-1);
+    mjd=img.mjd+t/86400.0;
+    
+    // Compute apparent position
+    s=apparent_position(mjd);
+    
+    // Convert to rx,ry
+    r=acos(sin(img.de0*D2R)*sin(s.de*D2R)+cos(img.de0*D2R)*cos(s.de*D2R)*cos((img.ra0-s.ra)*D2R))*R2D;
+    if (r<90.0)
+      forward(img.ra0,img.de0,s.ra,s.de,&s.rx,&s.ry);
+    else
+      return;
+    
+    // Convert image position
+    dx=s.rx-img.a[0];
+    dy=s.ry-img.b[0];
+    x[i]=(img.b[2]*dx-img.a[2]*dy)/d+img.x0;
+    y[i]=(img.a[1]*dy-img.b[1]*dx)/d+img.y0;
+    
+    
+   
+  }
+  trk.x0=x[0];
+  trk.y0=y[0];
+  trk.x1=x[MMAX-1];
+  trk.y1=y[MMAX-1];
+
+  return trk;
+}
+
+void track_image(struct image *img,struct track trk)
+{
+  FILE *file;
+  char line[LIM],filename[LIM];
+  int flag=0,satno;
+  float x0,y0,x1,y1,texp;
+  int i,j,k,l,k0;
+  int di,dj;
+  float *z;
+  int *wt;
+  float dxdn,dydn,dx,dy;
+
+  dxdn=(trk.x1-trk.x0)/(float) img->nframes;
+  dydn=(trk.y1-trk.y0)/(float) img->nframes;
+
+  // Allocate
+  z=(float *) malloc(sizeof(float)*img->naxis1*img->naxis2);
+  wt=(int *) malloc(sizeof(int)*img->naxis1*img->naxis2);
+
+  // Set to zero
+  for (i=0;i<img->naxis1*img->naxis2;i++) {
+    z[i]=0.0;
+    wt[i]=0;
+  }
+
+  // Loop over frames
+  for (l=0;l<img->nframes;l++) {
+    // Offset
+    dx=dxdn*(l-img->nframes/2);
+    dy=dydn*(l-img->nframes/2);
+    
+    // Integer offset
+    di=(int) floor(dx+0.5);
+    dj=(int) floor(dy+0.5);
+
+    // Set
+    for (i=0;i<img->naxis1;i++) {
+      for (j=0;j<img->naxis2;j++) {
+	k=i+img->naxis1*j;
+	k0=i+di+img->naxis1*(j+dj);
+	if (i+di>0 && i+di<img->naxis1 && j+dj>0 && j+dj<img->naxis2) {
+	  wt[k]+=1;
+	  if (img->znum[k0]==l)
+	    z[k]+=img->zmax[k0];
+	  //	  else
+	  //	    z[k]+=img->zavg[k0];
+	}
+      }
+    }
+  }
+
+  // Scale
+  for (i=0;i<img->naxis1*img->naxis2;i++) {
+    if (wt[i]>0)
+      img->zd[i]=z[i]/(float) wt[i];
+    else
+      img->zd[i]=z[i];
+  }
+  img->naxis3=5;
+
+  free(z);
+  free(wt);
+
+  return;
+}
+
+
 int main(int argc,char *argv[])
 {
   int i;
@@ -272,25 +346,41 @@ int main(int argc,char *argv[])
   float heat_g[] = {0.0, 0.0, 0.5, 1.0, 1.0};
   float heat_b[] = {0.0, 0.0, 0.0, 0.3, 1.0};
   char text[128];
-  char *env,filename[128];
+  orbit_t orb;
+  float x0,y0,x1,y1;
+  struct track trk;
+  FILE *file;
+  char filename[128];
+  int satno=0;
+  char *env;
 
+  // Read image
   img=read_fits(argv[1]);
 
   // Set site
   get_site(img.cospar);
 
+  if (argc==5)
+    satno=atoi(argv[4]);
+
+  // Find closest orbit
+  orb=find_tle(argv[2],img,satno);
+
+  trk=plot_satellite(orb,img);
+
+  track_image(&img,trk);
 
   for (i=0,zavg=0.0;i<img.naxis1*img.naxis2;i++)
-    zavg+=img.zmax[i];
+    zavg+=img.zd[i];
   zavg/=(float) img.naxis1*img.naxis2;
   for (i=0,zstd=0.0;i<img.naxis1*img.naxis2;i++)
-    zstd+=pow(img.zmax[i]-zavg,2);
+    zstd+=pow(img.zd[i]-zavg,2);
   zstd=sqrt(zstd/(float) (img.naxis1*img.naxis2));
   zmin=zavg-2*zstd;
   zmax=zavg+6*zstd;
 
-  if (argc==3)
-    cpgopen(argv[2]);
+  if (argc==4)
+    cpgopen(argv[3]);
   else
     cpgopen("/xs");
   cpgpap(0.,1.0);
@@ -312,20 +402,20 @@ int main(int argc,char *argv[])
   cpglab("x (pix)","y (pix)"," ");
   cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
     
-  cpgimag(img.zmax,img.naxis1,img.naxis2,1,img.naxis1,1,img.naxis2,zmin,zmax,tr);
+  cpgimag(img.zd,img.naxis1,img.naxis2,1,img.naxis1,1,img.naxis2,zmin,zmax,tr);
   cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
 
   cpgstbg(1);
 
-  // Environment variables
-  env=getenv("ST_TLEDIR");
-  sprintf(filename,"%s/classfd.tle",env);
-  plot_satellites(filename,img,0,img.mjd,img.exptime,4);
-  sprintf(filename,"%s/catalog.tle",env);
-  plot_satellites(filename,img,0,img.mjd,img.exptime,0);
+  cpgsci(4);
+  cpgpt1(trk.x0,trk.y0,17);
+  cpgpt1(trk.x1,trk.y1,4);
 
+  sprintf(filename,"%s.id",argv[1]);
+  file=fopen(filename,"w");
+  fprintf(file,"%.23s %8.3f %8.3f %8.3f %8.3f %8.5f 00001 classfd.tle\n",img.nfd+1,trk.x0,trk.y0,trk.x1,trk.y1,img.exptime);
+  fclose(file);
   cpgend();
-
 
   return 0;
 }
@@ -345,6 +435,8 @@ struct image read_fits(char *filename)
   // Image size
   img.naxis1=atoi(qfits_query_hdr(filename,"NAXIS1"));
   img.naxis2=atoi(qfits_query_hdr(filename,"NAXIS2"));
+  img.naxis3=atoi(qfits_query_hdr(filename,"NAXIS3"));
+  img.nframes=atoi(qfits_query_hdr(filename,"NFRAMES"));
 
   // MJD
   img.mjd=(double) atof(qfits_query_hdr(filename,"MJD-OBS"));
@@ -368,15 +460,14 @@ struct image read_fits(char *filename)
   img.b[2]=3600.0*atof(qfits_query_hdr(filename,"CD2_2"));
   img.xrms=3600.0*atof(qfits_query_hdr(filename,"CRRES1"));
   img.yrms=3600.0*atof(qfits_query_hdr(filename,"CRRES2"));
-  img.nframes=atoi(qfits_query_hdr(filename,"NFRAMES"));
 
   // Timestamps
   img.dt=(float *) malloc(sizeof(float)*img.nframes);
   for (i=0;i<img.nframes;i++) {
     sprintf(key,"DT%04d",i);
-    strcpy(val,qfits_query_hdr(filename,key));
-    sscanf(val+1,"%f",&img.dt[i]);
-    //    img.dt[i]=atof(qfits_query_hdr(filename,key));
+    //strcpy(val,qfits_query_hdr(filename,key));
+    //    sscanf(val+1,"%f",&img.dt[i]);
+    img.dt[i]=atof(qfits_query_hdr(filename,key));
   }
 
   // Allocate image memory
@@ -384,6 +475,9 @@ struct image read_fits(char *filename)
   img.zstd=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
   img.zmax=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
   img.znum=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
+  img.zd=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
+  for (i=0;i<img.naxis1*img.naxis2;i++) 
+    img.zd[i]=0.0;
 
   // Set parameters
   ql.xtnum=0;
@@ -391,7 +485,7 @@ struct image read_fits(char *filename)
   ql.filename=filename;
 
   // Loop over planes
-  for (k=0;k<4;k++) {
+  for (k=0;k<img.naxis3;k++) {
     ql.pnum=k;;
 
     // Initialize load
@@ -409,6 +503,7 @@ struct image read_fits(char *filename)
 	if (k==1) img.zstd[l]=ql.fbuf[l];
 	if (k==2) img.zmax[l]=ql.fbuf[l];
 	if (k==3) img.znum[l]=ql.fbuf[l];
+	if (k==3) img.zd[l]=ql.fbuf[l];
 	l++;
       }
     }
@@ -436,7 +531,7 @@ struct sat apparent_position(double mjd)
   // Get positions
   obspos_xyz(mjd,&obspos,&obsvel);
   satpos_xyz(jd,&satpos,&satvel);
-  sunpos_xyz(mjd,&sunpos);
+  sunpos_xyz(jd,&sunpos);
 
   // Sat positions
   s.x=satpos.x;
