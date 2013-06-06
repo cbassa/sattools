@@ -1216,7 +1216,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
       // In field of view
       if (fabs(x)<m.fw && fabs(y)<m.fh && fflag==0) {
 	mjd2date(mjd,date);
-	printf("%.19s %s %6.1f\n",date,norad,s.mag);
+	printf("%.19s %05ld %6.1f %7.1f d %9.2f km\n",date,Isat,s.mag,s.age,s.r);
 	fflag=1;
       }
 

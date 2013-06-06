@@ -253,54 +253,60 @@ int main(int argc,char *argv[])
     plot_image(img,t,c,catfile,mmin);
 
   // Do fit
-  for (l=0;l<10;l++) {
-    for (j=0;j<5;j++) {
-      // Transform
-      for (i=0;i<c.n;i++) 
-	forward(t.ra0,t.de0,c.ra[i],c.de[i],&c.rx[i],&c.ry[i]);
+  if (c.n>10) {
+    for (l=0;l<10;l++) {
+      for (j=0;j<5;j++) {
+	// Transform
+	for (i=0;i<c.n;i++) 
+	  forward(t.ra0,t.de0,c.ra[i],c.de[i],&c.rx[i],&c.ry[i]);
       
-      // Select
-      for (i=0,k=0;i<c.n;i++) {
+	// Select
+	for (i=0,k=0;i<c.n;i++) {
+	  if (c.usage[i]==1) {
+	    x[k]=c.x[i];
+	    y[k]=c.y[i];
+	    rx[k]=(float) c.rx[i];
+	    ry[k]=(float) c.ry[i];
+	    k++;
+	  }
+	}
+	// Fit
+	lfit2d(x,y,rx,k,t.a);
+	lfit2d(x,y,ry,k,t.b);
+	
+	// Move reference point
+	reverse(t.ra0,t.de0,t.a[0],t.b[0],&ra0,&de0);
+	t.ra0=ra0;
+	t.de0=de0;
+      }
+      
+      // Compute and plot residuals
+      for (i=0,t.xrms=0.0,t.yrms=0.0,m=0;i<c.n;i++) {
 	if (c.usage[i]==1) {
-	  x[k]=c.x[i];
-	  y[k]=c.y[i];
-	  rx[k]=(float) c.rx[i];
-	  ry[k]=(float) c.ry[i];
-	  k++;
+	  c.xres[i]=c.rx[i]-(t.a[0]+t.a[1]*c.x[i]+t.a[2]*c.y[i]);
+	  c.yres[i]=c.ry[i]-(t.b[0]+t.b[1]*c.x[i]+t.b[2]*c.y[i]);
+	  
+	  c.res[i]=sqrt(c.xres[i]*c.xres[i]+c.yres[i]*c.yres[i]);
+	  t.xrms+=c.xres[i]*c.xres[i];
+	  t.yrms+=c.yres[i]*c.yres[i];
+	  t.rms+=c.xres[i]*c.xres[i]+c.yres[i]*c.yres[i];
+	  m++;
 	}
       }
-      // Fit
-      lfit2d(x,y,rx,k,t.a);
-      lfit2d(x,y,ry,k,t.b);
-
-      // Move reference point
-      reverse(t.ra0,t.de0,t.a[0],t.b[0],&ra0,&de0);
-      t.ra0=ra0;
-      t.de0=de0;
-    }
-
-    // Compute and plot residuals
-    for (i=0,t.xrms=0.0,t.yrms=0.0,m=0;i<c.n;i++) {
-      if (c.usage[i]==1) {
-	c.xres[i]=c.rx[i]-(t.a[0]+t.a[1]*c.x[i]+t.a[2]*c.y[i]);
-	c.yres[i]=c.ry[i]-(t.b[0]+t.b[1]*c.x[i]+t.b[2]*c.y[i]);
-
-	c.res[i]=sqrt(c.xres[i]*c.xres[i]+c.yres[i]*c.yres[i]);
-	t.xrms+=c.xres[i]*c.xres[i];
-	t.yrms+=c.yres[i]*c.yres[i];
-	t.rms+=c.xres[i]*c.xres[i]+c.yres[i]*c.yres[i];
-	m++;
+      t.xrms=sqrt(t.xrms/(float) m);
+      t.yrms=sqrt(t.yrms/(float) m);
+      t.rms=sqrt(t.rms/(float) m);
+      
+      // Deselect outliers
+      for (i=0;i<c.n;i++) {
+	if (c.res[i]>2*t.rms)
+	  c.usage[i]=0;
       }
     }
-    t.xrms=sqrt(t.xrms/(float) m);
-    t.yrms=sqrt(t.yrms/(float) m);
-    t.rms=sqrt(t.rms/(float) m);
-
-    // Deselect outliers
-    for (i=0;i<c.n;i++) {
-      if (c.res[i]>2*t.rms)
-	c.usage[i]=0;
-    }
+  } else {
+    t.xrms=0.0;
+    t.yrms=0.0;
+    t.rms=0.0;
   }
 
   // Print results
