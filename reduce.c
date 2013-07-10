@@ -301,8 +301,8 @@ void fit(struct observation *obs,struct image img)
   // Fit x-pixel position
   chi2y=linear_fit(dt,y,n,ay,say);
 
-  printf("x: %6.2f +- %.2f  %7.3f +- %.3f  %8.2f\n",ax[0],sax[0],ax[1],sax[1],chi2x);
-  printf("y: %6.2f +- %.2f  %7.3f +- %.3f  %8.2f\n",ay[0],say[0],ay[1],say[1],chi2y);
+  printf("x: %6.2f +- %.2f  %7.3f +- %.3f  %8.2f; %f pix/s\n",ax[0],sax[0],ax[1],sax[1],chi2x,ax[1]/img.nframes*img.exptime);
+  printf("y: %6.2f +- %.2f  %7.3f +- %.3f  %8.2f; %f pix/s\n",ay[0],say[0],ay[1],say[1],chi2y,ay[1]/img.nframes*img.exptime);
 
   obs->x[0]=ax[0];
   obs->y[0]=ay[0];
@@ -717,6 +717,15 @@ int main(int argc,char *argv[])
 	frac=0.0;
       else if (frac<0.49)
 	frac=0.5;
+      printf("Fraction: %.1f\n",frac);
+      iobject=0;
+    }
+
+    // Change fraction
+    if (c=='E') {
+      frac+=0.1;
+      if (frac>1.0)
+	frac=0.0;
       printf("Fraction: %.1f\n",frac);
       iobject=0;
     }

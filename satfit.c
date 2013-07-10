@@ -87,6 +87,74 @@ xyz_t get_position(double r0,int i0)
   return pos;
 }
 
+int psearch(void)
+{
+  int i,satno=99300;
+  double mjdmin,mjdmax;
+  int ia[7]={0,0,0,0,0,0,0};
+  double ecc,eccmin,eccmax,decc;
+  double rev,revmin,revmax,drev;
+  double argp,argpmin,argpmax,dargp;
+  char line1[70],line2[70];
+  FILE *file;
+
+  // Provide 
+  printf("Mean motion [min, max, stepsize]: \n");
+  scanf("%lf %lf %lf",&revmin,&revmax,&drev);
+  printf("Eccentricity [min, max, stepsize]: \n");
+  scanf("%lf %lf %lf",&eccmin,&eccmax,&decc);
+  //  printf("Argument of perigee [min, max, stepsize]: \n");
+  //  scanf("%lf %lf %lf",&argpmin,&argpmax,&dargp);
+
+
+  // Step 1: select all points
+  //  for (i=0;i<d.n;i++)
+  //    d.p[i].flag=2;
+
+  // Step 2: get time range
+  time_range(&mjdmin,&mjdmax,2);
+
+  file=fopen("search.dat","w");
+
+  // Step 4: Loop over eccentricity
+  for (rev=revmin;rev<revmax;rev+=drev) {
+    for (ecc=eccmin;ecc<eccmax;ecc+=decc) {
+      //      for (argp=argpmin;argp<argpmax;argp+=dargp) {
+	orb.satno=satno;
+	orb.ecc=ecc;
+	orb.rev=rev;
+	//orb.argp=argp*D2R;
+    
+	// Set parameters
+	for (i=0;i<7;i++) 
+	  ia[i]=0;
+	
+	// Step 4: loop over parameters
+	for (i=0;i<5;i++) {
+	  if (i==0) ia[4]=1;
+	  if (i==1) ia[1]=1;
+	  if (i==2) ia[0]=1;
+	  //	if (i==3) ia[5]=1;
+	  if (i==4) ia[3]=1;
+	  
+	  // Do fit
+	  fit(orb,ia);
+	}
+	fit(orb,ia);
+	fit(orb,ia);
+	fit(orb,ia);
+	printf("%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
+	fprintf(file,"%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
+      }
+      fprintf(file,"\n");
+      //    }
+  }
+  fclose(file);
+
+  return orb.satno;
+}
+
+
 int circular_fit(void)
 {
   int i;
@@ -202,12 +270,12 @@ int main(int argc,char *argv[])
   char filename[64];
   int satno=-1;
   double mjdmin,mjdmax;
-  int arg=0;
-  char *datafile,*catalog;
+  int arg=0,elset=0,circular=0,tleout=0,noplot=0;
+  char *datafile,*catalog,tlefile[LIM];
   orbit_t orb0;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"d:c:i:ha"))!=-1) {
+  while ((arg=getopt(argc,argv,"d:c:i:haCo:p"))!=-1) {
     switch(arg) {
     case 'd':
       datafile=optarg;
@@ -219,6 +287,19 @@ int main(int argc,char *argv[])
 
     case 'i':
       satno=atoi(optarg);
+      break;
+
+    case 'C':
+      circular=1;
+      break;
+
+    case 'p':
+      noplot=1;
+      break;
+
+    case 'o':
+      tleout=1;
+      strcpy(tlefile,optarg);
       break;
 
     case 'h':
@@ -247,6 +328,19 @@ int main(int argc,char *argv[])
 
   freopen("/tmp/stderr.txt","w",stderr);
 
+  // Fit circular orbit
+  if (circular==1) {
+    for (i=0;i<d.n;i++)
+      d.p[i].flag=2;
+    satno=circular_fit();
+    plot_residuals=1;
+    quit=1;
+
+    // Dump tle
+    if (tleout==1) 
+      print_tle(orb,tlefile);
+  }
+
   // Adjust
   if (adjust==1) {
     orb0=orb;
@@ -256,6 +350,17 @@ int main(int argc,char *argv[])
     plot_residuals=1;
     redraw=1;
     quit=1;
+
+    // Dump tle
+    if (tleout==1) 
+      print_tle(orb,tlefile);
+  }
+
+  // Exit before plotting
+  if (quit==1 && noplot==1) {
+    free(d.p);
+    fclose(stderr);
+    return 0;
   }
 
   cpgopen("/xs");
@@ -408,6 +513,14 @@ int main(int argc,char *argv[])
       redraw=1;
     }
 
+    // Search
+    if (c=='S') {
+      satno=psearch();
+      plot_residuals=1;
+      ia[0]=ia[1]=ia[4]=ia[5]=1;
+      redraw=1;
+    }
+
     // Change
     if (c=='c') {
       printf("(1) Inclination,     (2) Ascending Node,   (3) Eccentricity,\n(4) Arg. of Perigee, (5) Mean Anomaly,     (6) Mean Motion,\n(7) B* drag,         (8) Epoch,            (9) Satellite ID\n\nWhich parameter to change: ");
@@ -478,15 +591,48 @@ int main(int argc,char *argv[])
     // Default tle
     if (c=='t') {
       orb.satno=99999;
-      orb.eqinc=0.5*M_PI;
-      orb.ascn=0.0;
-      orb.ecc=0.0;
-      orb.argp=0.0;
-      orb.mnan=0.0;
-      orb.rev=14.0;
-      orb.bstar=0.5e-4;
       orb.ep_day=mjd2doy(0.5*(mjdmin+mjdmax),&orb.ep_year);
       satno=99999;
+      if (elset==0) {
+	orb.eqinc=0.5*M_PI;
+	orb.ascn=0.0;
+	orb.ecc=0.0;
+	orb.argp=0.0;
+	orb.mnan=0.0;
+	orb.rev=14.0;
+	orb.bstar=0.5e-4;
+	printf("LEO orbit\n");
+      } else if (elset==1) {
+	orb.eqinc=20.0*D2R;
+	orb.ascn=0.0;
+	orb.ecc=0.7;
+	orb.argp=0.0;
+	orb.mnan=0.0;
+	orb.rev=2.25;
+	orb.bstar=0.0;
+	printf("GTO orbit\n");
+      } else if (elset==2) {
+	orb.eqinc=10.0*D2R;
+	orb.ascn=0.0;
+	orb.ecc=0.0;
+	orb.argp=0.0;
+	orb.mnan=0.0;
+	orb.rev=1.0027;
+	orb.bstar=0.0;
+	printf("GSO orbit\n");
+      } else if (elset==3) {
+	orb.eqinc=63.4*D2R;
+	orb.ascn=0.0;
+	orb.ecc=0.7;
+	orb.argp=0.0;
+	orb.mnan=0.0;
+	orb.rev=2.0;
+	orb.bstar=0.0;
+	printf("HEO orbit\n");
+      }
+      elset++;
+      if (elset>3)
+	elset=0;
       print_orb(&orb);
       printf("\n================================================================================\n");
       click=0;
@@ -901,6 +1047,10 @@ double chisq(double a[])
   } else if (a[0]>180.0) {
     a[0]=180.0;
   }
+  if (a[5]>17.0)
+    a[5]=17.0;
+  if (a[5]<0.1)
+    a[5]=0.1;
   
 
   // Set parameters
@@ -1151,10 +1301,14 @@ void fit(orbit_t orb,int *ia)
   double db[7]={5.0,5.0,0.1,5.0,5.0,0.5,0.0001};
 
   a[0]=orb.eqinc*R2D;
+  da[0]=da[0]*R2D;
   a[1]=orb.ascn*R2D;
+  da[1]=da[1]*R2D;
   a[2]=orb.ecc;
   a[3]=orb.argp*R2D;
+  da[3]=da[3]*R2D;
   a[4]=orb.mnan*R2D;
+  da[4]=da[4]*R2D;
   a[5]=orb.rev;
   a[6]=orb.bstar;
 

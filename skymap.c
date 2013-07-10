@@ -28,14 +28,14 @@ struct map {
   float length;
   float minmag,maxmag,minrad,maxrad;
   char orientation[LIM],projection[4],observer[32];
-  char nfd[LIM],starfile[LIM],tlefile[LIM],iodfile[LIM];
+  char nfd[LIM],starfile[LIM],tlefile[LIM],iodfile[LIM],xyzstring[LIM];
   char datadir[LIM],tledir[LIM];
   double lat,lng;
   double h,sra,sde,sazi,salt;
   float alt,timezone;
   float fw,fh;
   int level,grid,site_id;
-  int leoflag,iodflag,iodpoint,visflag,planar,pssatno,psnr;
+  int leoflag,iodflag,iodpoint,visflag,planar,pssatno,psnr,xyzflag;
   float psrmin,psrmax,rvis;
 } m;
 struct sat {
@@ -102,7 +102,7 @@ void get_site(int site_id);
 void usage()
 {
   
-  printf("skymap t:c:i:R:D:hs:d:l:P:r:V:\n\n");
+  printf("skymap t:c:i:R:D:hs:d:l:P:r:V:p:\n\n");
   printf("t    date/time (yyyy-mm-ddThh:mm:ss.sss) [default: now]\n");
   printf("c    TLE catalog file [default: classfd.tle]\n");
   printf("i    satellite ID (NORAD) [default: all]\n");
@@ -115,6 +115,7 @@ void usage()
   printf("P    planar search satellite ID\n");
   printf("r    planar search altitude\n");
   printf("V    altitude for visibility contours\n");
+  printf("p    xyz position of object\n");
 
   return;
 }
@@ -148,6 +149,7 @@ void init_skymap(void)
   m.mjd=-1.0;
   m.leoflag=1;
   m.iodflag=0;
+  m.xyzflag=0;
   m.visflag=0;
   m.planar=0;
 
@@ -260,6 +262,95 @@ void read_iod(char *filename,int iobs)
   return;
 }
 
+void plot_xyz(double mjd,char *string)
+{
+  struct sat s;
+  double jd,rsun,rearth,rsat;
+  double dx,dy,dz,dvx,dvy,dvz;
+  xyz_t satpos,obspos,obsvel,satvel,sunpos;
+  double sra,sde;
+
+  sscanf(string,"%lf,%lf,%lf",&satpos.x,&satpos.y,&satpos.z);
+
+  // Get positions
+  obspos_xyz(mjd,&obspos,&obsvel);
+  sunpos_xyz(mjd,&sunpos,&sra,&sde);
+
+  // Age
+  s.age=0.0;
+
+  // Sat positions
+  s.x=satpos.x;
+  s.y=satpos.y;
+  s.z=satpos.z;
+  s.vx=satvel.x;
+  s.vy=satvel.y;
+  s.vz=satvel.z;
+
+  // Sun position from satellite
+  dx=-satpos.x+sunpos.x;  
+  dy=-satpos.y+sunpos.y;
+  dz=-satpos.z+sunpos.z;
+
+  // Distances
+  rsun=sqrt(dx*dx+dy*dy+dz*dz);
+  rearth=sqrt(satpos.x*satpos.x+satpos.y*satpos.y+satpos.z*satpos.z);
+  s.h=rearth-XKMPER;
+  // Angles
+  s.psun=asin(696.0e3/rsun)*R2D;
+  s.pearth=asin(6378.135/rearth)*R2D;
+  s.p=acos((-dx*satpos.x-dy*satpos.y-dz*satpos.z)/(rsun*rearth))*R2D;
+
+  // Visibility state
+  if (s.p-s.pearth<-s.psun)
+    strcpy(s.state,"eclipsed");
+  else if (s.p-s.pearth>-s.psun && s.p-s.pearth<s.psun)
+    strcpy(s.state,"umbra");
+  else if (s.p-s.pearth>s.psun)
+    strcpy(s.state,"sunlit");
+
+  // Position differences
+  dx=satpos.x-obspos.x;  
+  dy=satpos.y-obspos.y;
+  dz=satpos.z-obspos.z;
+  dvx=satvel.x-obsvel.x;
+  dvy=satvel.y-obsvel.y;
+  dvz=satvel.z-obsvel.z;
+  
+  // Celestial position
+  s.r=sqrt(dx*dx+dy*dy+dz*dz);
+  s.v=(dvx*dx+dvy*dy+dvz*dz)/s.r;
+  s.ra=modulo(atan2(dy,dx)*R2D,360.0);
+  s.de=asin(dz/s.r)*R2D;
+
+  // Phase
+  s.phase=acos(((obspos.x-satpos.x)*(sunpos.x-satpos.x)+(obspos.y-satpos.y)*(sunpos.y-satpos.y)+(obspos.z-satpos.z)*(sunpos.z-satpos.z))/(rsun*s.r))*R2D;
+	  
+  // Magnitude
+  if (strcmp(s.state,"sunlit")==0) 
+    s.mag=STDMAG-15.0+5*log10(s.r)-2.5*log10(sin(s.phase*D2R)+(M_PI-s.phase*D2R)*cos(s.phase*D2R));
+  else
+    s.mag=15;
+
+     
+  // Convert and project
+  if (strcmp(m.orientation,"horizontal")==0) {
+    equatorial2horizontal(mjd,s.ra,s.de,&s.azi,&s.alt);
+    forward(s.azi,s.alt,&s.rx,&s.ry);
+  } else if (strcmp(m.orientation,"equatorial")==0) {
+    forward(s.ra,s.de,&s.rx,&s.ry);
+  }
+
+  cpgsci(3);
+  cpgpt1(s.rx,s.ry,17);
+  cpgsch(0.6);
+  cpgtext(s.rx,s.ry," xyz");
+  cpgsch(1.0);
+  cpgsci(1);
+  printf("%s %6.3f %6.3f %.1f km\n",m.nfd,s.ra,s.de,s.r);
+
+  return;
+}
 
 int main(int argc,char *argv[])
 {
@@ -271,7 +362,7 @@ int main(int argc,char *argv[])
   init_skymap();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:R:D:hs:d:l:P:r:V:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:R:D:hs:d:l:P:r:V:p:"))!=-1) {
     switch(arg) {
 
     case 't':
@@ -310,6 +401,11 @@ int main(int argc,char *argv[])
       m.psrmin=300;
       m.psrmax=1000;
       m.psnr=8;
+      break;
+
+    case 'p':
+      strcpy(m.xyzstring,optarg);
+      m.xyzflag=1;
       break;
 
     case 'r':
@@ -1811,6 +1907,10 @@ int plot_skymap(void)
     // Plot IOD points
     if (m.iodflag==1)
       plot_iod(m.iodfile);
+
+    // Plot XYZ position
+    if (m.xyzflag==1)
+      plot_xyz(m.mjd,m.xyzstring);
 
     // Plot visibility
     if (m.visflag==1 && strcmp(m.orientation,"horizontal")==0)

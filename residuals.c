@@ -108,22 +108,54 @@ void compute_residual(char *filename,struct point p)
   dr=sqrt(pow(dry*rx[0]-drx*ry[0],2)/(drx*drx+dry*dry));
   if ((-rx[0]*drx-ry[0]*dry)<0.0)
     dr*=-1;
-  printf("%s | %8.3f deg %8.3f sec %5.1f day, %.1f km\n",p.iod_line,dr,dt,age,r[0]);
+  printf("%s | %8.5f deg %8.3f sec %5.1f day, %.1f km\n",p.iod_line,dr,dt,age,r[0]);
+
+  return;
+}
+
+void split_file(struct data d,float dtmax)
+{
+  int i,j,flag=0;
+  FILE *file;
+  char filename[LIM];
+  double mjd0,dt;
+
+  for (i=0,j=0;i<d.n;i++) {
+    if (flag==1) {
+      dt=86400*(d.p[i].mjd-mjd0);
+      if (dt>dtmax) {
+	if (file!=NULL)
+	  fclose(file);
+	flag=0;
+	j++;
+      }
+    }    
+    if (flag==0) {
+      mjd0=d.p[i].mjd;
+      flag=1;
+      sprintf(filename,"split%04d.dat",j+1);
+      file=fopen(filename,"w");
+    }
+    fprintf(file,"%s\n",d.p[i].iod_line);
+  }
+  if (file!=NULL)
+    fclose(file);
 
   return;
 }
 
 int main(int argc,char *argv[])
 {
-  int i,arg=0;
+  int i,arg=0,split=0;
   struct data d;
   char *datafile,catalog[LIM];
   char *env;
+  float dt;
 
   env=getenv("ST_TLEDIR");
   sprintf(catalog,"%s/classfd.tle",env);
   // Decode options
-  while ((arg=getopt(argc,argv,"d:c:h"))!=-1) {
+  while ((arg=getopt(argc,argv,"d:c:hs:"))!=-1) {
     switch(arg) {
     case 'd':
       datafile=optarg;
@@ -131,6 +163,11 @@ int main(int argc,char *argv[])
 
     case 'c':
       strcpy(catalog,optarg);
+      break;
+
+    case 's':
+      dt=atof(optarg);
+      split=1;
       break;
 
     case 'h':
@@ -146,8 +183,14 @@ int main(int argc,char *argv[])
 
   // Read data
   d=read_data(datafile);
-  for (i=0;i<d.n;i++)
-    compute_residual(catalog,d.p[i]);
+
+  if (split==1) {
+    split_file(d,dt);
+  } else {
+    for (i=0;i<d.n;i++)
+      compute_residual(catalog,d.p[i]);
+  }
+
   return 0;
 }
 
