@@ -18,6 +18,7 @@
 long Isat=0;
 long Isatsel=0;
 extern double SGDP4_jd0;
+char satid[10]="13500A";
 
 struct point {
   int flag,satno;
@@ -523,13 +524,13 @@ int main(int argc,char *argv[])
 
     // Change
     if (c=='c') {
-      printf("(1) Inclination,     (2) Ascending Node,   (3) Eccentricity,\n(4) Arg. of Perigee, (5) Mean Anomaly,     (6) Mean Motion,\n(7) B* drag,         (8) Epoch,            (9) Satellite ID\n\nWhich parameter to change: ");
+      printf("(1) Inclination,     (2) Ascending Node,   (3) Eccentricity,\n(4) Arg. of Perigee, (5) Mean Anomaly,     (6) Mean Motion,\n(7) B* drag,         (8) Epoch,            (9) Satellite ID\n(0) Sat ID\nWhich parameter to change: ");
       scanf("%i",&i);
-      if (i>0 && i<=9) {
+      if (i>=0 && i<=9) {
 	printf("\nNew value: ");
 	fgets(string,64,stdin);
 	scanf("%s",string);
-	//	if (i==0) strcpy(d.satname,string);
+	if (i==0) strcpy(satid,string);
 	if (i==1) orb.eqinc=RAD(atof(string));
 	if (i==2) orb.ascn=RAD(atof(string));
 	if (i==3) orb.ecc=atof(string);
@@ -1193,7 +1194,7 @@ void format_tle(orbit_t orb,char *line1,char *line2)
     sbstar[4] = bstar[5];  sbstar[5] = bstar[6];  sbstar[6] = bstar[8];  sbstar[7] = bstar[10];  sbstar[8] = '\0';
   }
   // Print lines
-  sprintf(line1,"1 %05dU          %2d%012.8f  .00000000  00000-0 %8s 0    0",orb.satno,orb.ep_year-2000,orb.ep_day,sbstar);
+  sprintf(line1,"1 %05dU %-8s %2d%012.8f  .00000000  00000-0 %8s 0    0",orb.satno,satid,orb.ep_year-2000,orb.ep_day,sbstar);
   sprintf(line2,"2 %05d %8.4f %8.4f %07.0f %8.4f %8.4f %11.8f    0",orb.satno,DEG(orb.eqinc),DEG(orb.ascn),1E7*orb.ecc,DEG(orb.argp),DEG(orb.mnan),orb.rev);
 
   // Compute checksums

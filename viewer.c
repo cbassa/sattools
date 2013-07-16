@@ -24,6 +24,7 @@ struct image {
   int cospar;
 };
 struct image read_fits(char *filename);
+void write_composite_pgm(char *filename,struct image img);
 void write_pgm(char *filename,struct image img);
 
 int main(int argc,char *argv[])
@@ -33,7 +34,8 @@ int main(int argc,char *argv[])
 
   img=read_fits(argv[1]);
 
-  write_pgm("avg.pgm",img);
+  write_composite_pgm("avg.pgm",img);
+  write_pgm("f1.pgm",img);
 
   return 0;
 }
@@ -135,7 +137,7 @@ struct image read_fits(char *filename)
 }
 
 // Write pgm file
-void write_pgm(char *filename,struct image img)
+void write_composite_pgm(char *filename,struct image img)
 {
   int i,j,k,l,n;
   FILE *file;
@@ -218,25 +220,34 @@ void write_pgm(char *filename,struct image img)
 }
 
 // Write pgm file
-void write_pgm2(char *filename,struct image img)
+void write_pgm(char *filename,struct image img)
 {
-  int i,j,k;
+  int i,j,k,n;
   FILE *file;
-  float z;
+  float s1,s2,z,avg,std,zavgmin,zavgmax;
+
+  n=img.naxis1*img.naxis2;
+  for (i=0,s1=0.0,s2=0.0;i<n;i++) {
+    z=img.zavg[i];
+    s1+=z;
+    s2+=z*z;
+  }
+  avg=s1/(float) n;
+  std=sqrt(s2/(float) n-avg*avg);
+  zavgmin=avg-2*std;
+  zavgmax=avg+3*std;
 
   file=fopen(filename,"w");
   fprintf(file,"P5\n# %.23s\n%d %d\n255\n",img.nfd+1,img.naxis1,img.naxis2);
   for (j=0;j<img.naxis2;j++) {
     for (i=0;i<img.naxis1;i++) {
       k=i+(img.naxis2-j-1)*img.naxis1;
-      //      z=255.0*(img.zavg[k]-30.0)/(60.0-30.0);
-      z=img.zstd[k];
-      //z=255.0*(img.ztrk[k]-30.0)/(60.0-30.0);
+      z=255.0*(img.zavg[k]-zavgmin)/(zavgmax-zavgmin);
       if (z>255.0)
 	z=255.0;
       if (z<0.0)
 	z=0.0;
-      fprintf(file,"%c",(char) z);
+      fprintf(file,"%c",(unsigned char) z);
     }
   }
   fclose(file);

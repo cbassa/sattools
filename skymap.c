@@ -28,7 +28,7 @@ struct map {
   float length;
   float minmag,maxmag,minrad,maxrad;
   char orientation[LIM],projection[4],observer[32];
-  char nfd[LIM],starfile[LIM],tlefile[LIM],iodfile[LIM],xyzstring[LIM];
+  char nfd[LIM],starfile[LIM],tlefile[LIM],iodfile[LIM],xyzfile[LIM];
   char datadir[LIM],tledir[LIM];
   double lat,lng;
   double h,sra,sde,sazi,salt;
@@ -115,7 +115,7 @@ void usage()
   printf("P    planar search satellite ID\n");
   printf("r    planar search altitude\n");
   printf("V    altitude for visibility contours\n");
-  printf("p    xyz position of object\n");
+  printf("p    file with xyz positions\n");
 
   return;
 }
@@ -262,19 +262,29 @@ void read_iod(char *filename,int iobs)
   return;
 }
 
-void plot_xyz(double mjd,char *string)
+
+// Plot XYZ point
+void plot_xyz(double mjd0,char *filename)
 {
   struct sat s;
   double jd,rsun,rearth,rsat;
   double dx,dy,dz,dvx,dvy,dvz;
   xyz_t satpos,obspos,obsvel,satvel,sunpos;
-  double sra,sde;
+  double sra,sde,mjd,mjd1;
+  FILE *file;
+  char line[LIM];
 
-  sscanf(string,"%lf,%lf,%lf",&satpos.x,&satpos.y,&satpos.z);
+  file=fopen(filename,"r");
+  while (fgetline(file,line,LIM)>0) {
+    sscanf(line,"%lf %lf %lf %lf",&mjd,&satpos.x,&satpos.y,&satpos.z);
+    if (mjd>mjd0)
+      break;
+  }
+  fclose(file);
 
   // Get positions
-  obspos_xyz(mjd,&obspos,&obsvel);
-  sunpos_xyz(mjd,&sunpos,&sra,&sde);
+  obspos_xyz(mjd0,&obspos,&obsvel);
+  sunpos_xyz(mjd0,&sunpos,&sra,&sde);
 
   // Age
   s.age=0.0;
@@ -404,7 +414,7 @@ int main(int argc,char *argv[])
       break;
 
     case 'p':
-      strcpy(m.xyzstring,optarg);
+      strcpy(m.xyzfile,optarg);
       m.xyzflag=1;
       break;
 
@@ -1910,7 +1920,7 @@ int plot_skymap(void)
 
     // Plot XYZ position
     if (m.xyzflag==1)
-      plot_xyz(m.mjd,m.xyzstring);
+      plot_xyz(m.mjd,m.xyzfile);
 
     // Plot visibility
     if (m.visflag==1 && strcmp(m.orientation,"horizontal")==0)
