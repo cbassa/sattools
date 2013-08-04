@@ -378,6 +378,7 @@ int main(int argc,char *argv[])
     case 't':
       strcpy(m.nfd,optarg);
       m.mjd=nfd2mjd(m.nfd);
+      m.iodpoint=-1;
       break;
 
     case 'c':
