@@ -1,5 +1,6 @@
 # No ID   Latitude Longitude   Elev   Observer
 #0000 CB   51.9114    5.1736      0    Cees Bassa
+4171 CB   52.8344    6.3785      0    Cees Bassa
 4553 CB   53.3210   -2.2330     86    Cees Bassa
 0001 MM   30.3340  -97.7610    160    Mike McCants
 0002 MM   30.3138  -97.8661    280    Mike McCants
