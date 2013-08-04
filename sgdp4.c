@@ -175,10 +175,10 @@ long iday, iyear;
 
     iyear  = (long)orb->ep_year;
 
-    if (iyear < 1960)
+    if (iyear < 1957)
         {
         /* Assume 0 and 100 both refer to 2000AD */
-        iyear += (iyear < 60 ? 2000 : 1900);
+        iyear += (iyear < 57 ? 2000 : 1900);
         }
 
     if (iyear < 1901 || iyear > 2099)
