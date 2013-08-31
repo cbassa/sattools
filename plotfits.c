@@ -6,6 +6,7 @@
 #include "cpgplot.h"
 #include "qfits.h"
 #include <gsl/gsl_multifit.h>
+#include <getopt.h>
 
 #define LIM 256
 #define D2R M_PI/180.0
