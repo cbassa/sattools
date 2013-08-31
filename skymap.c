@@ -33,7 +33,7 @@ struct map {
   double lat,lng;
   double h,sra,sde,sazi,salt;
   float alt,timezone;
-  float fw,fh;
+  float fw,fh,agelimit;
   int level,grid,site_id;
   int leoflag,iodflag,iodpoint,visflag,planar,pssatno,psnr,xyzflag;
   float psrmin,psrmax,rvis;
@@ -152,6 +152,7 @@ void init_skymap(void)
   m.xyzflag=0;
   m.visflag=0;
   m.planar=0;
+  m.agelimit=-1.0;
 
   // Default settings
   strcpy(m.observer,"Unknown");
@@ -1273,7 +1274,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
   char norad[7],satname[30],date[24];;
   float isch;
   float rsun,rearth,psun,pearth,p;
-  int priority[]={24680,28888,15071,26934,37348,5678,5679,5680,5681,5682,8818,8835,8836,8884,10502,10529,10544,10594,11720,11731,11732,11745,13791,13844,13845,13874};
+  int priority[]={24680,28888,15071,26934,37348,5678,5679,5680,5681,5682,8818,8835,8836,8884,10502,10529,10544,10594,11720,11731,11732,11745,13791,13844,13845,13874,39232};
 
   // Open TLE file
   fp=fopen(filename,"rb");
@@ -1300,6 +1301,9 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
 
       // Compute apparent position
       s=apparent_position(mjd);
+
+      if (m.agelimit>0 && s.age<m.agelimit)
+	continue;
 
       // Convert to float
       x=(float) s.rx;
@@ -1777,12 +1781,12 @@ void skymap_plotsun(void)
 // plot skymap
 int plot_skymap(void)
 {
-  int redraw=1,fov=2,status;
+  int redraw=1,fov=3,status;
   float x,y;
   char c,text[256],sra[16],sde[16],filename[LIM];
   double ra,de,azi,alt,rx,ry;
   xyz_t sunpos;
-  float focallength[]={28,35,50,100,200,300};
+  float focallength[]={12,28,35,50,100,200,300};
 
   for (;;) {
     if (redraw>0) {
@@ -1960,12 +1964,19 @@ int plot_skymap(void)
       printf("F   Toggle focal length\n");
       printf("TAB Cycle IOD observations\n");
       printf("S   Save position/time to schedule\n");
+      printf("a   Select on age\n");
     }
 
     // Cycle IOD points
     if (c=='\t') {
       m.iodpoint++;
       read_iod(m.iodfile,m.iodpoint);
+      redraw=1;
+    }
+
+    if (c=='a') {
+      printf("Limit on age [d]: \n");
+      scanf("%f",&m.agelimit);
       redraw=1;
     }
 
