@@ -88,6 +88,64 @@ xyz_t get_position(double r0,int i0)
   return pos;
 }
 
+int period_search(void)
+{
+  int i,j,i1,i2;
+  float dt;
+  int nrev,nrevmin,nrevmax;
+  char line1[70],line2[70];
+  int ia[7];
+
+  // Set fitting parameters
+  for (i=0;i<6;i++)
+    ia[i]=1;
+  ia[6]=0;
+
+  // Select all points
+  for (i=0;i<d.n;i++)
+    d.p[i].flag=2;
+  
+
+  // Print observations
+  printf("Present observations:\n");
+  for (i=0;i<d.n;i++) 
+    printf("%3d: %s\n",i+1,d.p[i].iod_line);
+  printf("\nSelect center observations of both arcs: ");
+  scanf("%d %d",&i1,&i2);
+  dt=d.p[i2].mjd-d.p[i1].mjd;
+  printf("\nTime passed: %f days\n",dt);
+  printf("Provide revolution range to search over [min,max]: ");
+  scanf("%d %d",&nrevmin,&nrevmax);
+
+  for (nrev=nrevmin;nrev<nrevmax+1;nrev++) {
+    orb.satno=79000+nrev;
+    orb.rev=nrev/dt;
+    
+    // Set parameters
+    for (i=0;i<7;i++) 
+      ia[i]=0;
+	
+    // Loop over parameters
+    for (i=0;i<6;i++) {
+      if (i==0) ia[4]=1;
+      if (i==1) ia[1]=1;
+      if (i==2) ia[0]=1;
+      if (i==3) ia[3]=1;
+      if (i==4) ia[2]=1;
+      if (i==5) ia[5]=1;
+
+      for (j=0;j<5;j++)
+	fit(orb,ia);
+    }
+
+    format_tle(orb,line1,line2);
+    printf("%s\n%s\n# %d revs, %f revs/day, %f\n",line1,line2,nrev,nrev/dt,d.rms);
+  }
+
+
+  return;
+}
+
 int psearch(void)
 {
   int i,satno=99300;
@@ -436,6 +494,11 @@ int main(int argc,char *argv[])
     if (c=='q' || c=='Q')
       break;
    
+    // Period search
+    if (c=='P') {
+      period_search();
+    }
+
     // Fit
     if (c=='f') {
       // Count points
@@ -448,7 +511,7 @@ int main(int argc,char *argv[])
 	printf("No points selected!\n");
       } else {
 	fit(orb,ia);
-	printf("%d %.3f\n",nobs,d.rms);
+	printf("%d %.5f\n",nobs,d.rms);
 	plot_residuals=1;
 	redraw=1;
 	continue;
@@ -1299,7 +1362,8 @@ void fit(orbit_t orb,int *ia)
 {
   int i,n;
   double a[7],da[7];
-  double db[7]={5.0,5.0,0.1,5.0,5.0,0.5,0.0001};
+  //  double db[7]={5.0,5.0,0.1,5.0,5.0,0.5,0.0001};
+  double db[7]={1.0,1.0,0.02,1.0,1.0,0.1,0.0001};
 
   a[0]=orb.eqinc*R2D;
   da[0]=da[0]*R2D;
