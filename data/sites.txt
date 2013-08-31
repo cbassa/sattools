@@ -1,6 +1,6 @@
 # No ID   Latitude Longitude   Elev   Observer
 #0000 CB   51.9114    5.1736      0    Cees Bassa
-4171 CB   52.8344    6.3785      0    Cees Bassa
+4171 CB   52.8344    6.3785     10    Cees Bassa
 4553 CB   53.3210   -2.2330     86    Cees Bassa
 0001 MM   30.3340  -97.7610    160    Mike McCants
 0002 MM   30.3138  -97.8661    280    Mike McCants
@@ -49,6 +49,9 @@
 6242 JM   42.9453   -2.8284    623    Jon Mikel
 6241 JM   42.9565   -2.8203    619    Jon Mikel
 4160 BD   51.2793    5.4768     35    Bram Dorreman
+0000 RL   38.9483 -104.5617   2073    Ron Lee
+#0000 CW   59.3104   18.1003      0    Christoffer Wallstenius
+#0000 BK   46.7217  -92.4592      0    Bob King
 #0000 TL   41.5960  -71.0910      0    Tom Loebit
 #0000 WH   53.9067   11.9170      0    Wolfgang Hamburg
 #0000 CB   52.8361    6.3612      0    Cees Bassa
@@ -58,5 +61,5 @@
 #0000 RB   37.2620  -121.977     72    Rick Baldridge
 #0000 AM   44.3932   33.9701     44    Andriy Makeyev
 #0000 CB  -15.8769  -48.087       0    Carlos Bella
-0000 SC   46.1911    9.0223    203    Simone 
+#0000 SC   46.1911    9.0223    203    Simone 
 #0000 AA   38.0       23.75       0    Anthony A
