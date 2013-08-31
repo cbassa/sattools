@@ -549,7 +549,7 @@ void mjd2date(double mjd,char *date)
   double f,jd,dday;
   int z,alpha,a,b,c,d,e;
   int year,month,day,hour,min;
-  float sec,x;
+  double sec,x;
 
   jd=mjd+2400000.5;
   jd+=0.5;
@@ -589,6 +589,6 @@ void mjd2date(double mjd,char *date)
   hour=x;
 
   sprintf(date,"%04d-%02d-%02dT%02d:%02d:%06.3f",year,month,day,hour,min,sec);
-
+  
   return;
 }
