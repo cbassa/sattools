@@ -57,6 +57,7 @@ int main(int argc, char *argv[])
 
     // Get local time
     time(&rawtime);
+    rawtime-=3600;
 
     // Print UTC time
     ptm=gmtime(&rawtime);
@@ -105,8 +106,14 @@ void send_position(char *sra,char *sde)
   struct sockaddr_in addr;
   char packet[LIM];
   FILE *file;
+  float ra,de;
 
-  sprintf(packet,"<newNumberVector device='Celestron GPS' name='EQUATORIAL_EOD_COORD_REQUEST'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
+
+  // Old packet style
+  //  sprintf(packet,"<newNumberVector device='Celestron GPS' name='EQUATORIAL_EOD_COORD_REQUEST'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
+
+  // New packet style (as of 2013-08-20)
+  sprintf(packet,"<newNumberVector device='Celestron GPS' name='EQUATORIAL_EOD_COORD'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
 
   // Send TCP packet
   skt=socket(AF_INET,SOCK_STREAM,0);
