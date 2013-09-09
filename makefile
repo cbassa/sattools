@@ -13,6 +13,21 @@ F77 = gfortran
 all:
 	make satfit uk2iod rde2iod viewer residuals tleinfo satmap satorbit runsched fitskey fitsheader satid skymap addwcs reduce wcsfit plotfits pgm2fits faketle imgstat pstrack
 
+angular: angular.o 
+	$(CC) -o angular angular.c -lm -lwcs_c
+
+dec2sex: dec2sex.o 
+	$(CC) -o dec2sex dec2sex.c -lm
+
+sex2dec: sex2dec.o 
+	$(CC) -o sex2dec sex2dec.c -lm
+
+calibrate: calibrate.o sgdp4.o satutl.o deep.o ferror.o
+	$(F77) -o calibrate calibrate.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+
+jpg2fits: jpg2fits.o
+	$(CC) -o jpg2fits jpg2fits.o $(LFLAGS)
+
 pstrack: pstrack.o sgdp4.o satutl.o deep.o ferror.o
 	$(F77) -o pstrack pstrack.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
 
