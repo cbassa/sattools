@@ -1233,7 +1233,7 @@ void skymap_plotstars(char *filename)
     }
   }
   fclose(file);
-  
+
   return;
 }
 
