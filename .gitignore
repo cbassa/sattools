@@ -25,6 +25,13 @@ viewer
 wcsfit
 faketle
 imgstat
+angular
+calibrate
+dec2sex
+jpg2fits
+measure
+pstrack
+sex2dec
 
 # TLE dir
 tle/
