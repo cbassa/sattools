@@ -19,20 +19,29 @@ struct image read_jpg(char *filename);
 void write_fits(struct image img,char *filename);
 double date2mjd(int year,int month,double day);
 double nfd2mjd(char *date);
+void mjd2nfd(double mjd,char *nfd);
 
 int main(int argc,char *argv[])
 {
   int arg;
   struct image img;
   char infile[64],outfile[64],nfd[32];
-  double mjd;
+  double mjd,delay=0.0,tz=0.0;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"i:t:o:"))!=-1) {
+  while ((arg=getopt(argc,argv,"i:t:o:d:Z:"))!=-1) {
     switch(arg) {
 
     case 'i':
       strcpy(infile,optarg);
+      break;
+
+    case 'd':
+      delay=(double) atof(optarg);
+      break;
+
+    case 'Z':
+      tz=(double) atof(optarg);
       break;
 
     case 'o':
@@ -41,7 +50,6 @@ int main(int argc,char *argv[])
 
     case 't':
       strcpy(nfd,optarg);
-      mjd=nfd2mjd(nfd);
       break;
 
     default:
@@ -54,6 +62,12 @@ int main(int argc,char *argv[])
     img=read_jpg(infile);
 
   if (nfd!=NULL) {
+    // Compute time
+    mjd=nfd2mjd(nfd);
+    mjd+=(delay+tz)/86400.0;
+    mjd2nfd(mjd,nfd);
+
+    // Into file
     strcpy(img.nfd,nfd);
     img.mjd=mjd;
   }
@@ -286,4 +300,55 @@ double nfd2mjd(char *date)
   mjd=date2mjd(year,month,dday);
 
   return mjd;
+}
+
+// Compute Date from Julian Day
+void mjd2nfd(double mjd,char *nfd)
+{
+  double f,jd,dday;
+  int z,alpha,a,b,c,d,e;
+  int year,month,day,hour,min;
+  float sec,x;
+
+  jd=mjd+2400000.5;
+  jd+=0.5;
+
+  z=floor(jd);
+  f=fmod(jd,1.);
+
+  if (z<2299161)
+    a=z;
+  else {
+    alpha=floor((z-1867216.25)/36524.25);
+    a=z+1+alpha-floor(alpha/4.);
+  }
+  b=a+1524;
+  c=floor((b-122.1)/365.25);
+  d=floor(365.25*c);
+  e=floor((b-d)/30.6001);
+
+  dday=b-d-floor(30.6001*e)+f;
+  if (e<14)
+    month=e-1;
+  else
+    month=e-13;
+
+  if (month>2)
+    year=c-4716;
+  else
+    year=c-4715;
+
+  day=(int) floor(dday);
+  x=24.0*(dday-day);
+  x=3600.*fabs(x);
+  sec=fmod(x,60.);
+  x=(x-sec)/60.;
+  min=fmod(x,60.);
+  x=(x-min)/60.;
+  hour=x;
+  sec=floor(1000.0*sec)/1000.0;
+
+  sprintf(nfd,"%04d-%02d-%02dT%02d:%02d:%06.3f",year,month,day,hour,min,sec);
+
+  return;
 }

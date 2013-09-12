@@ -712,10 +712,10 @@ void skymap_plot_renew(void)
   if (m.level==9) {
     m.w=1;
     m.minmag=3.0;
-    m.maxmag=10.0;
+    m.maxmag=12.0;
     m.maxrad=2.0;
     m.minrad=0.02;
-    sprintf(m.starfile,"%s/data/tyc12mag.dat",m.datadir);
+    sprintf(m.starfile,"%s/data/tycho2.dat",m.datadir);
   }
   /*
   // Star files
@@ -1166,73 +1166,72 @@ void skymap_plotstars(char *filename)
   FILE *file;
   struct star s;
 
-  /*
-  // 20130118 Testing of the binary catalog also used in plotfits
-  file=fopen("software/sattools/data/tycho2.dat","rb");
-  while (!feof(file)) {
-    fread(&s,sizeof(struct star),1,file);
-    vmag=s.mag;
-    ra0=s.ra;
-    de0=s.de;
-    if (vmag<=m.maxmag) {
-      precess(mjd0,ra0,de0,m.mjd,&ra,&de);
-      if (strcmp(m.orientation,"horizontal")==0) {
-	equatorial2horizontal(m.mjd,ra,de,&azi,&alt);
-	forward(azi,alt,&rx,&ry);
-      } else if (strcmp(m.orientation,"equatorial")==0) {
-	forward(ra,de,&rx,&ry);
-      }
-      x=(float) rx;
-      y=(float) ry;
+  if (strstr(filename,"tycho2.dat")!=NULL) {
+    file=fopen(m.starfile,"rb");
+    while (!feof(file)) {
+      fread(&s,sizeof(struct star),1,file);
+      vmag=s.mag;
+      ra0=s.ra;
+      de0=s.de;
+      if (vmag<=m.maxmag) {
+	precess(mjd0,ra0,de0,m.mjd,&ra,&de);
+	if (strcmp(m.orientation,"horizontal")==0) {
+	  equatorial2horizontal(m.mjd,ra,de,&azi,&alt);
+	  forward(azi,alt,&rx,&ry);
+	} else if (strcmp(m.orientation,"equatorial")==0) {
+	  forward(ra,de,&rx,&ry);
+	}
+	x=(float) rx;
+	y=(float) ry;
       
-      // Star size
-      rad=m.maxrad+(m.minrad-m.maxrad)*(vmag-m.minmag)/(m.maxmag-m.minmag);
-      rad*=m.w/90.0;
-      cpgsci(0);
-      cpgcirc(x,y,1.3*rad);
-      cpgsci(1);
-      cpgcirc(x,y,rad);
-    }
-  }
-  fclose(file);
-  */
-    
-  // Loop over file
-  file=fopen(filename,"r");
-  if (file==NULL) {
-    printf("Star file not found\n");
-    exit(1);
-  }
-  while (fgetline(file,line,LIM)>0) {
-    // Failed for Tycho files
-    //    sscanf(line,"%i %lf %lf %f\n",&hip,&ra,&de,&vmag);
-    // Skipping star ID
-    sscanf(line+13,"%lf %lf %f\n",&ra0,&de0,&vmag);
-
-    if (vmag<=m.maxmag) {
-      precess(mjd0,ra0,de0,m.mjd,&ra,&de);
-      if (strcmp(m.orientation,"horizontal")==0) {
-	equatorial2horizontal(m.mjd,ra,de,&azi,&alt);
-	forward(azi,alt,&rx,&ry);
-      } else if (strcmp(m.orientation,"equatorial")==0) {
-	forward(ra,de,&rx,&ry);
+	// Star size
+	rad=m.maxrad+(m.minrad-m.maxrad)*(vmag-m.minmag)/(m.maxmag-m.minmag);
+	rad*=m.w/90.0;
+	cpgsci(0);
+	cpgcirc(x,y,1.3*rad);
+	cpgsci(1);
+	cpgcirc(x,y,rad);
       }
-      x=(float) rx;
-      y=(float) ry;
-      
-      if (fabs(rx)<0.02 && fabs(ry)<0.02)
-	printf("%lf %lf %lf %lf %f\n",ra0,de0,ra,de,vmag);
-
-      // Star size
-      rad=m.maxrad+(m.minrad-m.maxrad)*(vmag-m.minmag)/(m.maxmag-m.minmag);
-      rad*=m.w/90.0;
-      cpgsci(0);
-      cpgcirc(x,y,1.3*rad);
-      cpgsci(1);
-      cpgcirc(x,y,rad);
     }
+    fclose(file);
+  } else {
+    // Loop over file
+    file=fopen(filename,"r");
+    if (file==NULL) {
+      printf("Star file not found\n");
+      exit(1);
+    }
+    while (fgetline(file,line,LIM)>0) {
+      // Failed for Tycho files
+      //    sscanf(line,"%i %lf %lf %f\n",&hip,&ra,&de,&vmag);
+      // Skipping star ID
+      sscanf(line+13,"%lf %lf %f\n",&ra0,&de0,&vmag);
+      
+      if (vmag<=m.maxmag) {
+	precess(mjd0,ra0,de0,m.mjd,&ra,&de);
+	if (strcmp(m.orientation,"horizontal")==0) {
+	  equatorial2horizontal(m.mjd,ra,de,&azi,&alt);
+	  forward(azi,alt,&rx,&ry);
+	} else if (strcmp(m.orientation,"equatorial")==0) {
+	  forward(ra,de,&rx,&ry);
+	}
+	x=(float) rx;
+	y=(float) ry;
+	
+	if (fabs(rx)<0.02 && fabs(ry)<0.02)
+	  printf("%lf %lf %lf %lf %f\n",ra0,de0,ra,de,vmag);
+	
+	// Star size
+	rad=m.maxrad+(m.minrad-m.maxrad)*(vmag-m.minmag)/(m.maxmag-m.minmag);
+	rad*=m.w/90.0;
+	cpgsci(0);
+	cpgcirc(x,y,1.3*rad);
+	cpgsci(1);
+	cpgcirc(x,y,rad);
+      }
+    }
+    fclose(file);
   }
-  fclose(file);
 
   return;
 }

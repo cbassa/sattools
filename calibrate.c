@@ -68,8 +68,8 @@ int main(int argc,char *argv[])
   img=read_fits(argv[1],0);
 
   // Hard coded
-  img.ra0=301.53;
-  img.de0=8.07;
+  img.ra0=336.98;
+  img.de0=-5.45;
   sx=-10.0;
   sy=10.0;
   q=10.0;
@@ -119,7 +119,7 @@ int main(int argc,char *argv[])
 	  if (cat.select[i]!=0) 
 	    cpgpt1(cat.x[i],cat.y[i],6);
 	  else
-	    cpgpt1(cat.x[i],cat.y[i],4);
+	    cpgpt1(cat.x[i],cat.y[i],24);
 	}
 	cpgsci(1);
       }
@@ -275,12 +275,12 @@ struct image read_fits(char *filename,int pnum)
   }
 
   // Get levels
-  for (i=0,s1=0.0,s2=0.0;i<img.naxis1*img.naxis2;i++) {
+  for (i=0,s1=0.0;i<img.naxis1*img.naxis2;i++) 
     s1+=img.z[i];
-    s2+=img.z[i]*img.z[i];
-  }
-  avg=s1/(float) (img.naxis1*img.naxis2);
-  std=sqrt(s2/(float) (img.naxis1*img.naxis2)-avg*avg);
+  avg=s1/(float) (img.naxis1*img.naxis2);  
+  for (i=0,s2=0.0;i<img.naxis1*img.naxis2;i++) 
+    s2+=pow(img.z[i]-avg,2);
+  std=sqrt(s2/(float) (img.naxis1*img.naxis2));
   img.zmin=avg-4.0*std;
   img.zmax=avg+16.0*std;
   
