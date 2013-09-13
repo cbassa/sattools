@@ -25,6 +25,9 @@ sex2dec: sex2dec.o
 calibrate: calibrate.o sgdp4.o satutl.o deep.o ferror.o
 	$(F77) -o calibrate calibrate.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
 
+measure: measure.o
+	$(F77) -o measure measure.o $(LFLAGS)
+
 jpg2fits: jpg2fits.o
 	$(CC) -o jpg2fits jpg2fits.o $(LFLAGS)
 
