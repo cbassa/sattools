@@ -263,6 +263,48 @@ void read_iod(char *filename,int iobs)
   return;
 }
 
+void plot_geo_belt(void)
+{
+  int i;
+  xyz_t obspos,obsvel;
+  xyz_t satpos;
+  double theta,dx,dy,dz,r,ra,de,azi,alt,rx,ry;
+
+  obspos_xyz(m.mjd,&obspos,&obsvel);
+
+  cpgsci(3);
+  for (theta=0.0;theta<=360.0;theta+=1.0) {
+    satpos.x=42164*cos(theta*D2R);
+    satpos.y=42164*sin(theta*D2R);
+    satpos.z=0.0;
+
+    // Position differences
+    dx=satpos.x-obspos.x;  
+    dy=satpos.y-obspos.y;
+    dz=satpos.z-obspos.z;
+  
+    // Celestial position
+    r=sqrt(dx*dx+dy*dy+dz*dz);
+    ra=modulo(atan2(dy,dx)*R2D,360.0);
+    de=asin(dz/r)*R2D;
+
+    // Convert and project
+    if (strcmp(m.orientation,"horizontal")==0) {
+      equatorial2horizontal(m.mjd,ra,de,&azi,&alt);
+      forward(azi,alt,&rx,&ry);
+    } else if (strcmp(m.orientation,"equatorial")==0) {
+      forward(ra,de,&rx,&ry);
+    }
+
+    if (theta==0.0)
+      cpgmove((float) rx,(float) ry);
+    else
+      cpgdraw((float) rx,(float) ry);
+  }
+  cpgsci(1);
+
+  return;
+}
 
 // Plot XYZ point
 void plot_xyz(double mjd0,char *filename)
@@ -1906,6 +1948,8 @@ int plot_skymap(void)
 	skymap_plotsatellite(m.tlefile,Isatsel,m.mjd,m.length);
 
       skymap_plotsun();
+
+      plot_geo_belt();
     }
     // Reset redraw
     redraw=0;
