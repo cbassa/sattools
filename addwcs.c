@@ -14,7 +14,7 @@
 #define R2D 180.0/M_PI
 
 struct image {
-  int naxis1,naxis2,nframes;
+  int naxis,naxis1,naxis2,nframes;
   float *zavg,*zstd,*zmax,*znum;
   double ra0,de0;
   float x0,y0;
@@ -66,7 +66,7 @@ void plot_image(struct image img,struct transformation t,struct catalog c,char *
   float zmin,zmax,zavg,zstd;
 
   for (i=0,zavg=0.0;i<img.naxis1*img.naxis2;i++)
-    zavg+=img.zmax[i];
+    zavg+=img.zavg[i];
   zavg/=(float) img.naxis1*img.naxis2;
   for (i=0,zstd=0.0;i<img.naxis1*img.naxis2;i++)
     zstd+=pow(img.zavg[i]-zavg,2);
@@ -338,54 +338,79 @@ struct image read_fits(char *filename)
   struct image img;
 
   // Image size
+  img.naxis=atoi(qfits_query_hdr(filename,"NAXIS"));
   img.naxis1=atoi(qfits_query_hdr(filename,"NAXIS1"));
   img.naxis2=atoi(qfits_query_hdr(filename,"NAXIS2"));
 
   // MJD
   img.mjd=(double) atof(qfits_query_hdr(filename,"MJD-OBS"));
 
-  // Number of frames
-  img.nframes=atoi(qfits_query_hdr(filename,"NFRAMES"));
-
-  // Timestamps
-  img.dt=(float *) malloc(sizeof(float)*img.nframes);
-  for (i=0;i<img.nframes;i++) {
-    sprintf(key,"DT%04d",i);
-    strcpy(val,qfits_query_hdr(filename,key));
-    sscanf(val+1,"%f",&img.dt[i]);
-    //    img.dt[i]=atof(qfits_query_hdr(filename,key));
-  }
-
-  // Allocate image memory
-  img.zavg=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
-  img.zstd=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
-  img.zmax=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
-  img.znum=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
-
   // Set parameters
   ql.xtnum=0;
   ql.ptype=PTYPE_FLOAT;
   ql.filename=filename;
 
-  // Loop over planes
-  for (k=0;k<4;k++) {
-    ql.pnum=k;;
-
+  if (img.naxis==3) {
+    // Number of frames
+    img.nframes=atoi(qfits_query_hdr(filename,"NFRAMES"));
+    
+    // Timestamps
+    img.dt=(float *) malloc(sizeof(float)*img.nframes);
+    for (i=0;i<img.nframes;i++) {
+      sprintf(key,"DT%04d",i);
+      strcpy(val,qfits_query_hdr(filename,key));
+      sscanf(val+1,"%f",&img.dt[i]);
+      //    img.dt[i]=atof(qfits_query_hdr(filename,key));
+    }
+    
+    // Allocate image memory
+    img.zavg=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
+    img.zstd=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
+    img.zmax=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
+    img.znum=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
+    
+    
+    // Loop over planes
+    for (k=0;k<4;k++) {
+      ql.pnum=k;;
+      
+      // Initialize load
+      if (qfitsloader_init(&ql) != 0) 
+	printf("Error initializing data loading\n");
+      
+      // Test load
+      if (qfits_loadpix(&ql) != 0) 
+	printf("Error loading actual data\n");
+      
+      // Fill z array
+      for (i=0,l=0;i<img.naxis1;i++) {
+	for (j=0;j<img.naxis2;j++) {
+	  if (k==0) img.zavg[l]=ql.fbuf[l];
+	  if (k==1) img.zstd[l]=ql.fbuf[l];
+	  if (k==2) img.zmax[l]=ql.fbuf[l];
+	  if (k==3) img.znum[l]=ql.fbuf[l];
+	  l++;
+	}
+      }
+    }
+  } else {
+    // Allocate image memory
+    img.zavg=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
+    
+    ql.pnum=0;
+    
     // Initialize load
     if (qfitsloader_init(&ql) != 0) 
       printf("Error initializing data loading\n");
-
+    
     // Test load
     if (qfits_loadpix(&ql) != 0) 
       printf("Error loading actual data\n");
-
+      
     // Fill z array
     for (i=0,l=0;i<img.naxis1;i++) {
       for (j=0;j<img.naxis2;j++) {
-	if (k==0) img.zavg[l]=ql.fbuf[l];
-	if (k==1) img.zstd[l]=ql.fbuf[l];
-	if (k==2) img.zmax[l]=ql.fbuf[l];
-	if (k==3) img.znum[l]=ql.fbuf[l];
+	img.zavg[l]=ql.fbuf[l];
 	l++;
       }
     }

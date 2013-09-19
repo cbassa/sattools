@@ -68,11 +68,11 @@ int main(int argc,char *argv[])
   img=read_fits(argv[1],0);
 
   // Hard coded
-  img.ra0=336.98;
-  img.de0=-5.45;
-  sx=-10.0;
-  sy=10.0;
-  q=10.0;
+  img.ra0=209;
+  img.de0=18.00;
+  sx=-30.0;
+  sy=30.0;
+  q=-60.0;
   img.x0=0.5*(float) img.naxis1;
   img.y0=0.5*(float) img.naxis2;
 

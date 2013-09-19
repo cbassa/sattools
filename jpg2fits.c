@@ -227,8 +227,8 @@ void write_fits(struct image img,char *filename)
   qfits_header_add(qh,"DATE-OBS",val," ",NULL);
   sprintf(val,"%lf",img.mjd);
   qfits_header_add(qh,"MJD-OBS",val," ",NULL);
-  qfits_header_add(qh,"COSPAR","4171"," ",NULL);
-  qfits_header_add(qh,"EXPTIME","10.060"," ",NULL);
+  qfits_header_add(qh,"COSPAR","0000"," ",NULL);
+  qfits_header_add(qh,"EXPTIME","5.00"," ",NULL);
   qfits_header_add(qh,"OBSERVER","Cees Bassa"," ",NULL);
 
   // Dump fitsheader
