@@ -89,7 +89,7 @@ void orbit(orbit_t orb,float *aodp,float *perigee,float *apogee,float *period)
 
 int main(int argc,char *argv[])
 {
-  int arg=0,satno=0,quiet=0;
+  int arg=0,satno=0,header=0,oneline=0;
   char tlefile[LIM];
   char line0[70],line1[70],line2[70];
   FILE *file;
@@ -103,7 +103,7 @@ int main(int argc,char *argv[])
   sprintf(tlefile,"%s/classfd.tle",env);
 
   // Decode options
-  while ((arg=getopt(argc,argv,"c:i:aq"))!=-1) {
+  while ((arg=getopt(argc,argv,"c:i:aH"))!=-1) {
     switch (arg) {
       
     case 'c':
@@ -118,8 +118,8 @@ int main(int argc,char *argv[])
       info=1;
       break;
 
-    case 'q':
-      quiet=1;
+    case 'H':
+      header=1;
       break;
 
     case 'h':
@@ -138,9 +138,9 @@ int main(int argc,char *argv[])
   if (file==NULL) 
     fatal_error("File open failed for reading \"%s\"",tlefile);
 
-  if (info==0 && quiet==0)
+  if (info==0 && header==1)
     printf("SATNO YEAR DOY     INCL    ASCN     ARGP     MA       ECC      MM\n");
-  if (info==1 && quiet==0)
+  if (info==1 && header==1)
     printf("SATNO SEMI     PERIGEE  APOGEE    PERIOD  ECC\n");
 
   // Loop over file
