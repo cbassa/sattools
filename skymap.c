@@ -30,6 +30,7 @@ struct map {
   char orientation[LIM],projection[4],observer[32];
   char nfd[LIM],starfile[LIM],tlefile[LIM],iodfile[LIM],xyzfile[LIM];
   char datadir[LIM],tledir[LIM];
+  float saltmin;
   double lat,lng;
   double h,sra,sde,sazi,salt;
   float alt,timezone;
@@ -102,12 +103,15 @@ void get_site(int site_id);
 void usage()
 {
   
-  printf("skymap t:c:i:R:D:hs:d:l:P:r:V:p:\n\n");
+  printf("skymap t:c:i:R:D:hs:d:l:P:r:V:p:A:E:S:\n\n");
   printf("t    date/time (yyyy-mm-ddThh:mm:ss.sss) [default: now]\n");
   printf("c    TLE catalog file [default: classfd.tle]\n");
   printf("i    satellite ID (NORAD) [default: all]\n");
   printf("R    R.A.\n");
   printf("D    Decl.\n");
+  printf("A    Azimuth\n");
+  printf("E    Elecation\n");
+  printf("S    All night\n");
   printf("h    this help\n");
   printf("s    site (COSPAR)\n");
   printf("d    IOD observations\n");
@@ -153,6 +157,7 @@ void init_skymap(void)
   m.visflag=0;
   m.planar=0;
   m.agelimit=-1.0;
+  m.saltmin=-6.0;
 
   // Default settings
   strcpy(m.observer,"Unknown");
@@ -405,6 +410,59 @@ void plot_xyz(double mjd0,char *filename)
   return;
 }
 
+void allnight(void)
+{
+  int flag;
+  xyz_t sunpos;
+  double ra,de,azi,alt,alt0;
+  double mjd,mjdrise=-1.0,mjdset=-1.0;
+  char nfd[32];
+
+  // Find first event
+  for (flag=0,mjd=m.mjd;mjd<m.mjd+1.0;mjd+=1.0/86400) {
+    sunpos_xyz(mjd,&sunpos,&ra,&de);
+    equatorial2horizontal(mjd,ra,de,&azi,&alt);
+    
+    if (flag!=0) {
+      if (alt>m.saltmin && alt0<=m.saltmin)
+	mjdrise=mjd;
+      if (alt<m.saltmin && alt0>=m.saltmin)
+	mjdset=mjd;
+    }
+    
+    if (flag==0)
+      flag=1;
+
+    alt0=alt;
+  }
+  if (mjdrise<mjdset) {
+    for (flag=0,mjd=mjdrise-1.0;mjd<mjdrise;mjd+=1.0/86400) {
+      sunpos_xyz(mjd,&sunpos,&ra,&de);
+      equatorial2horizontal(mjd,ra,de,&azi,&alt);
+      
+      if (flag!=0) {
+	if (alt>m.saltmin && alt0<=m.saltmin)
+	  mjdrise=mjd;
+	if (alt<m.saltmin && alt0>=m.saltmin)
+	  mjdset=mjd;
+      }
+      
+      if (flag==0)
+	flag=1;
+
+      alt0=alt;
+    }
+  }
+
+  m.mjd=mjdset;
+  mjd2date(m.mjd,m.nfd);
+	 mjd2date(mjdrise,nfd);
+	 m.length=(mjdrise-mjdset)*86400;
+  printf("Set: %s; Rise: %s; length: %.0fs\n",m.nfd,nfd,m.length);
+
+  return;
+}
+
 int main(int argc,char *argv[])
 {
   int i,arg=0;
@@ -415,13 +473,18 @@ int main(int argc,char *argv[])
   init_skymap();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:R:D:hs:d:l:P:r:V:p:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:R:D:hs:d:l:P:r:V:p:A:E:S:"))!=-1) {
     switch(arg) {
 
     case 't':
       strcpy(m.nfd,optarg);
       m.mjd=nfd2mjd(m.nfd);
       m.iodpoint=-1;
+      break;
+
+    case 'S':
+      m.saltmin=atof(optarg);
+      allnight();
       break;
 
     case 'c':
@@ -485,6 +548,19 @@ int main(int argc,char *argv[])
       m.level=5;
       break;
 
+    case 'A':
+      m.azi0=modulo(atof(optarg)+180.0,360.0);
+      strcpy(m.orientation,"horizontal");
+      m.level=3;
+      break;
+
+    case 'E':
+      m.alt0=atof(optarg);
+      strcpy(m.orientation,"horizontal");
+      m.level=3;
+      break;
+
+
     case 'h':
       usage();
       return 0;
@@ -497,7 +573,7 @@ int main(int argc,char *argv[])
   }
 
   init_plot("/xs",10,0.75);
-  
+
   plot_skymap();
 
   cpgend();

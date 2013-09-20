@@ -51,6 +51,28 @@ struct image read_fits(char *filename,int pnum);
 int fgetline(FILE *file,char *s,int lim);
 int select_nearest(struct catalog c,float x,float y);
 
+// Return x modulo y [0,y)
+double modulo(double x,double y)
+{
+  x=fmod(x,y);
+  if (x<0.0) x+=y;
+
+  return x;
+}
+
+// Greenwich Mean Sidereal Time
+double gmst(double mjd)
+{
+  double t,gmst;
+
+  t=(mjd-51544.5)/36525.0;
+
+  gmst=modulo(280.46061837+360.98564736629*(mjd-51544.5)+t*t*(0.000387933-t/38710000),360.0);
+
+  return gmst;
+}
+
+
 void plot_objects(char *filename)
 {
   int i;
@@ -336,7 +358,7 @@ void reduce_point(struct observation *obs,struct image img,float tmid,float x,fl
   int iframe,k;
   double ra,de,rx,ry;
   float dx,dy,dt;
-  double mjd;
+  double mjd,mjd1,mjd2;
   char nfd[32],sra[15],sde[15];
 
   // Transform position
@@ -345,6 +367,11 @@ void reduce_point(struct observation *obs,struct image img,float tmid,float x,fl
   rx=img.a[0]+img.a[1]*dx+img.a[2]*dy;
   ry=img.b[0]+img.b[1]*dx+img.b[2]*dy;
   reverse(img.ra0,img.de0,rx,ry,&ra,&de);
+
+  // Correct for stationary camera
+  mjd1=img.mjd+0.5*(double) img.exptime/86400.0;
+  mjd2=img.mjd+(double) tmid/86400.0;
+  ra+=gmst(mjd2)-gmst(mjd1);
 
   dec2sex(ra/15.0,sra,0);
   dec2sex(de,sde,1);

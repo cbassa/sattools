@@ -13,7 +13,9 @@ struct image {
   float xmin,xmax,ymin,ymax;
   double tr[6];
   double mjd;
-  char nfd[32];
+  char nfd[32],observer[32];
+  int cospar;
+  float exptime;
 };
 struct image read_jpg(char *filename);
 void write_fits(struct image img,char *filename);
@@ -27,9 +29,12 @@ int main(int argc,char *argv[])
   struct image img;
   char infile[64],outfile[64],nfd[32];
   double mjd,delay=0.0,tz=0.0;
+  int cospar=0;
+  char observer[32]="Cees Bassa";
+  float exptime=10.06;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"i:t:o:d:Z:"))!=-1) {
+  while ((arg=getopt(argc,argv,"i:t:o:d:Z:c:T:O:"))!=-1) {
     switch(arg) {
 
     case 'i':
@@ -52,6 +57,18 @@ int main(int argc,char *argv[])
       strcpy(nfd,optarg);
       break;
 
+    case 'c':
+      cospar=atoi(optarg);
+      break;
+
+    case 'T':
+      exptime=atof(optarg);
+      break;
+
+    case 'O':
+      strcpy(observer,optarg);
+      break;
+
     default:
       return 0;
 
@@ -71,6 +88,11 @@ int main(int argc,char *argv[])
     strcpy(img.nfd,nfd);
     img.mjd=mjd;
   }
+
+  // Set properties
+  img.cospar=cospar;
+  img.exptime=exptime;
+  strcpy(img.observer,observer);
 
   if (outfile!=NULL)
     write_fits(img,outfile);
@@ -227,9 +249,12 @@ void write_fits(struct image img,char *filename)
   qfits_header_add(qh,"DATE-OBS",val," ",NULL);
   sprintf(val,"%lf",img.mjd);
   qfits_header_add(qh,"MJD-OBS",val," ",NULL);
-  qfits_header_add(qh,"COSPAR","0000"," ",NULL);
-  qfits_header_add(qh,"EXPTIME","5.00"," ",NULL);
-  qfits_header_add(qh,"OBSERVER","Cees Bassa"," ",NULL);
+  sprintf(val,"%d",img.cospar);
+  qfits_header_add(qh,"COSPAR",val," ",NULL);
+  sprintf(val,"%f",img.exptime);
+  qfits_header_add(qh,"EXPTIME",val," ",NULL);
+  sprintf(val,"%s",img.observer);
+  qfits_header_add(qh,"OBSERVER",val," ",NULL);
 
   // Dump fitsheader
   //  qfits_header_dump(qh,stdout);
