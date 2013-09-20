@@ -82,6 +82,8 @@ void plot_objects(char *filename)
   char line[LIM],catalog[128],dummy[128],text[8];
 
   file=fopen(filename,"r");
+  if (file==NULL)
+    return;
   while (fgetline(file,line,LIM)>0) {
     sscanf(line,"%s %f %f %f %f %f %d %s",dummy,&x0,&y0,&x1,&y1,&texp,&id,catalog);
 

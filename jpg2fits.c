@@ -27,8 +27,8 @@ int main(int argc,char *argv[])
 {
   int arg;
   struct image img;
-  char infile[64],outfile[64],nfd[32];
-  double mjd,delay=0.0,tz=0.0;
+  char infile[64],outfile[64],nfd[32]="2000-01-01T00:00:00";
+  double mjd=51544.0,delay=0.0,tz=0.0;
   int cospar=0;
   char observer[32]="Cees Bassa";
   float exptime=10.06;

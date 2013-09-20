@@ -11,7 +11,10 @@ CC = gcc
 F77 = gfortran
 
 all:
-	make satfit uk2iod rde2iod viewer residuals tleinfo satmap satorbit runsched fitskey fitsheader satid skymap addwcs reduce wcsfit plotfits pgm2fits faketle imgstat pstrack
+	make addwcs angular calibrate dec2sex faketle fitsheader fitskey imgstat jpg2fits jpgstack measure pgm2fits plotfits pstrack rde2iod reduce residuals runsched satfit satid satmap satorbit sex2dec skymap tle2ole tleinfo uk2iod viewer wcsfit
+
+jpgstack: jpgstack.o
+	$(CC) -o jpgstack jpgstack.o -ljpeg
 
 angular: angular.o 
 	$(CC) -o angular angular.c -lm -lwcs_c
