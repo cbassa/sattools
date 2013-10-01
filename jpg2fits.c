@@ -10,8 +10,6 @@
 struct image {
   int nx,ny,nz;
   float *z;
-  float xmin,xmax,ymin,ymax;
-  double tr[6];
   double mjd;
   char nfd[32],observer[32];
   int cospar;
@@ -23,18 +21,52 @@ double date2mjd(int year,int month,double day);
 double nfd2mjd(char *date);
 void mjd2nfd(double mjd,char *nfd);
 
+struct image rebin(struct image raw,int nbin)
+{
+  int i,j,k;
+  int ii,jj,kk;
+  struct image img;
+
+  img.nx=raw.nx/nbin;
+  img.ny=raw.ny/nbin;
+  img.nz=1;
+  img.z=(float *) malloc(sizeof(float)*img.nx*img.ny*img.nz);
+
+  for (i=0;i<img.nx;i++) {
+    for (j=0;j<img.ny;j++) {
+      k=i+img.nx*j;
+      img.z[k]=0.0;
+      for (ii=0;ii<nbin;ii++) {
+	for (jj=0;jj<nbin;jj++) {
+	  kk=ii+nbin*i+raw.nx*(jj+nbin*j);
+	  img.z[k]+=raw.z[kk];
+	}
+      }
+    }
+  }
+  img.mjd=raw.mjd;
+  img.cospar=raw.cospar;
+  img.exptime=raw.exptime;
+  strcpy(img.nfd,raw.nfd);
+  strcpy(img.observer,raw.observer);
+    
+
+  return img;
+}
+
 int main(int argc,char *argv[])
 {
   int arg;
-  struct image img;
-  char infile[64],outfile[64],nfd[32]="2000-01-01T00:00:00";
+  struct image img,raw;
+  char infile[64],outfile[64]="",nfd[32]="2000-01-01T00:00:00";
   double mjd=51544.0,delay=0.0,tz=0.0;
   int cospar=0;
   char observer[32]="Cees Bassa";
   float exptime=10.06;
+  int flag=0,nbin=1;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"i:t:o:d:Z:c:T:O:"))!=-1) {
+  while ((arg=getopt(argc,argv,"i:t:o:d:Z:c:T:O:b:"))!=-1) {
     switch(arg) {
 
     case 'i':
@@ -45,12 +77,17 @@ int main(int argc,char *argv[])
       delay=(double) atof(optarg);
       break;
 
+    case 'b':
+      nbin=atoi(optarg);
+      break;
+
     case 'Z':
       tz=(double) atof(optarg);
       break;
 
     case 'o':
       strcpy(outfile,optarg);
+      flag=1;
       break;
 
     case 't':
@@ -75,8 +112,14 @@ int main(int argc,char *argv[])
     }
   }
 
-  if (infile!=NULL)
-    img=read_jpg(infile);
+  if (infile!=NULL) {
+    if (nbin==1) {
+      img=read_jpg(infile);
+    } else {
+      raw=read_jpg(infile);
+      img=rebin(raw,nbin);
+    }
+  }
 
   if (nfd!=NULL) {
     // Compute time
@@ -89,6 +132,9 @@ int main(int argc,char *argv[])
     img.mjd=mjd;
   }
 
+  if (flag==0)
+    sprintf(outfile,"%s.fits",img.nfd);
+
   // Set properties
   img.cospar=cospar;
   img.exptime=exptime;
@@ -97,7 +143,10 @@ int main(int argc,char *argv[])
   if (outfile!=NULL)
     write_fits(img,outfile);
 
+  // Free
   free(img.z);
+  if (nbin!=1)
+    free(raw.z);
 
   return 0;
 }
@@ -159,20 +208,6 @@ struct image read_jpg(char *filename)
       img.z[k]/=3.0;
     }
   }
-
-  // Limits
-  img.xmin=0.0;
-  img.xmax=(float) img.nx;
-  img.ymin=0.0;
-  img.ymax=(float) img.ny;
-
-  // Translation matrix
-  img.tr[1]=(img.xmax-img.xmin)/(float) img.nx;
-  img.tr[2]=0.0;
-  img.tr[0]=img.xmin-0.5*img.tr[1];
-  img.tr[4]=0.0;
-  img.tr[5]=(img.ymax-img.ymin)/(float) img.ny;
-  img.tr[3]=img.ymin-0.5*img.tr[5];
 
   // Free allocated memory
   free(row_pointer[0]);

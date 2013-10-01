@@ -49,7 +49,8 @@
 6242 JM   42.9453   -2.8284    623    Jon Mikel
 6241 JM   42.9565   -2.8203    619    Jon Mikel
 4160 BD   51.2793    5.4768     35    Bram Dorreman
-0000 MB   44.6500  -63.6000      0    Michael Boschat
+0000 JH   28.7564  -17.8889   2308    Jan Hattenbach
+#0000 MB   44.6500  -63.6000      0    Michael Boschat
 #0000 IS   54.2825   26.7466      0    Ivan Serhey
 #0000 RL   38.9483 -104.5617   2073    Ron Lee
 #0000 CW   59.3104   18.1003      0    Christoffer Wallstenius

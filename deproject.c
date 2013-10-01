@@ -32,7 +32,7 @@ struct image read_fits(char *filename,int pnum);
 void forward(double ra0,double de0,double ra,double de,double *x,double *y)
 {
   int i;
-  char pcode[4]="TAN";
+  char pcode[4]="STG";
   double phi,theta;
   struct celprm cel;
   struct prjprm prj;
@@ -72,8 +72,8 @@ int main(int argc,char *argv[])
   struct jpeg_image jpg,out;
   double rx,ry,rx0,ry0;
   double x,y,d;
-  double drx=-5.0,dry=5.0;
-  double ra0=297.695833,de0=8.868333;
+  double drx=-10.0,dry=10.0;
+  double ra0=303.91,de0=47.43;
 
   // Read image
   img=read_fits(argv[1],0);
@@ -82,8 +82,8 @@ int main(int argc,char *argv[])
   // Offset
   forward(img.ra0,img.de0,ra0,de0,&rx0,&ry0);
 
-  out.nx=12000;
-  out.ny=8000;
+  out.nx=6000;
+  out.ny=4000;
   out.nz=3;
 
   out.z=(float *) malloc(sizeof(float)*out.nx*out.ny*out.nz);

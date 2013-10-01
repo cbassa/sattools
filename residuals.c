@@ -151,14 +151,19 @@ int main(int argc,char *argv[])
   char *datafile,catalog[LIM];
   char *env;
   float dt;
+  int verbose=0;
 
   env=getenv("ST_TLEDIR");
   sprintf(catalog,"%s/classfd.tle",env);
   // Decode options
-  while ((arg=getopt(argc,argv,"d:c:hs:"))!=-1) {
+  while ((arg=getopt(argc,argv,"d:c:hs:v"))!=-1) {
     switch(arg) {
     case 'd':
       datafile=optarg;
+      break;
+
+    case 'v':
+      verbose=1;
       break;
 
     case 'c':
@@ -183,6 +188,12 @@ int main(int argc,char *argv[])
 
   // Read data
   d=read_data(datafile);
+
+  if (verbose==1) {
+    for (i=0;i<d.n;i++) {
+      printf("%14.8lf %10.4f %10.4f %10.4f %10.6f %10.6f\n",d.p[i].mjd,d.p[i].obspos.x,d.p[i].obspos.y,d.p[i].obspos.z,d.p[i].ra,d.p[i].de);
+    }
+  }
 
   if (split==1) {
     split_file(d,dt);

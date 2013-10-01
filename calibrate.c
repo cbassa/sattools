@@ -58,7 +58,7 @@ int main(int argc,char *argv[])
   struct catalog cat,ast;
   float sx,sy,q;
   char *env,starfile[128];
-  float r,rmin=1.0,rmax=10.0,mmin=1.0,mmax=8.0,mag=8.0;
+  float r,rmin=1.0,rmax=10.0,mmin=2.0,mmax=8.0,mag=8.0;
 
   // Environment variables
   env=getenv("ST_DATADIR");
@@ -68,11 +68,11 @@ int main(int argc,char *argv[])
   img=read_fits(argv[1],0);
 
   // Hard coded
-  img.ra0=337.29;
-  img.de0=-5.10;
+  img.ra0=atof(argv[2]);
+  img.de0=atof(argv[3]);
   sx=-10.0;
   sy=10.0;
-  q=0.0;
+  q=atof(argv[4]);
   img.x0=0.5*(float) img.naxis1;
   img.y0=0.5*(float) img.naxis2;
 

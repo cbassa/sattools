@@ -90,6 +90,8 @@ void plot_objects(char *filename)
     cpgsci(0);
     if (strstr(catalog,"classfd")!=NULL)
       cpgsci(4);
+    if (strstr(catalog,"inttles")!=NULL)
+      cpgsci(3);
 
     cpgmove(x0,y0);
     cpgdraw(x1,y1);

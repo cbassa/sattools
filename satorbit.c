@@ -7,7 +7,7 @@
 #include "cpgplot.h"
 #include "sgdp4h.h"
 
-#define LIM 80
+#define LIM 90
 #define NMAX 1024
 #define MMAX 28368
 #define D2R M_PI/180.0
@@ -29,8 +29,8 @@ struct map {
   int length;
   char orientation[LIM];
   char nfd[LIM],tlefile[LIM],observer[32];
-  char datadir[LIM],tledir[LIM];
-  int site_id;
+  char datadir[LIM],tledir[LIM],notamfile[LIM],xyzfile[LIM];
+  int site_id,notamflag,xyzflag;
   float w;
 } m;
 struct globe {
@@ -77,6 +77,8 @@ void initialize_setup(void)
   m.mjd=nfd2mjd(m.nfd);
   m.w=1.2;
   m.h0=gmst(m.mjd);
+  m.notamflag=0;
+  m.xyzflag=0;
 
   // Default settings
   strcpy(m.observer,"Unknown");
@@ -293,7 +295,7 @@ void plot_track(void)
 	  cpgpt1(x,y,17);
 	}
 	cpgmove(x,y);
-      } else {
+      } else if (s.r>XKMPER) {
 	if (sqrt(x*x+y*y)<XKMPER && z<0.0)
 	  cpgmove(x,y);
 	else
@@ -309,6 +311,115 @@ void plot_track(void)
       if (i==nstep)
 	break;
     }
+  }
+  cpgsls(1);
+  cpgsci(isci);
+  cpgsch(isch);
+
+
+  return;
+}
+
+// plot satellite track
+void plot_xyz(void)
+{
+  int i=0,nstep=500;
+  orbit_t orb;
+  xyz_t pos,vel;
+  double jd,dt,h,mjd,mjd0;
+  FILE *fp=NULL;
+  float x,y,z,r,v;
+  long imode;
+  int isci;
+  float isch;
+  char norad[7],line[LIM];
+  struct sat s;
+  double rsun,rearth;
+  double dx,dy,dz,sra,sde;
+  xyz_t sunpos,satpos;
+
+  cpgqci(&isci);
+  cpgqch(&isch);
+  cpgsci(8);
+
+  fp=fopen(m.xyzfile,"rb");
+  if (fp==NULL) {
+    fatal_error("File open failed for reading \"%s\"",m.xyzfile);
+  }
+  h=gmst(m.mjd);
+      
+  while (fgetline(fp,line,LIM)>0) {
+    // Get satellite position
+    sscanf(line,"%lf %lf %lf %lf",&mjd,&satpos.x,&satpos.y,&satpos.z);
+    printf("%lf %f %f %f\n",mjd,satpos.x,satpos.y,satpos.z);
+
+    // Get positions
+    sunpos_xyz(m.mjd,&sunpos,&sra,&sde);
+    // Sun position from satellite
+    dx=-satpos.x+sunpos.x;  
+    dy=-satpos.y+sunpos.y;
+    dz=-satpos.z+sunpos.z;
+
+    // Distances
+    rsun=sqrt(dx*dx+dy*dy+dz*dz);
+    rearth=sqrt(satpos.x*satpos.x+satpos.y*satpos.y+satpos.z*satpos.z);
+    // Angles
+    s.psun=asin(696.0e3/rsun)*R2D;
+    s.pearth=asin(6378.135/rearth)*R2D;
+    s.p=acos((-dx*satpos.x-dy*satpos.y-dz*satpos.z)/(rsun*rearth))*R2D;
+    //  s.p=acos(((sunpos.x+satpos.x)*satpos.x+(sunpos.y+satpos.y)*satpos.y+(sunpos.z+satpos.z)*satpos.z)/(rsun*rearth))*R2D;
+    
+    s.p-=s.pearth;
+
+    // Celestial position
+    s.r=sqrt(satpos.x*satpos.x+satpos.y*satpos.y+satpos.z*satpos.z);
+    s.ra=atan2(satpos.y,satpos.x)*R2D;
+    s.de=asin(satpos.z/s.r)*R2D;
+    
+    // Latitude and longitude
+    s.lng=s.ra-gmst(m.mjd);;
+    s.lat=s.de;
+  
+    s.x=satpos.x;
+    s.y=satpos.y;
+    s.z=satpos.z;
+    
+    x=satpos.x;
+    y=satpos.y;
+    z=satpos.z;
+    
+    rotate(0,-90.0,&x,&y,&z);
+    rotate(1,90.0,&x,&y,&z);
+    rotate(1,m.l0+h,&x,&y,&z);
+    rotate(0,m.b0,&x,&y,&z);
+    
+    // Visibility
+    if (s.p<-s.psun)
+      cpgsci(14);
+    else if (s.p>-s.psun && s.p<s.psun)
+      cpgsci(15);
+    else if (s.p>s.psun)
+      cpgsci(7);
+    
+    // Plot
+    if (i==0) {
+      plot_footprint(s);
+      if (!(sqrt(x*x+y*y)<XKMPER && z<0.0)) {
+	sprintf(norad," xyz");
+	cpgsch(0.6);
+	cpgtext(x,y,norad);
+	cpgsch(isch);
+	cpgpt1(x,y,17);
+      }
+      cpgmove(x,y);
+      i++;
+    } else if (s.r>XKMPER) {
+      if (sqrt(x*x+y*y)<XKMPER && z<0.0)
+	cpgmove(x,y);
+      else
+	cpgdraw(x,y);
+    }
+    
   }
   cpgsls(1);
   cpgsci(isci);
@@ -585,6 +696,54 @@ void plot_terminator(void)
   return;
 }
 
+// Read a line of maximum length int lim from file FILE into string s
+int fgetline(FILE *file,char *s,int lim)
+{
+  int c,i=0;
+
+  while (--lim > 0 && (c=fgetc(file)) != EOF && c != '\n')
+    s[i++] = c;
+  if (c == '\t')
+    c=' ';
+  if (c == '\n')
+    s[i++] = c;
+  s[i] = '\0';
+  return i;
+}
+
+void plot_notam(char *filename)
+{
+  int i,flag=0;
+  float x,y,z;
+  float l,b;
+  char line[LIM];
+  FILE *file;
+
+  file=fopen(filename,"r");
+  while (fgetline(file,line,LIM)>0) {
+    sscanf(line,"%f %f",&b,&l);
+    z=cos(l*D2R)*cos(b*D2R)*XKMPER;
+    x=sin(l*D2R)*cos(b*D2R)*XKMPER;
+    y=sin(b*D2R)*XKMPER;
+
+    rotate(1,m.l0,&x,&y,&z);
+    rotate(0,m.b0,&x,&y,&z);
+    
+    if (z>0.0) {
+      if (flag==0) {
+	cpgmove(x,y);
+	flag=1;
+      } else {
+	cpgdraw(x,y);
+      }
+    } else {
+      flag=0;
+    }
+  }
+
+  return;
+}
+
 void plot_map(void)
 {
   int redraw=1,status;
@@ -653,8 +812,18 @@ void plot_map(void)
       cpgsci(1);
       cpgbox("BC",0.,0,"BC",0.,0);
 
+      // Plot notam
+      if (m.notamflag==1) {
+	cpgsci(3);
+	plot_notam(m.notamfile);
+	cpgsci(1);
+      }
+
       // Plot track
-      plot_track();
+      if (m.xyzflag==0)
+	plot_track();
+      else
+	plot_xyz();
     }
     
     // Reset redraw
@@ -689,7 +858,7 @@ void plot_map(void)
 
       m.lng=atan2(y,x)*R2D;
       m.lat=asin(z/XKMPER)*R2D;
-
+      printf("%8.3f %8.3f\n",m.lng,m.lat);
       m.l0=m.lng;
       m.b0=m.lat;
       redraw=1;
@@ -765,7 +934,7 @@ int main(int argc,char *argv[])
   initialize_setup();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:l:h"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:l:hN:p:"))!=-1) {
     switch (arg) {
       
     case 't':
@@ -787,6 +956,16 @@ int main(int argc,char *argv[])
 
     case 'l':
       m.length=atoi(optarg);
+      break;
+
+    case 'N':
+      strcpy(m.notamfile,optarg);
+      m.notamflag=1;
+      break;
+
+    case 'p':
+      strcpy(m.xyzfile,optarg);
+      m.xyzflag=1;
       break;
 
     case 'h':

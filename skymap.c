@@ -23,7 +23,7 @@ long Isatsel=0;
 extern double SGDP4_jd0;
 
 struct map {
-  double alpha0,delta0,ra0,de0,azi0,alt0;
+  double alpha0,delta0,ra0,de0,azi0,alt0,q;
   double fov,mjd,gmst,w,wl,wb;
   float length;
   float minmag,maxmag,minrad,maxrad;
@@ -1876,6 +1876,19 @@ long identify_satellite(char *filename,int satno,double mjd,float rx,float ry)
   return Isatmin;
 }
 
+double parallactic_angle(double mjd,double ra,double de)
+{
+  double h,q;
+
+  h=gmst(mjd)+m.lng-ra;
+
+  q=atan2(sin(h*D2R),(tan(m.lat*D2R)*cos(de*D2R)-sin(de*D2R)*cos(h*D2R)))*R2D;
+  if (fabs(m.lat-de)<0.001)
+    q=0.0;
+
+  return q;
+}
+
 void skymap_plotsun(void)
 {
   double rx,ry;
@@ -1894,6 +1907,8 @@ void skymap_plotsun(void)
 
   return;
 }
+
+
 
 // plot skymap
 int plot_skymap(void)
@@ -1918,6 +1933,9 @@ int plot_skymap(void)
 	horizontal2equatorial(m.mjd,m.azi0,m.alt0,&m.ra0,&m.de0);
       else if (strcmp(m.orientation,"equatorial")==0) 
 	equatorial2horizontal(m.mjd,m.ra0,m.de0,&m.azi0,&m.alt0);
+
+      // Parallactic angle
+      m.q=parallactic_angle(m.mjd,m.ra0,m.de0);
       
       // Get sun position
       sunpos_xyz(m.mjd,&sunpos,&m.sra,&m.sde);
@@ -2003,7 +2021,7 @@ int plot_skymap(void)
       // Bottom string
       dec2sex(m.ra0/15.0,sra,0,5);
       dec2sex(m.de0,sde,0,4);
-      sprintf(text,"R: %s; D: %s; A: %.1f; E: %.1f; S: %.1fx%.1f deg; L: %d; O: %s; m < %.1f; f: %.0f mm; l: %.0f s",sra,sde,modulo(m.azi0-180.0,360.0),m.alt0,3.0*m.w,2.0*m.w,m.level,m.orientation,m.maxmag,focallength[fov],m.length);
+      sprintf(text,"R:%s; D:%s; A: %.1f; E: %.1f; q: %.2f; S: %.1fx%.1f deg; L: %d; O: %s; m < %.1f; f: %.0f mm; l: %.0f s",sra,sde,modulo(m.azi0-180.0,360.0),m.alt0,m.q,3.0*m.w,2.0*m.w,m.level,m.orientation,m.maxmag,focallength[fov],m.length);
       cpgmtxt("B",1.0,0.0,0.0,text);
       cpgsch(1.0);
 
@@ -2419,7 +2437,7 @@ void dec2sex(double x,char *s,int f,int len)
   int i;
   double sec,deg,min;
   char sign;
-  char *form[]={":: ",",, ","hms","   "};
+  char *form[]={"::",",,","hms","  "};
 
   sign=(x<0 ? '-' : ' ');
   x=3600.*fabs(x);

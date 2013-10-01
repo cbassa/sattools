@@ -335,6 +335,8 @@ int main(int argc,char *argv[])
   env=getenv("ST_TLEDIR");
   sprintf(filename,"%s/classfd.tle",env);
   plot_satellites(filename,img,0,img.mjd,img.exptime,4);
+  sprintf(filename,"%s/inttles.tle",env);
+  plot_satellites(filename,img,0,img.mjd,img.exptime,3);
   sprintf(filename,"%s/catalog.tle",env);
   plot_satellites(filename,img,0,img.mjd,img.exptime,0);
 

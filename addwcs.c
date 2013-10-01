@@ -8,7 +8,7 @@
 #include <gsl/gsl_multifit.h>
 #include <getopt.h>
 
-#define NMAX 2048
+#define NMAX 8192
 #define LIM 128
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI
