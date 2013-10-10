@@ -49,7 +49,7 @@ struct sat {
   double rsun,rearth,h;
   double psun,pearth,p,phase;
   double r,v,ra,de;
-  double azi,alt;
+  double azi,alt,salt;
   double rx,ry;
 };
 struct star {
@@ -1436,8 +1436,12 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
 	  if (Isat==priority[i]) {
 	    cpgsci(2);
 	    break;
-	  } else
-	    cpgsci(7);
+	  } else {
+	    if (s.salt<0.0)
+	      cpgsci(7);
+	    else
+	      cpgsci(8);
+	  }
 	}
       }
 
@@ -1565,7 +1569,7 @@ struct sat apparent_position(double mjd)
   double jd,rsun,rearth,rsat;
   double dx,dy,dz,dvx,dvy,dvz;
   xyz_t satpos,obspos,obsvel,satvel,sunpos;
-  double sra,sde;
+  double sra,sde,azi;
 
   // Sat ID
   s.Isat=Isat;
@@ -1578,6 +1582,9 @@ struct sat apparent_position(double mjd)
   satpos_xyz(jd,&satpos,&satvel);
   sunpos_xyz(mjd,&sunpos,&sra,&sde);
 
+  // Sun altitude
+  equatorial2horizontal(mjd,sra,sde,&azi,&s.salt);
+ 
   // Age
   s.age=jd-SGDP4_jd0;
 

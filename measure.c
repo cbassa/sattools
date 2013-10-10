@@ -412,6 +412,7 @@ int main(int argc,char *argv[])
   int year;
   float frac=0.5;
   float fx=0.5,fy=0.333;
+  int ix=0,iy=0;
 
   // Environment variables
   env=getenv("ST_DATADIR");
@@ -538,6 +539,7 @@ int main(int argc,char *argv[])
       redraw=1;
       continue;
     }
+
     // Center
     if (c=='c') {
       xmin=x-fx*width;
@@ -554,6 +556,33 @@ int main(int argc,char *argv[])
       xmax=x+fx*width;
       ymin=y-fy*width;
       ymax=y+fy*width;
+      redraw=1;
+      continue;
+    }
+
+    // Cycle through image
+    if (c=='\t') {
+      printf("%d %d\n",ix,iy);
+
+      // Set area
+      width=1000;
+      x=width*(ix+0.5);
+      y=width*(iy+0.5);
+      xmin=x-fx*width;
+      xmax=x+fx*width;
+      ymin=y-fy*width;
+      ymax=y+fy*width;
+
+      // Increment
+      ix++;
+      if (width*ix>img.naxis1) {
+	ix=0;
+	iy++;
+      }
+      if (width*iy>img.naxis2) {
+	ix=0;
+	iy=0;
+      }
       redraw=1;
       continue;
     }
