@@ -27,9 +27,9 @@ struct image {
   float a[3],b[3],xrms,yrms;
   float exptime;
   double mjd;
-  char nfd[32];
+  char nfd[32],filename[32];
   int cospar;
-} img;
+} ;
 struct catalog {
   int n;
   float x[NMAX],y[NMAX],mag[NMAX];
@@ -393,7 +393,7 @@ void reduce_point(struct observation *obs,struct image img,float tmid,float x,fl
 
 int main(int argc,char *argv[])
 {
-  int i;
+  int i,iimg=0,nimg;
   float xmin,xmax,ymin,ymax,zmin,zmax;
   float tr[]={-0.5,1.0,0.0,-0.5,0.0,1.0};
   float heat_l[] = {0.0, 0.2, 0.4, 0.6, 1.0};
@@ -413,17 +413,24 @@ int main(int argc,char *argv[])
   float frac=0.5;
   float fx=0.5,fy=0.333;
   int ix=0,iy=0;
+  struct image *img;
 
   // Environment variables
   env=getenv("ST_DATADIR");
 
+  // Number of images
+  nimg=argc-1;
+
+  // Allocate
+  img=(struct image *) malloc(sizeof(struct image)*nimg);
+
   // Read image
-  img=read_fits(argv[1],0);
-  sprintf(idfile,"%s.id",argv[1]);
+  for (i=0;i<nimg;i++) 
+    img[i]=read_fits(argv[i+1],0);
 
   // Set image aspect
   fx=0.5;
-  fy=0.25*img.naxis1/img.naxis2;
+  fy=0.25*img[0].naxis1/img[0].naxis2;
 
   // Default observation
   obs.satno=99999;
@@ -439,10 +446,10 @@ int main(int argc,char *argv[])
   obs.type=2;
   obs.behavior='S';
   obs.state=0;
-  obs.cospar=img.cospar;
+  obs.cospar=img[0].cospar;
 
   // Get fake designation
-  mjd=nfd2mjd(img.nfd);
+  mjd=nfd2mjd(img[0].nfd);
   doy=mjd2doy(mjd,&year);
   sprintf(obs.desig,"%02d%03.0lfA",year-2000,doy+500);
 
@@ -453,13 +460,11 @@ int main(int argc,char *argv[])
   cpgsch(0.8);
 
   // Default limits
-  width=(img.naxis1>img.naxis2) ? img.naxis1 : img.naxis2;
+  width=(img[0].naxis1>img[0].naxis2) ? img[0].naxis1 : img[0].naxis2;
   xmin=0.0;
-  xmax=img.naxis1;
+  xmax=img[0].naxis1;
   ymin=0.0;
-  ymax=img.naxis2;
-  zmin=img.zmin;
-  zmax=img.zmax;
+  ymax=img[0].naxis2;
 
   // Forever loop
   for (;;) {
@@ -473,14 +478,17 @@ int main(int argc,char *argv[])
       cpgsfs(2);
       cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
 
-      sprintf(text,"UT Date: %.23s  COSPAR ID: %04d",img.nfd+1,img.cospar);
+      sprintf(text,"File: %s; UT Date: %.23s  COSPAR ID: %04d",img[iimg].filename,img[iimg].nfd+1,img[iimg].cospar);
       cpgmtxt("T",6.0,0.0,0.0,text);
-      sprintf(text,"R.A.: %10.5f (%4.1f'') Decl.: %10.5f (%4.1f'')",img.ra0,img.xrms,img.de0,img.yrms);
+      sprintf(text,"R.A.: %10.5f (%4.1f'') Decl.: %10.5f (%4.1f'')",img[iimg].ra0,img[iimg].xrms,img[iimg].de0,img[iimg].yrms);
       cpgmtxt("T",4.8,0.0,0.0,text);
-      sprintf(text,"FoV: %.2f\\(2218)x%.2f\\(2218) Scale: %.2f''x%.2f'' pix\\u-1\\d",img.naxis1*sqrt(img.a[1]*img.a[1]+img.b[1]*img.b[1])/3600.0,img.naxis2*sqrt(img.a[2]*img.a[2]+img.b[2]*img.b[2])/3600.0,sqrt(img.a[1]*img.a[1]+img.b[1]*img.b[1]),sqrt(img.a[2]*img.a[2]+img.b[2]*img.b[2]));
+      sprintf(text,"FoV: %.2f\\(2218)x%.2f\\(2218) Scale: %.2f''x%.2f'' pix\\u-1\\d",img[iimg].naxis1*sqrt(img[iimg].a[1]*img[iimg].a[1]+img[iimg].b[1]*img[iimg].b[1])/3600.0,img[iimg].naxis2*sqrt(img[iimg].a[2]*img[iimg].a[2]+img[iimg].b[2]*img[iimg].b[2])/3600.0,sqrt(img[iimg].a[1]*img[iimg].a[1]+img[iimg].b[1]*img[iimg].b[1]),sqrt(img[iimg].a[2]*img[iimg].a[2]+img[iimg].b[2]*img[iimg].b[2]));
       cpgmtxt("T",3.6,0.0,0.0,text);
 
-      cpgimag(img.z,img.naxis1,img.naxis2,1,img.naxis1,1,img.naxis2,zmin,zmax,tr);
+      zmin=img[iimg].zmin;
+      zmax=img[iimg].zmax;
+
+      cpgimag(img[iimg].z,img[iimg].naxis1,img[iimg].naxis2,1,img[iimg].naxis1,1,img[iimg].naxis2,zmin,zmax,tr);
       cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
 
       // Plot fit
@@ -496,8 +504,10 @@ int main(int argc,char *argv[])
 	cpgsci(1);
       }
 
-      if (plotobj==1)
+      if (plotobj==1) {
+	sprintf(idfile,"%s.id",img[iimg].filename);
 	plot_objects(idfile);
+      }
 
       format_iod_line(&obs);
       cpgmtxt("T",1.0,0.5,0.5,obs.iod_line);
@@ -560,6 +570,24 @@ int main(int argc,char *argv[])
       continue;
     }
 
+    // Cycle through images
+    if (c==']') {
+      iimg++;
+      if (iimg>=nimg)
+	iimg=0;
+      redraw=1;
+      continue;
+    }
+
+    // Cycle through images
+    if (c=='[') {
+      iimg--;
+      if (iimg<0)
+	iimg=nimg-1;
+      redraw=1;
+      continue;
+    }
+
     // Cycle through image
     if (c=='\t') {
       printf("%d %d\n",ix,iy);
@@ -575,11 +603,11 @@ int main(int argc,char *argv[])
 
       // Increment
       ix++;
-      if (width*ix>img.naxis1) {
+      if (width*ix>img[iimg].naxis1) {
 	ix=0;
 	iy++;
       }
-      if (width*iy>img.naxis2) {
+      if (width*iy>img[iimg].naxis2) {
 	ix=0;
 	iy=0;
       }
@@ -613,11 +641,23 @@ int main(int argc,char *argv[])
 
     // Reset
     if (c=='r') {
-      width=(img.naxis1>img.naxis2) ? img.naxis1 : img.naxis2;
+      width=(img[iimg].naxis1>img[iimg].naxis2) ? img[iimg].naxis1 : img[iimg].naxis2;
       xmin=0.0;
-      xmax=img.naxis1;
+      xmax=img[iimg].naxis1;
       ymin=0.0;
-      ymax=img.naxis2;
+      ymax=img[iimg].naxis2;
+      redraw=1;
+      continue;
+    }
+
+    // Reset
+    if (c=='R') {
+      width=(img[iimg].naxis1>img[iimg].naxis2) ? img[iimg].naxis1 : img[iimg].naxis2;
+      xmin=0.0;
+      xmax=img[iimg].naxis1;
+      ymin=0.0;
+      ymax=img[iimg].naxis2;
+      iimg=0;
       redraw=1;
       continue;
     }
@@ -630,7 +670,7 @@ int main(int argc,char *argv[])
 
     // Measure
     if (c=='m' || c=='D') {
-      reduce_point(&obs,img,frac*img.exptime,x,y);
+      reduce_point(&obs,img[iimg],frac*img[iimg].exptime,x,y);
       obs.x[0]=x;
       obs.y[0]=y;
       obs.state=2;
@@ -640,6 +680,8 @@ int main(int argc,char *argv[])
   }
 
   cpgend();
+
+  free(img);
 
 
   return 0;
@@ -663,6 +705,9 @@ struct image read_fits(char *filename,int pnum)
 
   // Set filename
   ql.filename=filename;
+
+  // Set filename
+  strcpy(img.filename,filename);
 
   // Image size
   img.naxis1=atoi(qfits_query_hdr(filename,"NAXIS1"));
@@ -711,12 +756,12 @@ struct image read_fits(char *filename,int pnum)
   }
 
   // Get levels
-  for (i=0,s1=0.0,s2=0.0;i<img.naxis1*img.naxis2;i++) {
+  for (i=0,s1=0.0,s2=0.0;i<img.naxis1*img.naxis2;i++) 
     s1+=img.z[i];
-    s2+=img.z[i]*img.z[i];
-  }
   img.avg=s1/(float) (img.naxis1*img.naxis2);
-  img.std=sqrt(s2/(float) (img.naxis1*img.naxis2)-img.avg*img.avg);
+  for (i=0,s1=0.0,s2=0.0;i<img.naxis1*img.naxis2;i++) 
+    s2+=pow(img.z[i]-img.avg,2);
+  img.std=sqrt(s2/(float) (img.naxis1*img.naxis2-1));
   img.zmin=img.avg-4.0*img.std;
   img.zmax=img.avg+12.0*img.std;
   
