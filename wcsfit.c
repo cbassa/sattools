@@ -10,7 +10,7 @@
 #define LIM 256
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI
-#define NMAX 1024
+#define NMAX 2048
 
 struct catalog {
   int n;

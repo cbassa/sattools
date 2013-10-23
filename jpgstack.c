@@ -13,6 +13,7 @@ struct image {
 struct image read_jpg(char *filename);
 void write_jpg(char *filename,struct image img);
 
+
 int main(int argc,char *argv[])
 {
   int i,j,flag,n;

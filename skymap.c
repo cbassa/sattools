@@ -8,7 +8,7 @@
 #include "cel.h"
 #include "sgdp4h.h"
 
-#define LIM 128
+#define LIM 384
 #define NMAX 256
 #define MMAX 1024
 #define D2R M_PI/180.0
@@ -1285,6 +1285,7 @@ void skymap_plotstars(char *filename)
   struct star s;
 
   if (strstr(filename,"tycho2.dat")!=NULL) {
+
     file=fopen(m.starfile,"rb");
     while (!feof(file)) {
       fread(&s,sizeof(struct star),1,file);

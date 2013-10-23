@@ -391,6 +391,53 @@ void reduce_point(struct observation *obs,struct image img,float tmid,float x,fl
   return;
 }
 
+struct image maximum_image(struct image *raw,int n)
+{
+  int i,j,k,l;
+  float max,s1,s2;
+  struct image img;
+
+  printf("%d\n",n);
+  img.naxis1=raw[0].naxis1;
+  img.naxis2=raw[0].naxis2;
+  img.z=(float *) malloc(sizeof(float) * img.naxis1*img.naxis2);
+  for (i=0;i<img.naxis1*img.naxis2;i++) {
+    for (j=0,max=0.0;j<n;j++) 
+      if (raw[j].z[i]>max)
+	max=raw[j].z[i];
+    img.z[i]=max;
+  }
+
+  // Get levels
+  for (i=0,s1=0.0,s2=0.0;i<img.naxis1*img.naxis2;i++) 
+    s1+=img.z[i];
+  img.avg=s1/(float) (img.naxis1*img.naxis2);
+  for (i=0,s1=0.0,s2=0.0;i<img.naxis1*img.naxis2;i++) 
+    s2+=pow(img.z[i]-img.avg,2);
+  img.std=sqrt(s2/(float) (img.naxis1*img.naxis2-1));
+  img.zmin=img.avg-4.0*img.std;
+  img.zmax=img.avg+12.0*img.std;
+ 
+  // Fake 
+  strcpy(img.filename,"fake");
+  img.mjd=56000.0;
+  strcpy(img.nfd," 2013-01-01T00:00:00.000");
+  img.cospar=0;
+  img.exptime=0.0;
+  img.ra0=0.0;
+  img.de0=0.0;
+  img.x0=0.0;
+  img.y0=0.0;
+  for (i=0;i<3;i++) {
+    img.a[i]=0.0;
+    img.b[i]=0.0;
+  }
+  img.xrms=0.0;
+  img.yrms=0.0;
+
+  return img;
+}
+
 int main(int argc,char *argv[])
 {
   int i,iimg=0,nimg;
@@ -419,14 +466,15 @@ int main(int argc,char *argv[])
   env=getenv("ST_DATADIR");
 
   // Number of images
-  nimg=argc-1;
+  nimg=argc;
 
   // Allocate
   img=(struct image *) malloc(sizeof(struct image)*nimg);
 
   // Read image
-  for (i=0;i<nimg;i++) 
+  for (i=0;i<nimg-1;i++) 
     img[i]=read_fits(argv[i+1],0);
+  img[nimg-1]=maximum_image(img,nimg-1);
 
   // Set image aspect
   fx=0.5;
@@ -505,8 +553,15 @@ int main(int argc,char *argv[])
       }
 
       if (plotobj==1) {
-	sprintf(idfile,"%s.id",img[iimg].filename);
-	plot_objects(idfile);
+	if (iimg<nimg-2) {
+	  sprintf(idfile,"%s.id",img[iimg].filename);
+	  plot_objects(idfile);
+	} else if (iimg==nimg-1) {
+	  for (i=0;i<nimg-1;i++) {
+	    sprintf(idfile,"%s.id",img[i].filename);
+	    plot_objects(idfile);
+	  }
+	}
       }
 
       format_iod_line(&obs);
@@ -573,7 +628,7 @@ int main(int argc,char *argv[])
     // Cycle through images
     if (c==']') {
       iimg++;
-      if (iimg>=nimg)
+      if (iimg>=nimg-1)
 	iimg=0;
       redraw=1;
       continue;
@@ -583,7 +638,14 @@ int main(int argc,char *argv[])
     if (c=='[') {
       iimg--;
       if (iimg<0)
-	iimg=nimg-1;
+	iimg=nimg-2;
+      redraw=1;
+      continue;
+    }
+
+    // Maximum image
+    if (c=='o') {
+      iimg=nimg-1;
       redraw=1;
       continue;
     }
@@ -593,13 +655,13 @@ int main(int argc,char *argv[])
       printf("%d %d\n",ix,iy);
 
       // Set area
-      width=1000;
+      width=500;
       x=width*(ix+0.5);
       y=width*(iy+0.5);
-      xmin=x-fx*width;
-      xmax=x+fx*width;
-      ymin=y-fy*width;
-      ymax=y+fy*width;
+      xmin=x-1.5*fx*width;
+      xmax=x+1.5*fx*width;
+      ymin=y-1.5*fy*width;
+      ymax=y+1.5*fy*width;
 
       // Increment
       ix++;
