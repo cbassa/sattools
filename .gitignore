@@ -32,6 +32,11 @@ jpg2fits
 measure
 pstrack
 sex2dec
+deproject
+jpgstack
+slewto
+tle2old
+waitfor
 
 # TLE dir
 tle/
