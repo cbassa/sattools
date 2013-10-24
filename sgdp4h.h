@@ -180,6 +180,8 @@ typedef struct orbit_s
 	double	argp;	/* Argument of perigee, radians */
 	double	ascn;	/* Right ascension (ascending node), radians */
 	double	smjaxs;	/* Semi-major axis, km */
+  double ndot2,nddot6;  /* Mean motion derivatives */
+    char    desig[10]; /* International designation */
 	long	norb;	/* Orbit number, for elements */
 	int		satno;	/* Satellite number. */
 

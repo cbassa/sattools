@@ -97,10 +97,14 @@ int read_twoline(FILE *fp, long search_satno, orbit_t *orb)
   
   orb->ep_day =       d_read(st1, 21, 32);
   
+  orb->ndot2 = d_read(st1, 34, 43);
+  bm = d_read(st1, 45, 50) * 1.0e-5;
+  bx = d_read(st1, 51, 52);
+  orb->nddot6 = bm * pow(10.0, bx);
   bm = d_read(st1, 54, 59) * 1.0e-5;
   bx = d_read(st1, 60, 61);
   orb->bstar = bm * pow(10.0, bx);
-  
+
   orb->eqinc = RAD(d_read(st2,  9, 16));
   orb->ascn = RAD(d_read(st2, 18, 25));
   orb->ecc  =     d_read(st2, 27, 33) * 1.0e-7;
@@ -110,6 +114,8 @@ int read_twoline(FILE *fp, long search_satno, orbit_t *orb)
   orb->norb =     i_read(st2, 64, 68);
   
   orb->satno = search_satno;
+
+  sscanf(st1+9,"%s",orb->desig);
 
   return 0;
 }
@@ -206,16 +212,19 @@ return ptr;
 
 void print_orb(orbit_t *orb)
 {
-	printf("# Satellite ID = %ld\n", (long)orb->satno);
-    printf("# Epoch year = %d day = %.8f\n", orb->ep_year, orb->ep_day);
-    printf("# Eccentricity = %.7f\n", orb->ecc);
-    printf("# Equatorial inclination = %.4f deg\n", DEG(orb->eqinc));
-    printf("# Argument of perigee = %.4f deg\n", DEG(orb->argp));
-    printf("# Mean anomaly = %.4f deg\n", DEG(orb->mnan));
-    printf("# Right Ascension of Ascending Node = %.4f deg\n", DEG(orb->ascn));
-    printf("# Mean Motion (number of rev/day) = %.8f\n", orb->rev);
-    printf("# BSTAR drag = %.4e\n", orb->bstar);
-    printf("# Orbit number = %ld\n", orb->norb);
+  printf("# Satellite ID = %ld\n", (long)orb->satno);
+  printf("# Satellite designation = %s\n",orb->desig);
+  printf("# Epoch year = %d day = %.8f\n", orb->ep_year, orb->ep_day);
+  printf("# Eccentricity = %.7f\n", orb->ecc);
+  printf("# Equatorial inclination = %.4f deg\n", DEG(orb->eqinc));
+  printf("# Argument of perigee = %.4f deg\n", DEG(orb->argp));
+  printf("# Mean anomaly = %.4f deg\n", DEG(orb->mnan));
+  printf("# Right Ascension of Ascending Node = %.4f deg\n", DEG(orb->ascn));
+  printf("# Mean Motion (number of rev/day) = %.8f\n", orb->rev);
+  printf("# First derivative of mean motion = %e\n",orb->ndot2);
+  printf("# Second derivative of mean motion = %e\n",orb->nddot6);
+  printf("# BSTAR drag = %.4e\n", orb->bstar);
+  printf("# Orbit number = %ld\n", orb->norb);
 }
 
 /* ====================================================================== */

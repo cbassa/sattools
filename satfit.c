@@ -18,10 +18,10 @@
 long Isat=0;
 long Isatsel=0;
 extern double SGDP4_jd0;
-char satid[10]="13500A";
 
 struct point {
   int flag,satno;
+  char desig[10];
   double mjd,ra,de,rac,dec;
   float st,sr;
   char iod_line[LIM];
@@ -490,6 +490,11 @@ int main(int argc,char *argv[])
     // Get cursor
     cpgband(mode,posn,x0,y0,&x,&y,&c);
 
+    // Help
+    if (c=='h' || c=='?') {
+      printf("q   Quit\nw   Write TLE file\nP   Search mean motion space\nf   Fit orbit\ns   Select observations in current window\nu   Unselect observations\n1-7 Toggle parameter\nC   Fit circular orbit\nS   Search mean motion/eccentricity space\nc   Change a parameter\nz   Zoom\nr   Unzoom\nt   Toggle starting orbits (LEO, GTO, GEO, HEO)\n");
+    }
+
     // Quit
     if (c=='q' || c=='Q')
       break;
@@ -528,7 +533,7 @@ int main(int argc,char *argv[])
     }
 
     // Highlight
-    if (c=='h') {
+    if (c=='s') {
       highlight(xmin,ymin,xmax,ymax,2);
       time_range(&mjdmin,&mjdmax,2);
       for (i=0,nobs=0;i<d.n;i++)
@@ -593,7 +598,7 @@ int main(int argc,char *argv[])
 	printf("\nNew value: ");
 	fgets(string,64,stdin);
 	scanf("%s",string);
-	if (i==0) strcpy(satid,string);
+	if (i==0) strcpy(orb.desig,string);
 	if (i==1) orb.eqinc=RAD(atof(string));
 	if (i==2) orb.ascn=RAD(atof(string));
 	if (i==3) orb.ecc=atof(string);
@@ -654,9 +659,10 @@ int main(int argc,char *argv[])
 
     // Default tle
     if (c=='t') {
-      orb.satno=99999;
+      orb.satno=d.p[0].satno;
+      strcpy(orb.desig,d.p[0].desig);
       orb.ep_day=mjd2doy(0.5*(mjdmin+mjdmax),&orb.ep_year);
-      satno=99999;
+      satno=orb.satno;
       if (elset==0) {
 	orb.eqinc=0.5*M_PI;
 	orb.ascn=0.0;
@@ -896,7 +902,7 @@ struct point decode_iod_observation(char *iod_line)
   int format,epoch,me,xe,sign;
   int site_id;
   double sec,ra,mm,ss,de,dd,ds,day,mjd0;
-  char secbuf[6],sn[2],degbuf[3];
+  char secbuf[6],sn[2],degbuf[3],buf1[3],buf2[6];
   struct point p;
   struct site s;
   xyz_t vel;
@@ -912,6 +918,10 @@ struct point decode_iod_observation(char *iod_line)
 
   // Get SSN
   sscanf(iod_line,"%5d",&p.satno);
+
+  // Get desig
+  sscanf(iod_line+6,"%s %s",buf1,buf2);
+  sprintf(p.desig,"%s%s",buf1,buf2);
 
   // Get site
   sscanf(iod_line+16,"%4d",&site_id);
@@ -1257,7 +1267,7 @@ void format_tle(orbit_t orb,char *line1,char *line2)
     sbstar[4] = bstar[5];  sbstar[5] = bstar[6];  sbstar[6] = bstar[8];  sbstar[7] = bstar[10];  sbstar[8] = '\0';
   }
   // Print lines
-  sprintf(line1,"1 %05dU %-8s %2d%012.8f  .00000000  00000-0 %8s 0    0",orb.satno,satid,orb.ep_year-2000,orb.ep_day,sbstar);
+  sprintf(line1,"1 %05dU %-8s %2d%012.8f  .00000000  00000-0 %8s 0    0",orb.satno,orb.desig,orb.ep_year-2000,orb.ep_day,sbstar);
   sprintf(line2,"2 %05d %8.4f %8.4f %07.0f %8.4f %8.4f %11.8f    0",orb.satno,DEG(orb.eqinc),DEG(orb.ascn),1E7*orb.ecc,DEG(orb.argp),DEG(orb.mnan),orb.rev);
 
   // Compute checksums
@@ -1351,7 +1361,7 @@ void print_tle(orbit_t orb,char *filename)
   mjd2date(mjdmin,&year,&month,&day);
   fprintf(file,"# %4d%02d%05.2lf-",year,month,day);
   mjd2date(mjdmax,&year,&month,&day);
-  fprintf(file,"%4d%02d%05.2lf, %d measurements, %.3lf kHz rms\n",year,month,day,n,d.rms);
+  fprintf(file,"%4d%02d%05.2lf, %d measurements, %.3lf deg rms\n",year,month,day,n,d.rms);
   fclose(file);
 
   return;
@@ -1415,7 +1425,15 @@ void fit(orbit_t orb,int *ia)
 
 void usage()
 {
-  printf("satfit -d <data file> -c [tle catalog] -i [satno] -h\n\ndata file:    Tabulated doppler curve\ntle catalog:  Catalog with TLE's (optional)\nsatno:        Satellite to load from TLE catalog (optional)\n\n");
+  printf("satfit d:c:i:haCo:p\n\n");
+  printf("d    IOD observations\n");
+  printf("c    TLE catalog\n");
+  printf("i    Satellite ID (NORAD)\n");
+  printf("C    Fit circular orbit\n");
+  printf("p    No plotting\n");
+  printf("o    Output TLE file\n");
+  printf("a    Adjust MA and RAAN\n");
+  printf("h    This help\n");
 
   return;
 }
