@@ -73,7 +73,7 @@ int main(int argc,char *argv[])
   double rx,ry,rx0,ry0;
   double x,y,d;
   double drx=-10.0,dry=10.0;
-  double ra0=303.91,de0=47.43;
+  double ra0=346.10,de0=-8.48;
 
   // Read image
   img=read_fits(argv[1],0);

@@ -324,8 +324,10 @@ void dec2sex(double x,char *s,int f,int len)
 
 int main(int argc,char *argv[])
 {
-  int arg=0;
+  int arg=0,haflag=0;
   char sra[16],sde[16];
+  double ha;
+  FILE *file;
 
   // Initialize
   initialize();
@@ -335,12 +337,18 @@ int main(int argc,char *argv[])
   m.mjd=nfd2mjd(m.nfd);
 
     // Decode options
-  while ((arg=getopt(argc,argv,"t:R:D:A:E:h"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:H:R:D:A:E:h"))!=-1) {
     switch(arg) {
 
     case 't':
       strcpy(m.nfd,optarg);
       m.mjd=nfd2mjd(m.nfd);
+      break;
+
+    case 'H':
+      ha=atof(optarg);
+      haflag=1;
+      strcpy(m.orientation,"equatorial");
       break;
 
     case 'R':
@@ -374,6 +382,10 @@ int main(int argc,char *argv[])
     }
   }
 
+  // Compute RA from HA
+  if (haflag==1) 
+    m.ra0=modulo(gmst(m.mjd)+m.lng-ha,360.0);
+
   // Compute RA and Dec
   if (strcmp(m.orientation,"horizontal")==0) 
     horizontal2equatorial(m.mjd,m.azi0,m.alt0,&m.ra0,&m.de0);
@@ -392,6 +404,11 @@ int main(int argc,char *argv[])
 
   // Send position
   send_position(sra,sde);
+
+  // Log
+  file=fopen("position.txt","a");
+  fprintf(file,"%s %lf %lf %f\n",m.nfd,m.ra0,m.de0,m.q);
+  fclose(file);
 
   return 0;
 }

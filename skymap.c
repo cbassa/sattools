@@ -36,7 +36,7 @@ struct map {
   float alt,timezone;
   float fw,fh,agelimit;
   int level,grid,site_id;
-  int leoflag,iodflag,iodpoint,visflag,planar,pssatno,psnr,xyzflag;
+  int leoflag,iodflag,iodpoint,visflag,planar,pssatno,psnr,xyzflag,pflag;
   float psrmin,psrmax,rvis;
 } m;
 struct sat {
@@ -158,6 +158,7 @@ void init_skymap(void)
   m.planar=0;
   m.agelimit=-1.0;
   m.saltmin=-6.0;
+  m.pflag=1;
 
   // Default settings
   strcpy(m.observer,"Unknown");
@@ -268,20 +269,22 @@ void read_iod(char *filename,int iobs)
   return;
 }
 
-void plot_geo_belt(void)
+void plot_belt(float h,float beta)
 {
   int i;
   xyz_t obspos,obsvel;
   xyz_t satpos;
-  double theta,dx,dy,dz,r,ra,de,azi,alt,rx,ry;
+  double rr,theta,dx,dy,dz,r,ra,de,azi,alt,rx,ry;
 
   obspos_xyz(m.mjd,&obspos,&obsvel);
 
+  rr=h+6378.0;
+
   cpgsci(3);
   for (theta=0.0;theta<=360.0;theta+=1.0) {
-    satpos.x=42164*cos(theta*D2R);
-    satpos.y=42164*sin(theta*D2R);
-    satpos.z=0.0;
+    satpos.x=rr*cos(theta*D2R)*cos(beta*D2R);
+    satpos.y=rr*sin(theta*D2R)*cos(beta*D2R);
+    satpos.z=rr*sin(beta*D2R);
 
     // Position differences
     dx=satpos.x-obspos.x;  
@@ -310,6 +313,7 @@ void plot_geo_belt(void)
 
   return;
 }
+
 
 // Plot XYZ point
 void plot_xyz(double mjd0,char *filename)
@@ -1464,7 +1468,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
 	cpgsch(0.6);
 
 	// Print name if in viewport
-	if (fabs(x)<1.5*m.w && fabs(y)<m.w && x<1.32*m.w && y<0.96*m.w)
+	if (fabs(x)<1.5*m.w && fabs(y)<m.w && x<1.32*m.w && y<0.96*m.w && m.pflag==1)
 	  cpgtext(x,y,norad);
 	cpgsch(isch);
 	cpgmove(x,y);
@@ -1921,12 +1925,12 @@ void skymap_plotsun(void)
 // plot skymap
 int plot_skymap(void)
 {
-  int redraw=1,fov=3,status;
+  int redraw=1,fov=4,status;
   float x,y;
   char c,text[256],sra[16],sde[16],filename[LIM];
   double ra,de,azi,alt,rx,ry;
   xyz_t sunpos;
-  float focallength[]={12,28,35,50,100,200,300};
+  float focallength[]={12,28,35,50,85,100,200,300};
 
   for (;;) {
     if (redraw>0) {
@@ -1978,10 +1982,10 @@ int plot_skymap(void)
       if (fov>=0) {
 	cpgsfs(2);
 
-	m.fw=atan(0.5*6.3265/focallength[fov])*R2D;
-	m.fh=atan(0.5*4.6389/focallength[fov])*R2D;
-	//m.fw=atan(0.5*22.3/focallength[fov])*R2D;
-	//m.fh=atan(0.5*14.9/focallength[fov])*R2D;
+	//m.fw=atan(0.5*6.3265/focallength[fov])*R2D;
+	//	m.fh=atan(0.5*4.6389/focallength[fov])*R2D;
+	m.fh=atan(0.5*22.5/focallength[fov])*R2D;
+	m.fw=atan(0.5*15.0/focallength[fov])*R2D;
 
 	cpgrect(-m.fw,m.fw,-m.fh,m.fh);
 	cpgsfs(1);
@@ -2051,7 +2055,8 @@ int plot_skymap(void)
 
       skymap_plotsun();
 
-      plot_geo_belt();
+      plot_belt(35786.0,0.0);
+      plot_belt(39035,63.4);
     }
     // Reset redraw
     redraw=0;
@@ -2139,7 +2144,15 @@ int plot_skymap(void)
       redraw=1;
     }
 
-      
+    // Toggle satellite name
+    if (c=='p') {
+      if (m.pflag==1)
+	m.pflag=0;
+      else if (m.pflag==0)
+	m.pflag=1;
+      redraw=1;
+      continue;
+    }
 
     // Toggle visibility contours
     if (c=='v') {
@@ -2206,10 +2219,10 @@ int plot_skymap(void)
       if (fov>=sizeof(focallength)/sizeof(focallength[0]))
 	fov=0;
       printf("Focallength: %.0f mm\n",focallength[fov]);
-      m.fw=atan(0.5*6.3265/focallength[fov])*R2D;
-      m.fh=atan(0.5*4.6389/focallength[fov])*R2D;
-      //m.fw=atan(0.5*22.3/focallength[fov])*R2D;
-      //m.fh=atan(0.5*14.9/focallength[fov])*R2D;
+      //m.fw=atan(0.5*6.3265/focallength[fov])*R2D;
+      //m.fh=atan(0.5*4.6389/focallength[fov])*R2D;
+      m.fh=atan(0.5*22.5/focallength[fov])*R2D;
+      m.fw=atan(0.5*15.0/focallength[fov])*R2D;
       printf("FOV: %.1fx%.1f\n",2*m.fw,2*m.fh);
       redraw=1;
     }

@@ -655,7 +655,7 @@ int main(int argc,char *argv[])
       printf("%d %d\n",ix,iy);
 
       // Set area
-      width=500;
+      width=750;
       x=width*(ix+0.5);
       y=width*(iy+0.5);
       xmin=x-1.5*fx*width;
