@@ -269,7 +269,7 @@ void read_iod(char *filename,int iobs)
   return;
 }
 
-void plot_belt(float h,float beta)
+void plot_apex(float h,float beta)
 {
   int i;
   xyz_t obspos,obsvel;
@@ -278,7 +278,7 @@ void plot_belt(float h,float beta)
 
   obspos_xyz(m.mjd,&obspos,&obsvel);
 
-  rr=h+6378.0;
+  rr=h+XKMPER;
 
   cpgsci(3);
   for (theta=0.0;theta<=360.0;theta+=1.0) {
@@ -1925,7 +1925,7 @@ void skymap_plotsun(void)
 // plot skymap
 int plot_skymap(void)
 {
-  int redraw=1,fov=4,status;
+  int redraw=1,fov=4,status,plotstars=1;
   float x,y;
   char c,text[256],sra[16],sde[16],filename[LIM];
   double ra,de,azi,alt,rx,ry;
@@ -2046,17 +2046,23 @@ int plot_skymap(void)
 	skymap_plotequatorial_grid();
 	equatorial2horizontal(m.mjd,m.ra0,m.de0,&m.azi0,&m.alt0);
       }
-      sprintf(filename,"%s/data/constfig.dat",m.datadir);
-      skymap_plotconstellations(filename);
-      skymap_plotstars(m.starfile);
+      if (plotstars==1) {
+	sprintf(filename,"%s/data/constfig.dat",m.datadir);
+	skymap_plotconstellations(filename);
+	skymap_plotstars(m.starfile);
+      }
+      skymap_plotsun();
+
+      plot_apex(35786.0,0.0);
+      plot_apex(39035,63.4);
+      plot_apex(1100,63.4);
+      plot_apex(800,98.7);
+      plot_apex(1100,-63.4);
+      plot_apex(800,-98.7);
       
       if (Isatsel>=0 && m.leoflag>=0)
 	skymap_plotsatellite(m.tlefile,Isatsel,m.mjd,m.length);
 
-      skymap_plotsun();
-
-      plot_belt(35786.0,0.0);
-      plot_belt(39035,63.4);
     }
     // Reset redraw
     redraw=0;
@@ -2115,6 +2121,16 @@ int plot_skymap(void)
       printf("TAB Cycle IOD observations\n");
       printf("S   Save position/time to schedule\n");
       printf("a   Select on age\n");
+      printf("A   Toggle plotting stars\n");
+    }
+
+    // Toggle plotting stars
+    if (c=='Q') {
+      if (plotstars==1)
+	plotstars=0;
+      else if (plotstars==0)
+	plotstars=1;
+      redraw=1;
     }
 
     // Cycle IOD points
@@ -2272,7 +2288,7 @@ int plot_skymap(void)
     }
     
     // Exit
-    if (c=='q' || c=='Q') {
+    if (c=='q') {
       cpgend();
       exit(0);
     }

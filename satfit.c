@@ -691,12 +691,12 @@ int main(int argc,char *argv[])
 	orb.bstar=0.0;
 	printf("GSO orbit\n");
       } else if (elset==3) {
-	orb.eqinc=63.4*D2R;
+	orb.eqinc=63.434*D2R;
 	orb.ascn=0.0;
-	orb.ecc=0.7;
+	orb.ecc=0.71;
 	orb.argp=0.0;
-	orb.mnan=0.0;
-	orb.rev=2.0;
+	orb.mnan=270*D2R;
+	orb.rev=2.006;
 	orb.bstar=0.0;
 	printf("HEO orbit\n");
       }
