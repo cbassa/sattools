@@ -553,7 +553,7 @@ int main(int argc,char *argv[])
       }
 
       if (plotobj==1) {
-	if (iimg<nimg-2) {
+	if (iimg<nimg-1) {
 	  sprintf(idfile,"%s.id",img[iimg].filename);
 	  plot_objects(idfile);
 	} else if (iimg==nimg-1) {

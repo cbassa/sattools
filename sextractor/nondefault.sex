@@ -15,8 +15,8 @@ PARAMETERS_NAME	$ST_DATADIR/sextractor/default.param	# name of the file containi
 DETECT_TYPE	CCD		# "CCD" or "PHOTO" (*)
 FLAG_IMAGE	flag.fits	# filename for an input FLAG-image
 DETECT_MINAREA	5		# minimum number of pixels above threshold
-DETECT_THRESH	5		# <sigmas> or <threshold>,<ZP> in mag.arcsec-2
-ANALYSIS_THRESH	5		# <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+DETECT_THRESH	25		# <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+ANALYSIS_THRESH	25		# <sigmas> or <threshold>,<ZP> in mag.arcsec-2
 
 FILTER		Y		# apply filter for detection ("Y" or "N")?
 FILTER_NAME	$ST_DATADIR/sextractor/default.conv	# name of the file containing the filter
