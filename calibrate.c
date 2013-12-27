@@ -58,7 +58,7 @@ int main(int argc,char *argv[])
   struct catalog cat,ast;
   float sx=-10.0,sy=10.0,q;
   char *env,starfile[128];
-  float r,rmin=1.0,rmax=10.0,mmin=2.0,mmax=8.0,mag=8.0;
+  float r,rmin=1.0,rmax=10.0,mmin=2.0,mmax=8.0,mag=12.0;
 
   // Environment variables
   env=getenv("ST_DATADIR");
