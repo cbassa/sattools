@@ -424,7 +424,8 @@ struct image read_fits(char *filename)
   img.naxis2=atoi(qfits_query_hdr(filename,"NAXIS2"));
 
   // MJD
-  img.mjd=(double) atof(qfits_query_hdr(filename,"MJD-OBS"));
+  //  img.mjd=(double) atof(qfits_query_hdr(filename,"MJD-OBS"));
+  img.mjd=0.0;
 
 
   return img;

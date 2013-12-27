@@ -21,6 +21,53 @@ double date2mjd(int year,int month,double day);
 double nfd2mjd(char *date);
 void mjd2nfd(double mjd,char *nfd);
 
+// Read fits image
+struct image read_fits(char *filename)
+{
+  int i,j,k,l,m;
+  qfitsloader ql;
+  char key[FITS_LINESZ+1] ;
+  struct image img;
+  float s1,s2,avg,std;
+
+  // Set plane
+  ql.xtnum = 0;
+  ql.pnum = 0;
+
+  // Set loadtype
+  ql.ptype = PTYPE_FLOAT;
+
+  // Set filename
+  ql.filename=filename;
+
+  // Image size
+  img.nx=atoi(qfits_query_hdr(filename,"NAXIS1"));
+  img.ny=atoi(qfits_query_hdr(filename,"NAXIS2"));
+  img.nz=1;
+
+  // Initialize load
+  if (qfitsloader_init(&ql) != 0) 
+    printf("Error initializing data loading\n");
+
+  // Test load
+  if (qfits_loadpix(&ql) != 0) 
+    printf("Error loading actual data\n");
+
+  // Allocate image memory
+  img.z=(float *) malloc(sizeof(float) * img.nx*img.ny*img.nz);
+
+  // Fill z array
+  for (i=0,l=0,m=0;i<img.nx;i++) {
+    for (j=0;j<img.ny;j++) {
+      img.z[l]=ql.fbuf[l];
+      l++;
+    }
+  }
+
+  return img;
+}
+
+
 struct image rebin(struct image raw,int nbin)
 {
   int i,j,k;
@@ -63,14 +110,18 @@ int main(int argc,char *argv[])
   int cospar=0;
   char observer[32]="Cees Bassa";
   float exptime=10.06;
-  int flag=0,nbin=1;
+  int flag=0,nbin=1,readfits=0;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"i:t:o:d:Z:c:T:O:b:"))!=-1) {
+  while ((arg=getopt(argc,argv,"i:t:o:d:Z:c:T:O:b:F"))!=-1) {
     switch(arg) {
 
     case 'i':
       strcpy(infile,optarg);
+      break;
+
+    case 'F':
+      readfits=1;
       break;
 
     case 'd':
@@ -114,9 +165,15 @@ int main(int argc,char *argv[])
 
   if (infile!=NULL) {
     if (nbin==1) {
-      img=read_jpg(infile);
+      if (readfits==0)
+	img=read_jpg(infile);
+      else
+	img=read_fits(infile);
     } else {
-      raw=read_jpg(infile);
+      if (readfits==0)
+	raw=read_jpg(infile);
+      else
+	raw=read_fits(infile);
       img=rebin(raw,nbin);
     }
   }
@@ -351,10 +408,11 @@ double date2mjd(int year,int month,double day)
 // nfd2mjd
 double nfd2mjd(char *date)
 {
-  int year,month,day,hour,min,sec;
+  int year,month,day,hour,min;
+  float sec;
   double mjd,dday;
 
-  sscanf(date,"%04d-%02d-%02dT%02d:%02d:%02d",&year,&month,&day,&hour,&min,&sec);
+  sscanf(date,"%04d-%02d-%02dT%02d:%02d:%f",&year,&month,&day,&hour,&min,&sec);
 
   dday=day+hour/24.0+min/1440.0+sec/86400.0;
   mjd=date2mjd(year,month,dday);

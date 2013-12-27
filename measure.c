@@ -680,7 +680,7 @@ int main(int argc,char *argv[])
 
 
     // Zoom
-    if (c=='z' || c=='+') {
+    if (c=='z' || c=='+' || c=='=') {
       width/=1.5;
       xmin=x-fx*width;
       xmax=x+fx*width;
@@ -691,7 +691,7 @@ int main(int argc,char *argv[])
     }
 
     // Unzoom
-    if (c=='x' || c=='+' || c=='=') {
+    if (c=='x' || c=='-') {
       width*=1.5;
       xmin=x-fx*width;
       xmax=x+fx*width;
@@ -776,7 +776,7 @@ struct image read_fits(char *filename,int pnum)
   img.naxis2=atoi(qfits_query_hdr(filename,"NAXIS2"));
 
   // MJD
-  img.mjd=atof(qfits_query_hdr(filename,"MJD-OBS"));
+  img.mjd=(double) atof(qfits_query_hdr(filename,"MJD-OBS"));
   strcpy(img.nfd,qfits_query_hdr(filename,"DATE-OBS"));
   img.exptime=atof(qfits_query_hdr(filename,"EXPTIME"));
 
@@ -784,7 +784,6 @@ struct image read_fits(char *filename,int pnum)
   img.cospar=atoi(qfits_query_hdr(filename,"COSPAR"));
 
   // Transformation
-  img.mjd=atof(qfits_query_hdr(filename,"MJD-OBS"));
   img.ra0=atof(qfits_query_hdr(filename,"CRVAL1"));
   img.de0=atof(qfits_query_hdr(filename,"CRVAL2"));
   img.x0=atof(qfits_query_hdr(filename,"CRPIX1"));

@@ -1983,7 +1983,7 @@ int plot_skymap(void)
 	cpgsfs(2);
 
 	//m.fw=atan(0.5*6.3265/focallength[fov])*R2D;
-	//	m.fh=atan(0.5*4.6389/focallength[fov])*R2D;
+	//m.fh=atan(0.5*4.6389/focallength[fov])*R2D;
 	m.fh=atan(0.5*22.5/focallength[fov])*R2D;
 	m.fw=atan(0.5*15.0/focallength[fov])*R2D;
 

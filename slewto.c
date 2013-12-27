@@ -36,6 +36,57 @@ void usage(void)
   return;
 }
 
+// Compute Date from Julian Day
+void mjd2nfd(double mjd,char *nfd)
+{
+  double f,jd,dday;
+  int z,alpha,a,b,c,d,e;
+  int year,month,day,hour,min;
+  float sec,x;
+
+  jd=mjd+2400000.5;
+  jd+=0.5;
+
+  z=floor(jd);
+  f=fmod(jd,1.);
+
+  if (z<2299161)
+    a=z;
+  else {
+    alpha=floor((z-1867216.25)/36524.25);
+    a=z+1+alpha-floor(alpha/4.);
+  }
+  b=a+1524;
+  c=floor((b-122.1)/365.25);
+  d=floor(365.25*c);
+  e=floor((b-d)/30.6001);
+
+  dday=b-d-floor(30.6001*e)+f;
+  if (e<14)
+    month=e-1;
+  else
+    month=e-13;
+
+  if (month>2)
+    year=c-4716;
+  else
+    year=c-4715;
+
+  day=(int) floor(dday);
+  x=24.0*(dday-day);
+  x=3600.*fabs(x);
+  sec=fmod(x,60.);
+  x=(x-sec)/60.;
+  min=fmod(x,60.);
+  x=(x-min)/60.;
+  hour=x;
+  sec=floor(1000.0*sec)/1000.0;
+
+  sprintf(nfd,"%04d-%02d-%02dT%02d:%02d:%06.3f",year,month,day,hour,min,sec);
+
+  return;
+}
+
 // Send new position to telescope
 void send_position(char *sra,char *sde)
 {
@@ -324,7 +375,7 @@ void dec2sex(double x,char *s,int f,int len)
 
 int main(int argc,char *argv[])
 {
-  int arg=0,haflag=0;
+  int arg=0,haflag=0,dry=0;
   char sra[16],sde[16];
   double ha;
   FILE *file;
@@ -337,12 +388,21 @@ int main(int argc,char *argv[])
   m.mjd=nfd2mjd(m.nfd);
 
     // Decode options
-  while ((arg=getopt(argc,argv,"t:H:R:D:A:E:h"))!=-1) {
+  while ((arg=getopt(argc,argv,"m:t:H:R:D:A:E:hn"))!=-1) {
     switch(arg) {
+
+    case 'n': 
+      dry=1;
+      break;
 
     case 't':
       strcpy(m.nfd,optarg);
       m.mjd=nfd2mjd(m.nfd);
+      break;
+
+    case 'm':
+      m.mjd=atof(optarg);
+      mjd2nfd(m.mjd,m.nfd);
       break;
 
     case 'H':
@@ -383,9 +443,13 @@ int main(int argc,char *argv[])
   }
 
   // Compute RA from HA
-  if (haflag==1) 
+  if (haflag==1) {
     m.ra0=modulo(gmst(m.mjd)+m.lng-ha,360.0);
-
+  } else {
+    ha=modulo(gmst(m.mjd)+m.lng-m.ra0,360.0);
+    if (ha>180.0)
+      ha-=360.0;
+  }
   // Compute RA and Dec
   if (strcmp(m.orientation,"horizontal")==0) 
     horizontal2equatorial(m.mjd,m.azi0,m.alt0,&m.ra0,&m.de0);
@@ -400,15 +464,17 @@ int main(int argc,char *argv[])
   dec2sex(m.de0,sde,0,4);
 
   // Print to screen
-  printf("%s R:%s D:%s A: %4.1f E: %4.1f q: %5.2f\n",m.nfd,sra,sde,modulo(m.azi0-180.0,360.0),m.alt0,m.q);
+  printf("%s R:%s D: %s H: %7.3f A: %6.3f E: %6.3f q: %5.2f\n",m.nfd,sra,sde,ha,modulo(m.azi0-180.0,360.0),m.alt0,m.q);
 
-  // Send position
-  send_position(sra,sde);
-
-  // Log
-  file=fopen("position.txt","a");
-  fprintf(file,"%s %lf %lf %f\n",m.nfd,m.ra0,m.de0,m.q);
-  fclose(file);
+  if (dry==0) {
+    // Send position
+    send_position(sra,sde);
+    
+    // Log
+    file=fopen("position.txt","a");
+    fprintf(file,"%s %lf %lf %f\n",m.nfd,m.ra0,m.de0,m.q);
+    fclose(file);
+  }
 
   return 0;
 }
