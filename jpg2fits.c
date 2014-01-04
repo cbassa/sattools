@@ -101,6 +101,25 @@ struct image rebin(struct image raw,int nbin)
   return img;
 }
 
+void usage(void)
+{
+  printf("jpg2fits i:t:o:d:Z:c:T:O:b:h\n\n");
+  printf("-i   input JPG file\n");
+  printf("-o   output FITS file\n");
+  printf("-t   start time (YYYY-MM-DDTHH:MM:SS.sss)\n");
+  printf("-d   delay (in seconds)\n");
+  printf("-Z   timezone offset (in seconds)\n");
+  printf("-T   exposure time (in seconds)\n");
+  printf("-c   COSPAR site number\n");
+  printf("-O   observer name\n");
+  printf("-b   binning factor\n");
+  printf("-h   this help\n");
+
+  exit(0);
+
+  return;
+}
+
 int main(int argc,char *argv[])
 {
   int arg;
@@ -113,54 +132,59 @@ int main(int argc,char *argv[])
   int flag=0,nbin=1,readfits=0;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"i:t:o:d:Z:c:T:O:b:F"))!=-1) {
-    switch(arg) {
-
-    case 'i':
-      strcpy(infile,optarg);
-      break;
-
-    case 'F':
-      readfits=1;
-      break;
-
-    case 'd':
-      delay=(double) atof(optarg);
-      break;
-
-    case 'b':
-      nbin=atoi(optarg);
-      break;
-
-    case 'Z':
-      tz=(double) atof(optarg);
-      break;
-
-    case 'o':
-      strcpy(outfile,optarg);
-      flag=1;
-      break;
-
-    case 't':
-      strcpy(nfd,optarg);
-      break;
-
-    case 'c':
-      cospar=atoi(optarg);
-      break;
-
-    case 'T':
-      exptime=atof(optarg);
-      break;
-
-    case 'O':
-      strcpy(observer,optarg);
-      break;
-
-    default:
-      return 0;
-
+  if (argc>1) {
+    while ((arg=getopt(argc,argv,"i:t:o:d:Z:c:T:O:b:h"))!=-1) {
+      switch(arg) {
+	
+      case 'i':
+	strcpy(infile,optarg);
+	break;
+	
+      case 'd':
+	delay=(double) atof(optarg);
+	break;
+	
+      case 'b':
+	nbin=atoi(optarg);
+	break;
+	
+      case 'Z':
+	tz=(double) atof(optarg);
+	break;
+	
+      case 'o':
+	strcpy(outfile,optarg);
+	flag=1;
+	break;
+	
+      case 't':
+	strcpy(nfd,optarg);
+	break;
+	
+      case 'c':
+	cospar=atoi(optarg);
+	break;
+	
+      case 'T':
+	exptime=atof(optarg);
+	break;
+	
+      case 'O':
+	strcpy(observer,optarg);
+	break;
+	
+      case 'h':
+	usage();
+	break;
+	
+      default:
+	usage();
+	return 0;
+	
+      }
     }
+  } else {
+    usage();
   }
 
   if (infile!=NULL) {
