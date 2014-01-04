@@ -54,6 +54,7 @@ void plot_pixel_catalog(char *filename);
 void lfit2d(float *x,float *y,float *z,int n,float *a);
 void add_fits_keywords(struct transformation t,char *filename);
 void modify_fits_keywords(struct transformation t,char *filename);
+void precess(double mjd0,double ra0,double de0,double mjd,double *ra,double *de);
 
 void plot_image(struct image img,struct transformation t,struct catalog c,char *filename,float mmin)
 {
@@ -156,7 +157,7 @@ int main(int argc,char *argv[])
   FILE *outfile;
   struct catalog c;
   float mmin=10.0,rmin=10.0;
-  double ra0,de0;
+  double mjd0=51544.5,ra0,de0,ra1,de1;
   float q0,q1;
   float rmsmin;
   float x[NMAX],y[NMAX],rx[NMAX],ry[NMAX];
@@ -241,8 +242,11 @@ int main(int argc,char *argv[])
   t=reference(reffile);
 
   // Correct astrometry for fixed or tracked setup
-  if (track==0)
-    t.ra0=modulo(t.ra0+gmst(img.mjd)-gmst(t.mjd),360.0);
+  if (track==0) {
+    precess(mjd0,t.ra0,t.de0,t.mjd,&ra1,&de1);
+    ra1=modulo(ra1+gmst(img.mjd)-gmst(t.mjd),360.0);
+    precess(img.mjd,ra1,de1,mjd0,&t.ra0,&t.de0);
+  }
 
   // Match catalog
   c=match_catalogs(catfile,starfile,t,img,rmin,mmin);
@@ -852,6 +856,47 @@ void modify_fits_keywords(struct transformation t,char *filename)
   keytuple2str(card,"CRRES2",val,"");
   qfits_replace_card(filename,"CRRES2",card);
 
+
+  return;
+}
+
+// Precess a celestial position
+void precess(double mjd0,double ra0,double de0,double mjd,double *ra,double *de)
+{
+  double t0,t;
+  double zeta,z,theta;
+  double a,b,c;
+
+  // Angles in radians
+  ra0*=D2R;
+  de0*=D2R;
+
+  // Time in centuries
+  t0=(mjd0-51544.5)/36525.0;
+  t=(mjd-mjd0)/36525.0;
+
+  // Precession angles
+  zeta=(2306.2181+1.39656*t0-0.000139*t0*t0)*t;
+  zeta+=(0.30188-0.000344*t0)*t*t+0.017998*t*t*t;
+  zeta*=D2R/3600.0;
+  z=(2306.2181+1.39656*t0-0.000139*t0*t0)*t;
+  z+=(1.09468+0.000066*t0)*t*t+0.018203*t*t*t;
+  z*=D2R/3600.0;
+  theta=(2004.3109-0.85330*t0-0.000217*t0*t0)*t;
+  theta+=-(0.42665+0.000217*t0)*t*t-0.041833*t*t*t;
+  theta*=D2R/3600.0;
+  
+  a=cos(de0)*sin(ra0+zeta);
+  b=cos(theta)*cos(de0)*cos(ra0+zeta)-sin(theta)*sin(de0);
+  c=sin(theta)*cos(de0)*cos(ra0+zeta)+cos(theta)*sin(de0);
+
+  *ra=(atan2(a,b)+z)*R2D;
+  *de=asin(c)*R2D;
+
+  if (*ra<360.0)
+    *ra+=360.0;
+  if (*ra>360.0)
+    *ra-=360.0;
 
   return;
 }
