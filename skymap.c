@@ -27,7 +27,7 @@ struct map {
   double fov,mjd,gmst,w,wl,wb;
   float length;
   float minmag,maxmag,minrad,maxrad;
-  char orientation[LIM],projection[4],observer[32];
+  char orientation[LIM],projection[4],observer[32],camera[16];
   char nfd[LIM],starfile[LIM],tlefile[LIM],iodfile[LIM],xyzfile[LIM];
   char datadir[LIM],tledir[LIM];
   float saltmin;
@@ -560,6 +560,8 @@ int main(int argc,char *argv[])
 
     case 'E':
       m.alt0=atof(optarg);
+      if (m.alt0>90.0)
+	m.alt0=90.0;
       strcpy(m.orientation,"horizontal");
       m.level=3;
       break;
@@ -1397,6 +1399,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
   float isch;
   float rsun,rearth,psun,pearth,p;
   int priority[]={24680,28888,15071,26934,37348,5678,5679,5680,5681,5682,8818,8835,8836,8884,10502,10529,10544,10594,11720,11731,11732,11745,13791,13844,13845,13874,39232};
+  char type[8];
 
   // Open TLE file
   fp=fopen(filename,"rb");
@@ -1408,9 +1411,22 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
     Isat=orb.satno;
     imode=init_sgdp4(&orb);
 
-    if (m.leoflag==1 && orb.rev<3)
+    if (orb.rev>=10.0)
+      strcpy(type,"LEO");
+    else if (orb.rev<10.0 && orb.eqinc*R2D>50.0 && orb.ecc>0.5)
+      strcpy(type,"HEO");
+    else if (orb.rev<10.0 && orb.eqinc*R2D<=50.0 && orb.ecc>0.5)
+      strcpy(type,"GTO");
+    else 
+      strcpy(type,"GEO");
+
+    if (m.leoflag==1 && strcmp(type,"LEO")!=0)
       continue;
-    if (m.leoflag==2 && orb.rev>=3)
+    if (m.leoflag==2 && strcmp(type,"HEO")!=0)
+      continue;
+    if (m.leoflag==3 && strcmp(type,"GEO")!=0)
+      continue;
+    if (m.leoflag==4 && strcmp(type,"GTO")!=0)
       continue;
 
     sprintf(norad," %ld",Isat);
@@ -1920,17 +1936,44 @@ void skymap_plotsun(void)
   return;
 }
 
+int read_camera(int no)
+{
+  int i=0;
+  FILE *file;
+  char line[LIM],filename[LIM];
 
+  sprintf(filename,"%s/data/camera.txt",m.datadir);
+  file=fopen(filename,"r");
+  if (file==NULL) {
+    printf("File with camera information not found!\n");
+    return;
+  }
+  while (fgets(line,LIM,file)!=NULL) {
+    // Skip
+    if (strstr(line,"#")!=NULL)
+      continue;
+    if (i==no) {
+      sscanf(line,"%s %f %f",m.camera,&m.fw,&m.fh);
+      m.fw*=0.5;
+      m.fh*=0.5;
+      return 0;
+    }
+    i++;
+  }
+  fclose(file);
+
+
+  return -1;
+}
 
 // plot skymap
 int plot_skymap(void)
 {
-  int redraw=1,fov=4,status,plotstars=1;
+  int redraw=1,fov=0,status,plotstars=1;
   float x,y;
   char c,text[256],sra[16],sde[16],filename[LIM];
   double ra,de,azi,alt,rx,ry;
   xyz_t sunpos;
-  float focallength[]={12,28,35,50,85,100,200,300};
 
   for (;;) {
     if (redraw>0) {
@@ -1982,10 +2025,11 @@ int plot_skymap(void)
       if (fov>=0) {
 	cpgsfs(2);
 
-	//m.fw=atan(0.5*6.3265/focallength[fov])*R2D;
-	//m.fh=atan(0.5*4.6389/focallength[fov])*R2D;
-	m.fh=atan(0.5*22.5/focallength[fov])*R2D;
-	m.fw=atan(0.5*15.0/focallength[fov])*R2D;
+	status=read_camera(fov);
+	if (status==-1) {
+	  fov=0;
+	  status=read_camera(fov);
+	}
 
 	cpgrect(-m.fw,m.fw,-m.fh,m.fh);
 	cpgsfs(1);
@@ -2008,7 +2052,11 @@ int plot_skymap(void)
 	  else if (m.leoflag==1)
 	    sprintf(text,"LEO");
 	  else if (m.leoflag==2)
-	    sprintf(text,"HEO/GEO");
+	    sprintf(text,"HEO");
+	  else if (m.leoflag==3)
+	    sprintf(text,"GEO");
+	  else if (m.leoflag==4)
+	    sprintf(text,"GTO");
 	} else if (Isatsel>0) {
 	  sprintf(text,"%05d",(int) Isatsel);
 	} else {
@@ -2021,7 +2069,11 @@ int plot_skymap(void)
 	  else if (m.leoflag==1)
 	    sprintf(text,"Planar search: %05d; LEO",m.pssatno);
 	  else if (m.leoflag==2)
-	    sprintf(text,"Planar search: %05d; HEO/GEO",m.pssatno);
+	    sprintf(text,"Planar search: %05d; HEO",m.pssatno);
+	  else if (m.leoflag==3)
+	    sprintf(text,"Planar search: %05d; GEO",m.pssatno);
+	  else if (m.leoflag==4)
+	    sprintf(text,"Planar search: %05d; GTO",m.pssatno);
 	} else if (Isatsel>0) {
 	  sprintf(text,"Planar search: %05d; %05d",m.pssatno,(int) Isatsel);
 	} else {
@@ -2033,7 +2085,7 @@ int plot_skymap(void)
       // Bottom string
       dec2sex(m.ra0/15.0,sra,0,5);
       dec2sex(m.de0,sde,0,4);
-      sprintf(text,"R:%s; D:%s; A: %.1f; E: %.1f; q: %.2f; S: %.1fx%.1f deg; L: %d; O: %s; m < %.1f; f: %.0f mm; l: %.0f s",sra,sde,modulo(m.azi0-180.0,360.0),m.alt0,m.q,3.0*m.w,2.0*m.w,m.level,m.orientation,m.maxmag,focallength[fov],m.length);
+      sprintf(text,"R:%s; D:%s; A: %.1f; E: %.1f; q: %.2f; S: %.1fx%.1f deg; L: %d; O: %s; m < %.1f; C: %s; l: %.0f s",sra,sde,modulo(m.azi0-180.0,360.0),m.alt0,m.q,3.0*m.w,2.0*m.w,m.level,m.orientation,m.maxmag,m.camera,m.length);
       cpgmtxt("B",1.0,0.0,0.0,text);
       cpgsch(1.0);
 
@@ -2117,7 +2169,7 @@ int plot_skymap(void)
       printf("R   Read catalog\n");
       printf("L   Toggle satellite selection (All, LEO, HEO/GEO, none)\n");
       printf("v   Toggle visibility contours\n");
-      printf("F   Toggle focal length\n");
+      printf("F   Toggle camera configuration (data/camera.txt)\n");
       printf("TAB Cycle IOD observations\n");
       printf("S   Save position/time to schedule\n");
       printf("a   Select on age\n");
@@ -2232,21 +2284,13 @@ int plot_skymap(void)
     // Toggle focal length
     if (c=='F') {
       fov++;
-      if (fov>=sizeof(focallength)/sizeof(focallength[0]))
-	fov=0;
-      printf("Focallength: %.0f mm\n",focallength[fov]);
-      //m.fw=atan(0.5*6.3265/focallength[fov])*R2D;
-      //m.fh=atan(0.5*4.6389/focallength[fov])*R2D;
-      m.fh=atan(0.5*22.5/focallength[fov])*R2D;
-      m.fw=atan(0.5*15.0/focallength[fov])*R2D;
-      printf("FOV: %.1fx%.1f\n",2*m.fw,2*m.fh);
       redraw=1;
     }
 
     if (c=='L') {
       if (Isatsel==0) {
 	m.leoflag++;
-	if (m.leoflag>2)
+	if (m.leoflag>4)
 	  m.leoflag=-1;
 	redraw=1;
       } else {
