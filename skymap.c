@@ -2499,7 +2499,7 @@ void mjd2date(double mjd,char *date)
 
   day=(int) floor(dday);
   x=24.0*(dday-day);
-  x=3600.*fabs(x);
+  x=3600.*fabs(x)+0.0001;
   sec=fmod(x,60.);
   x=(x-sec)/60.;
   min=fmod(x,60.);
