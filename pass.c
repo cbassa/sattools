@@ -482,9 +482,10 @@ void get_site(int site_id)
   int id;
   double lat,lng;
   float alt;
-  char abbrev[3],observer[64];
+  char abbrev[3],observer[64],filename[LIM];
 
-  file=fopen("/home/bassa/code/c/satellite/sattools/data/sites.txt","r");
+  sprintf(filename,"%s/data/sites.txt",m.datadir);
+  file=fopen(filename,"r");
   if (file==NULL) {
     printf("File with site information not found!\n");
     return;
