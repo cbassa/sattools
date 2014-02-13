@@ -37,6 +37,8 @@ jpgstack
 slewto
 tle2old
 waitfor
+pass
+tle2ole
 
 # TLE dir
 tle/

@@ -11,7 +11,7 @@ CC = gcc
 F77 = gfortran
 
 all:
-	make addwcs angular calibrate dec2sex faketle fitsheader fitskey imgstat jpg2fits jpgstack measure pgm2fits plotfits pstrack rde2iod reduce residuals runsched satfit satid satmap satorbit sex2dec skymap tle2ole tleinfo uk2iod viewer wcsfit deproject slewto waitfor
+	make addwcs angular calibrate dec2sex faketle fitsheader fitskey imgstat jpg2fits jpgstack measure pgm2fits plotfits pstrack rde2iod reduce residuals runsched satfit satid satmap satorbit sex2dec skymap tle2ole tleinfo uk2iod viewer wcsfit deproject slewto waitfor pass
 
 slewto: slewto.o
 	$(CC) -o slewto slewto.o -lm
@@ -90,6 +90,9 @@ satid: satid.o sgdp4.o satutl.o deep.o ferror.o
 
 skymap: skymap.o sgdp4.o satutl.o deep.o ferror.o
 	$(F77) -o skymap skymap.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+
+pass: pass.o sgdp4.o satutl.o deep.o ferror.o
+	$(CC) -o pass pass.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 reduce: reduce.o
 	$(F77) -o reduce reduce.o $(LFLAGS)

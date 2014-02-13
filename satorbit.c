@@ -241,6 +241,8 @@ void plot_track(void)
   float isch;
   char norad[7];
   struct sat s;
+  float rmin,rmax;
+  float xmin,ymin,zmin,xmax,ymax,zmax;
 
   cpgqci(&isci);
   cpgqch(&isch);
@@ -283,6 +285,25 @@ void plot_track(void)
 	cpgsci(15);
       else if (s.p>s.psun)
 	cpgsci(7);
+
+      // Find perigee and apogee
+      if (i==0) {
+	rmin=s.r;
+	rmax=s.r;
+      } else {
+	if (s.r<rmin) {
+	  rmin=s.r;
+	  xmin=x;
+	  ymin=y;
+	  zmin=z;
+	}
+	if (s.r>rmax) {
+	  rmax=s.r;
+	  xmax=x;
+	  ymax=y;
+	  zmax=z;
+	}
+      }
       
       // Plot
       if (i==0) {
@@ -311,6 +332,10 @@ void plot_track(void)
       if (i==nstep)
 	break;
     }
+    if (!(sqrt(xmin*xmin+ymin*ymin)<XKMPER && zmin<0.0))
+      cpgpt1(xmin,ymin,4);
+    if (!(sqrt(xmax*xmax+ymax*ymax)<XKMPER && zmax<0.0))
+      cpgpt1(xmax,ymax,6);
   }
   cpgsls(1);
   cpgsci(isci);
