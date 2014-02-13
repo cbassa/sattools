@@ -29,7 +29,7 @@ struct map {
   int length,all;
   char nfd[LIM],tlefile[LIM],observer[32];
   char datadir[LIM],tledir[LIM];
-  int site_id;
+  int site_id,plot;
 } m;
 struct point {
   double mjd;
@@ -40,7 +40,8 @@ struct point {
 struct pass {
   int satno;
   double mjdrise,mjdmax,mjdset;
-  char line[80];
+  char line[80],skymap[LIM];
+  float length;
 } p[PASSMAX];
 
 double nfd2mjd(char *date);
@@ -73,11 +74,14 @@ void compute_track(orbit_t orb)
   double mjdrise,mjdmax,mjdset,mjdentry,mjdexit;
   int irise=-1,imax=-1,iset=-1,ientry=-1,iexit=-1;
   int i1=-1,i2=-1,i3=-1;
+  int sunlit,sundown;
 
   for (i=0;i<m.length;i++) {
-    // Skip if only processing visible passes and the sun is up
-    if (pt[i].salt>m.saltmin && m.all==0)
-      continue;
+    // Sun altitude
+    if (pt[i].salt<m.saltmin)
+      sundown=1;
+    else
+      sundown=0;
 
     // Compute satellite position
     jd=pt[i].mjd+2400000.5;
@@ -105,6 +109,10 @@ void compute_track(orbit_t orb)
       strcpy(state,"umbra");
     else if (psat-pearth>psun)
       strcpy(state,"sunlit");
+    if (strcmp(state,"eclipsed")!=0)
+      sunlit=1;
+    else
+      sunlit=0;
 
     // Position differences
     dx=satpos.x-pt[i].obspos.x;  
@@ -134,71 +142,85 @@ void compute_track(orbit_t orb)
     pt[i].azi=modulo(azi+180.0,360.0);
 
     // Find all passes
-    if (i==0) { 
-      if (alt>=m.altmin && flag==0) {
+    if (m.all==1) {
+      if (i==0) { 
+	if (alt>=m.altmin && flag==0) {
+	  irise=i;
+	  flag=1;
+	} 
+	if (imax==-1 && flag==1) {
+	  imax=i;
+	  flag=2;
+	}
+      } else if (i==m.length-1) {
+	if (alt>=m.altmin && flag==0) {
+	  irise=i;
+	  flag=1;
+	} 
+	if (imax==-1 && flag==1) {
+	  imax=i;
+	  flag=2;
+	}
+	if (alt>=m.altmin && flag==2) {
+	  iset=i;
+	  flag=3;
+	}
+      } else if (i>0) {
+	if (alt1<m.altmin && alt>=m.altmin && flag==0) {
+	  irise=i;
+	  flag=1;
+	} else if (alt1>m.altmin && alt<=m.altmin && flag==2) {
+	  iset=i;
+	  flag=3;
+	} else if (flag==1 && alt<alt1) {
+	  imax=i-1;
+	  flag=2;
+	} 
+      }
+    } else {
+      if (flag==0 && alt>=m.altmin && sundown==1 && sunlit==1) {
 	irise=i;
 	flag=1;
-      } 
-      if (imax==-1 && flag==1) {
-	imax=i;
-	flag=2;
-      }
-    } else if (i==m.length-1) {
-      if (alt>=m.altmin && flag==0) {
-	irise=i;
-	flag=1;
-      } 
-      if (imax==-1 && flag==1) {
-	imax=i;
-	flag=2;
-      }
-      if (alt>=m.altmin && flag==2) {
-	iset=i;
-	flag=3;
-      }
-    } else if (i>0) {
-      if (alt1<m.altmin && alt>=m.altmin && flag==0) {
-	irise=i;
-	flag=1;
-      } else if (alt1>m.altmin && alt<=m.altmin && flag==2) {
-	iset=i;
-	flag=3;
-      } else if (flag==1 && alt<alt1) {
+      } else if (flag==1 && (alt<alt1 || !(sundown==1 && sunlit==1))) {
 	imax=i-1;
 	flag=2;
-      } 
-      if (strcmp(state1,"eclipsed")==0 && strcmp(state,"umbra")==0 && alt1>m.altmin) 
-	iexit=i;
-      if (strcmp(state1,"umbra")==0 && strcmp(state,"eclipsed")==0 && alt1>m.altmin) 
-	ientry=i;
+      } else if (flag==2 && !(alt>=m.altmin && sundown==1 && sunlit==1)) {
+	iset=i;
+	flag=3;
+      }
+      /*
+      if (sundown==1 && sunlit==1) {
+	if (alt>=m.altmin && flag==0) {
+	  irise=i;
+	  flag=1;
+	} else if (alt<=m.altmin && flag==2) {
+	  iset=i;
+	  flag=3;
+	} else if (flag==1 && alt<alt1) {
+	  imax=i-1;
+	  flag=2;
+	} 
+      }
+      */
     }
 
     if (flag==3) {
-      if (m.all==1) {
-	i1=irise;
-	i2=imax;
-	i3=iset;
-      } else {
-	if (iexit==-1)
-	  i1=irise;
-	else
-	  i1=iexit;
-	i2=imax;
-	if (ientry==-1)
-	  i3=iset;
-	else
-	  i3=ientry;
-      }
+      i1=irise;
+      i2=imax;
+      i3=iset;
 
       p[ipass].satno=orb.satno;
       p[ipass].mjdrise=pt[i1].mjd;
       p[ipass].mjdmax=pt[i2].mjd;
       p[ipass].mjdset=pt[i3].mjd;
+      p[ipass].length=86400.0*(pt[i3].mjd-pt[i1].mjd);
 
       sprintf(p[ipass].line,"%05d | %s  %3.0f/%2.0f | %.8s  %3.0f/%2.0f | %.8s  %3.0f/%2.0f | \n",orb.satno,
 	      pt[i1].nfd,pt[i1].azi,pt[i1].alt,
 	      pt[i2].nfd+11,pt[i2].azi,pt[i2].alt,
 	      pt[i3].nfd+11,pt[i3].azi,pt[i3].alt);
+      sprintf(p[ipass].skymap,"skymap -c %s -i %d -s %d -t %s -l %.0f",m.tlefile,orb.satno,m.site_id,pt[i1].nfd,p[ipass].length);
+
       flag=0;
       irise=-1;
       imax=-1;
@@ -234,13 +256,13 @@ int main(int argc,char *argv[])
   int arg=0;
   FILE *file;
   orbit_t orb;
-  int imode;
+  int imode,quiet=0;
 
   // Initialize setup
   initialize_setup();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:l:hS:A:a"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:l:hS:A:aPq"))!=-1) {
     switch (arg) {
       
     case 't':
@@ -266,6 +288,8 @@ int main(int argc,char *argv[])
 	m.length*=3600;
       else if (strchr(optarg,'m')!=NULL)
 	m.length*=60;
+      else if (strchr(optarg,'d')!=NULL)
+	m.length*=86400;
       break;
 
     case 'S':
@@ -283,6 +307,14 @@ int main(int argc,char *argv[])
     case 'h':
       usage();
       return 0;
+      break;
+      
+    case 'P':
+      m.plot=1;
+      break;
+
+    case 'q':
+      quiet=1;
       break;
 
     default:
@@ -323,11 +355,15 @@ int main(int argc,char *argv[])
   qsort(p,npass,sizeof(struct pass),qsort_compare_mjdrise);
 
   // Output header
-  print_header();
+  if (quiet==0)
+    print_header();
 
   // Print passes
-  for (ipass=0;ipass<npass;ipass++)
+  for (ipass=0;ipass<npass;ipass++) {
     printf("%s",p[ipass].line);
+    if (m.plot==1)
+      system(p[ipass].skymap);
+  }
 
   // Free
   free(pt);
@@ -444,6 +480,7 @@ void initialize_setup(void)
   m.saltmin=-6.0;
   m.altmin=10.0;
   m.all=0;
+  m.plot=0;
 
   // Default settings
   strcpy(m.observer,"Unknown");
