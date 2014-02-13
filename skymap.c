@@ -36,7 +36,7 @@ struct map {
   float alt,timezone;
   float fw,fh,agelimit;
   int level,grid,site_id;
-  int leoflag,iodflag,iodpoint,visflag,planar,pssatno,psnr,xyzflag,pflag;
+  int leoflag,iodflag,iodpoint,visflag,planar,pssatno,psnr,xyzflag,pflag,graves;
   float psrmin,psrmax,rvis;
 } m;
 struct sat {
@@ -51,6 +51,8 @@ struct sat {
   double r,v,ra,de;
   double azi,alt,salt;
   double rx,ry;
+  double rg,vg,azig,altg,rag,deg;
+  int illumg;
 };
 struct star {
   double ra,de;
@@ -78,10 +80,12 @@ void skymap_plothorizontal_grid();
 void skymap_plotequatorial_grid();
 void skymap_plotconstellations(char *);
 void equatorial2horizontal(double,double,double,double *,double *);
+void graves_equatorial2horizontal(double,double,double,double *,double *);
 void horizontal2equatorial(double,double,double,double *,double *);
 void skymap_plotstars(char *);
 void obspos_xyz(double,xyz_t *,xyz_t *);
 void sunpos_xyz(double,xyz_t *,double *,double *);
+void graves_xyz(double,xyz_t *,xyz_t *);
 void skymap_plotsatellite(char *,int,double,double);
 double date2mjd(int,int,double);
 struct sat apparent_position(double);
@@ -159,6 +163,7 @@ void init_skymap(void)
   m.agelimit=-1.0;
   m.saltmin=-6.0;
   m.pflag=1;
+  m.graves=0;
 
   // Default settings
   strcpy(m.observer,"Unknown");
@@ -460,8 +465,8 @@ void allnight(void)
 
   m.mjd=mjdset;
   mjd2date(m.mjd,m.nfd);
-	 mjd2date(mjdrise,nfd);
-	 m.length=(mjdrise-mjdset)*86400;
+  mjd2date(mjdrise,nfd);
+  m.length=(mjdrise-mjdset)*86400;
   printf("Set: %s; Rise: %s; length: %.0fs\n",m.nfd,nfd,m.length);
 
   return;
@@ -1261,6 +1266,20 @@ void equatorial2horizontal(double mjd,double ra,double de,double *azi,double *al
   return;
 }
 
+// Convert equatorial into horizontal coordinates
+void graves_equatorial2horizontal(double mjd,double ra,double de,double *azi,double *alt)
+{
+  double h;
+  float lat=47.3480,lng=5.5151;
+
+  h=gmst(mjd)+lng-ra;
+  
+  *azi=modulo(atan2(sin(h*D2R),cos(h*D2R)*sin(lat*D2R)-tan(de*D2R)*cos(lat*D2R))*R2D,360.0);
+  *alt=asin(sin(lat*D2R)*sin(de*D2R)+cos(lat*D2R)*cos(de*D2R)*cos(h*D2R))*R2D;
+
+  return;
+}
+
 // Convert horizontal into equatorial coordinates
 void horizontal2equatorial(double mjd,double azi,double alt,double *ra,double *de)
 {
@@ -1384,6 +1403,30 @@ void obspos_xyz(double mjd,xyz_t *pos,xyz_t *vel)
   return;
 }
 
+// Graves position
+void graves_xyz(double mjd,xyz_t *pos,xyz_t *vel)
+{
+  double ff,gc,gs,theta,s,dtheta;
+  float lat=47.3480,lng=5.5151,alt=0.1;
+
+  s=sin(lat*D2R);
+  ff=sqrt(1.0-FLAT*(2.0-FLAT)*s*s);
+  gc=1.0/ff+alt/XKMPER;
+  gs=(1.0-FLAT)*(1.0-FLAT)/ff+alt/XKMPER;
+
+  theta=gmst(mjd)+lng;
+  dtheta=dgmst(mjd)*D2R/86400;
+
+  pos->x=gc*cos(lat*D2R)*cos(theta*D2R)*XKMPER;
+  pos->y=gc*cos(lat*D2R)*sin(theta*D2R)*XKMPER; 
+  pos->z=gs*sin(lat*D2R)*XKMPER;
+  vel->x=-gc*cos(lat*D2R)*sin(theta*D2R)*XKMPER*dtheta;
+  vel->y=gc*cos(lat*D2R)*cos(theta*D2R)*XKMPER*dtheta; 
+  vel->z=0.0;
+
+  return;
+}
+
 // Plot satellite track
 void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
 {
@@ -1464,6 +1507,14 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
 	      cpgsci(8);
 	  }
 	}
+      }
+
+      // Graves colouring
+      if (m.graves==1) {
+	if (s.illumg==1)
+	  cpgsci(2);
+	else
+	  cpgsci(14);
       }
 
       // In field of view
@@ -1589,7 +1640,7 @@ struct sat apparent_position(double mjd)
   struct sat s;
   double jd,rsun,rearth,rsat;
   double dx,dy,dz,dvx,dvy,dvz;
-  xyz_t satpos,obspos,obsvel,satvel,sunpos;
+  xyz_t satpos,obspos,obsvel,satvel,sunpos,grvpos,grvvel;
   double sra,sde,azi;
 
   // Sat ID
@@ -1669,6 +1720,32 @@ struct sat apparent_position(double mjd)
     forward(s.azi,s.alt,&s.rx,&s.ry);
   } else if (strcmp(m.orientation,"equatorial")==0) {
     forward(s.ra,s.de,&s.rx,&s.ry);
+  }
+
+  // Compute position at Graves
+  if (m.graves==1) {
+    graves_xyz(mjd,&grvpos,&grvvel);  
+    dx=satpos.x-grvpos.x;  
+    dy=satpos.y-grvpos.y;
+    dz=satpos.z-grvpos.z;
+    dvx=satvel.x-grvvel.x;
+    dvy=satvel.y-grvvel.y;
+    dvz=satvel.z-grvvel.z;
+  
+    // Celestial position
+    s.rg=sqrt(dx*dx+dy*dy+dz*dz);
+    s.vg=(dvx*dx+dvy*dy+dvz*dz)/s.rg;
+    s.rag=modulo(atan2(dy,dx)*R2D,360.0);
+    s.deg=asin(dz/s.rg)*R2D;  
+    graves_equatorial2horizontal(mjd,s.rag,s.deg,&s.azig,&s.altg);
+    
+    // Illuminated?
+    if (s.altg>=15.0 && s.altg<=40.0 && modulo(s.azig-180.0,360.0)>=90.0 && modulo(s.azig-180.0,360.0)<=270.0)
+      s.illumg=1;
+    else
+      s.illumg=0;
+  } else {
+    s.illumg=0;
   }
 
   return s;
@@ -2166,6 +2243,7 @@ int plot_skymap(void)
       printf(">   Increase step size\n");
       printf("<   Decrease step size\n");
       printf("P   Toggle planar search\n");
+      printf("p   Toggle satellite name\n");
       printf("R   Read catalog\n");
       printf("L   Toggle satellite selection (All, LEO, HEO/GEO, none)\n");
       printf("v   Toggle visibility contours\n");
@@ -2173,7 +2251,7 @@ int plot_skymap(void)
       printf("TAB Cycle IOD observations\n");
       printf("S   Save position/time to schedule\n");
       printf("a   Select on age\n");
-      printf("A   Toggle plotting stars\n");
+      printf("Q   Toggle plotting stars\n");
     }
 
     // Toggle plotting stars
@@ -2323,7 +2401,7 @@ int plot_skymap(void)
       printf("RA: %10.4f Dec: %10.4f Azi: %10.4f Alt: %10.4f\n%f %f\n",ra,de,modulo(azi-180.0,360.0),alt,x,y);
     }
     // Grid on/off
-    if (c=='g' || c=='G') {
+    if (c=='g') {
       if (m.grid==1)
 	m.grid=0;
       else if (m.grid==0)
@@ -2331,6 +2409,15 @@ int plot_skymap(void)
       redraw=1;
     }
     
+    // Toggle Graves illumination
+    if (c=='G') {
+      if (m.graves==0)
+	m.graves=1;
+      else if (m.graves==1)
+	m.graves=0;
+      redraw=1;
+    }
+
     // Exit
     if (c=='q') {
       cpgend();
