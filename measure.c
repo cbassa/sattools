@@ -503,7 +503,7 @@ int main(int argc,char *argv[])
 
   // Open server
   cpgopen("/xs");
-  //  cpgpap(0.,1.25);
+
   cpgask(0);
   cpgsch(0.8);
 
@@ -526,7 +526,7 @@ int main(int argc,char *argv[])
       cpgsfs(2);
       cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
 
-      sprintf(text,"File: %s; UT Date: %.23s  COSPAR ID: %04d",img[iimg].filename,img[iimg].nfd+1,img[iimg].cospar);
+      sprintf(text,"File %d: %s; UT Date: %.23s  COSPAR ID: %04d",iimg+1,img[iimg].filename,img[iimg].nfd+1,img[iimg].cospar);
       cpgmtxt("T",6.0,0.0,0.0,text);
       sprintf(text,"R.A.: %10.5f (%4.1f'') Decl.: %10.5f (%4.1f'')",img[iimg].ra0,img[iimg].xrms,img[iimg].de0,img[iimg].yrms);
       cpgmtxt("T",4.8,0.0,0.0,text);
@@ -626,7 +626,7 @@ int main(int argc,char *argv[])
     }
 
     // Cycle through images
-    if (c==']') {
+    if (c==']' || c=='s') {
       iimg++;
       if (iimg>=nimg-1)
 	iimg=0;
@@ -635,7 +635,7 @@ int main(int argc,char *argv[])
     }
 
     // Cycle through images
-    if (c=='[') {
+    if (c=='[' || c=='a') {
       iimg--;
       if (iimg<0)
 	iimg=nimg-2;
