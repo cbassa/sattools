@@ -4,6 +4,7 @@
 #include <math.h>
 #include "qfits.h"
 #include "cel.h"
+#include "cpgplot.h"
 
 #define LIM 80
 #define NMAX 256
@@ -476,9 +477,9 @@ void fit(struct observation *obs,struct fourframe ff,int mask)
       }
     }
   }
-
-  printf("x: %6.2f +- %.2f  %7.3f +- %.3f  %8.2f; %f pix/s\n",ax[0],sax[0],ax[1],sax[1],chi2x,ax[1]/ff.nframes*ff.exptime);
-  printf("y: %6.2f +- %.2f  %7.3f +- %.3f  %8.2f; %f pix/s\n",ay[0],say[0],ay[1],say[1],chi2y,ay[1]/ff.nframes*ff.exptime);
+  printf("%d points, rms (%g, %g), chi2 (%g, %g)\n",n,rmsx,rmsy,chi2x,chi2y);
+  //  printf("x: %6.2f +- %.2f  %7.3f +- %.3f  %8.2f; %f pix/s\n",ax[0],sax[0],ax[1],sax[1],chi2x,ax[1]/ff.nframes*ff.exptime);
+  //  printf("y: %6.2f +- %.2f  %7.3f +- %.3f  %8.2f; %f pix/s\n",ay[0],say[0],ay[1],say[1],chi2y,ay[1]/ff.nframes*ff.exptime);
 
   obs->x[0]=ax[0];
   obs->y[0]=ay[0];
@@ -554,6 +555,12 @@ int main(int argc,char *argv[])
   float sigma=5.0,hmax,a[2],hall,fraq;
   struct observation obs;
   char *env;
+  float tr[]={-0.5,1.0,0.0,-0.5,0.0,1.0};
+  float heat_l[] = {0.0, 0.2, 0.4, 0.6, 1.0};
+  float heat_r[] = {0.0, 0.5, 1.0, 1.0, 1.0};
+  float heat_g[] = {0.0, 0.0, 0.5, 1.0, 1.0};
+  float heat_b[] = {0.0, 0.0, 0.0, 0.3, 1.0};
+  float zavg,zstd,zmin,zmax;
 
   env=getenv("ST_COSPAR");
   // Default observation
@@ -577,10 +584,30 @@ int main(int argc,char *argv[])
   else
     ff=read_fits("test1.fits");
 
+  // Determine limits
+  for (i=0,zavg=0.0;i<ff.naxis1*ff.naxis2;i++)
+    zavg+=ff.zmax[i];
+  zavg/=(float) ff.naxis1*ff.naxis2;
+  for (i=0,zstd=0.0;i<ff.naxis1*ff.naxis2;i++)
+    zstd+=pow(ff.zmax[i]-zavg,2);
+  zstd=sqrt(zstd/(float) (ff.naxis1*ff.naxis2));
+  zmin=zavg-2*zstd;
+  zmax=zavg+6*zstd;
+
   // Create image
   img.nx=ff.naxis1;
   img.ny=ff.naxis2;
   img.z=(float *) malloc(img.nx*img.ny*sizeof(float));
+  for (i=0;i<ff.naxis1*ff.naxis2;i++) 
+    img.z[i]=(ff.zmax[i]-ff.zavg[i])/ff.zstd[i]>sigma;
+
+  cpgopen("/xs");
+  cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
+  cpgwnad(0.0,(float) ff.naxis1,0.0,(float) ff.naxis2);
+  cpgimag(ff.zmax,ff.naxis1,ff.naxis2,1,ff.naxis1,1,ff.naxis2,zmin,zmax,tr);
+  //cpgwnad(0.0,(float) img.nx,0.0,(float) img.ny);
+  //  cpgimag(img.z,img.nx,img.ny,1,img.nx,1,img.ny,0.0,5.0,tr);
+  cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
 
   // Loop over lines
   for (k=0;;k++) {
@@ -619,12 +646,19 @@ int main(int argc,char *argv[])
     // Write observation
     write_observation(obs);
 
+    // Plot observation
+    cpgsci(4);
+    cpgpt1(obs.x[0],obs.y[0],4);
+    cpgmove(obs.x[1],obs.y[1]);
+    cpgdraw(obs.x[2],obs.y[2]);
+    cpgsci(1);
+
     // Reset mask
     for (i=0;i<ff.naxis1*ff.naxis2;i++) 
       if (ff.mask[i]>1)
 	ff.mask[i]=-1;
-
   }
+  cpgend();
 
   // Free
   free(img.z);
