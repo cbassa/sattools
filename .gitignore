@@ -5,6 +5,8 @@
 *~
 
 # Executables
+detect
+launchtle
 addwcs
 fitsheader
 fitskey
