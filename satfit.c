@@ -146,6 +146,73 @@ int period_search(void)
   return;
 }
 
+int revsearch(void)
+{
+  int i,satno=99300;
+  double mjdmin,mjdmax;
+  int ia[7]={0,0,0,0,0,0,0};
+  double ecc,eccmin,eccmax,decc;
+  double rev,revmin,revmax,drev;
+  double argp,argpmin,argpmax,dargp;
+  char line1[70],line2[70];
+  FILE *file,*tlefile;
+  int year,month;
+  double day;
+
+  // Provide 
+  printf("Mean motion [min, max, stepsize]: \n");
+  scanf("%lf %lf %lf",&revmin,&revmax,&drev);
+
+  // Step 1: select all points
+  //  for (i=0;i<d.n;i++)
+  //    d.p[i].flag=2;
+
+  // Step 2: get time range
+  time_range(&mjdmin,&mjdmax,2);
+
+  // Open files
+  file=fopen("search.dat","w");
+  tlefile=fopen("search.tle","w");
+
+  // Step 4: Loop over eccentricity
+  for (rev=revmin;rev<revmax;rev+=drev) {
+    orb.satno=satno;
+    orb.rev=rev;
+    
+    // Set parameters
+    for (i=0;i<7;i++) 
+      ia[i]=0;
+	
+    // Step 4: loop over parameters
+    for (i=0;i<5;i++) {
+      if (i==0) ia[4]=1;
+      if (i==1) ia[1]=1;
+      if (i==2) ia[0]=1;
+      if (i==3) ia[2]=1;
+      if (i==4) ia[3]=1;
+      
+      // Do fit
+      fit(orb,ia);
+    }
+    fit(orb,ia);
+    fit(orb,ia);
+    fit(orb,ia);
+    printf("%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
+    fprintf(file,"%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
+
+    format_tle(orb,line1,line2);
+    fprintf(tlefile,"OBJ\n%s\n%s\n",line1,line2);
+    mjd2date(mjdmin,&year,&month,&day);
+    fprintf(tlefile,"# %4d%02d%05.2lf-",year,month,day);
+    mjd2date(mjdmax,&year,&month,&day);
+    fprintf(tlefile,"%4d%02d%05.2lf, %d measurements, %.5lf deg rms\n",year,month,day,d.n,d.rms);
+  }
+  fclose(file);
+  fclose(tlefile);
+
+  return orb.satno;
+}
+
 int psearch(void)
 {
   int i,satno=99300;
@@ -590,6 +657,14 @@ int main(int argc,char *argv[])
       redraw=1;
     }
 
+    // Search
+    if (c=='R') {
+      satno=revsearch();
+      plot_residuals=1;
+      //      ia[0]=ia[1]=ia[4]=ia[5]=ia[2]=1;
+      redraw=1;
+    }
+
     // Change
     if (c=='c') {
       printf("(1) Inclination,     (2) Ascending Node,   (3) Eccentricity,\n(4) Arg. of Perigee, (5) Mean Anomaly,     (6) Mean Motion,\n(7) B* drag,         (8) Epoch,            (9) Satellite ID\n(0) Sat ID\nWhich parameter to change: ");
@@ -694,8 +769,8 @@ int main(int argc,char *argv[])
 	orb.eqinc=63.434*D2R;
 	orb.ascn=0.0;
 	orb.ecc=0.71;
-	orb.argp=0.0;
-	orb.mnan=270*D2R;
+	orb.argp=270*D2R;
+	orb.mnan=0.0;
 	orb.rev=2.006;
 	orb.bstar=0.0;
 	printf("HEO orbit\n");
