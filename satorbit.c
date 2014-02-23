@@ -332,10 +332,10 @@ void plot_track(void)
       if (i==nstep)
 	break;
     }
-    if (!(sqrt(xmin*xmin+ymin*ymin)<XKMPER && zmin<0.0))
-      cpgpt1(xmin,ymin,4);
-    if (!(sqrt(xmax*xmax+ymax*ymax)<XKMPER && zmax<0.0))
-      cpgpt1(xmax,ymax,6);
+    //    if (!(sqrt(xmin*xmin+ymin*ymin)<XKMPER && zmin<0.0))
+    //      cpgpt1(xmin,ymin,4);
+    //    if (!(sqrt(xmax*xmax+ymax*ymax)<XKMPER && zmax<0.0))
+    //      cpgpt1(xmax,ymax,6);
   }
   cpgsls(1);
   cpgsci(isci);
