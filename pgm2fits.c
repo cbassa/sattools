@@ -301,6 +301,10 @@ int main(int argc,char *argv[])
   // Free
   for (k=0;k<ff.nt;k++)
     free(img[k].c);
+  free(trk);
+  free(img);
+  free(wt);
+  free(ff.dt);
   free(ff.z);
 
   return 0;
