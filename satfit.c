@@ -385,7 +385,7 @@ void old_circular_fit(void)
 int main(int argc,char *argv[])
 {
   int i,j,nobs=0;
-  int redraw=1,plot_residuals=0,adjust=0,quit=0;
+  int redraw=1,plot_residuals=0,adjust=0,quit=0,identify=0;
   int ia[]={0,0,0,0,0,0,0};
   float dx[]={0.1,0.1,0.35,0.35,0.6,0.6,0.85},dy[]={0.0,-0.25,0.0,-0.25,0.0,-0.25,0.0};
   char c;
@@ -399,9 +399,10 @@ int main(int argc,char *argv[])
   int arg=0,elset=0,circular=0,tleout=0,noplot=0;
   char *datafile,*catalog,tlefile[LIM];
   orbit_t orb0;
+  FILE *file;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"d:c:i:haCo:p"))!=-1) {
+  while ((arg=getopt(argc,argv,"d:c:i:haCo:pI"))!=-1) {
     switch(arg) {
     case 'd':
       datafile=optarg;
@@ -437,6 +438,10 @@ int main(int argc,char *argv[])
       adjust=1;
       break;
 
+    case 'I':
+      identify=1;
+      break;
+
     default:
       usage();
       return 0;
@@ -448,11 +453,19 @@ int main(int argc,char *argv[])
   time_range(&mjdmin,&mjdmax,1);
 
   // Read TLE
-  if (satno>=0) {
+  if (satno>=0) 
     orb=read_tle(catalog,satno);
+
+  // Open catalog
+  if (identify==1) {
+    file=fopen(catalog,"r");
+    if (file==NULL) 
+      fatal_error("Failed to open %s\n",catalog);
   }
 
+  // Reloop stderr
   freopen("/tmp/stderr.txt","w",stderr);
+
 
   // Fit circular orbit
   if (circular==1) {
@@ -465,6 +478,23 @@ int main(int argc,char *argv[])
     // Dump tle
     if (tleout==1) 
       print_tle(orb,tlefile);
+  }
+
+  // Identify
+  if (identify==1) {
+    // Loop over file
+    while (read_twoline(file,0,&orb)==0) {
+      orb0=orb;
+      adjust_fit();
+      fit(orb,ia);
+      printf("%05d %8.3f %8.3f %8.3f %s %8.3f\n",orb.satno,DEG(orb.mnan-orb0.mnan),DEG(orb.ascn-orb0.ascn),d.rms,datafile,mjdmin-(SGDP4_jd0-2400000.5));
+    }
+    fclose(file);
+    
+    plot_residuals=1;
+    redraw=1;
+    quit=1;
+    noplot=1;
   }
 
   // Adjust
