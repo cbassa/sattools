@@ -22,6 +22,22 @@ double nfd2mjd(char *date);
 double date2mjd(int year,int month,double day);
 void mjd2date(double mjd,int *year,int *month,double *day);
 
+void usage(void)
+{
+  printf("faketle q:Q:i:I:w:t:m:n:\n\n");
+
+  printf("-q   Perigee altitude (km)\n");
+  printf("-Q   Apogee altitude (km)\n");
+  printf("-I   Orbital inclination (deg)\n");
+  printf("-n   RA of the ascending node (deg)\n");
+  printf("-w   Argument of perigee (deg)\n");
+  printf("-m   Mean anomaly (deg)\n");
+  printf("-t   Epoch (YYYY-mm-ddThh:mm:ss)\n");
+  printf("-i   Satellite number\n");
+
+  return;
+}
+
 int main(int argc,char *argv[])
 {
   orbit_t orb;
@@ -41,7 +57,7 @@ int main(int argc,char *argv[])
   orb.ep_year=2013;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"q:Q:i:I:w:t:m:n:"))!=-1) {
+  while ((arg=getopt(argc,argv,"q:Q:i:I:w:t:m:n:h"))!=-1) {
     switch(arg) {
     case 'q':
       perigee=atof(optarg);
@@ -76,7 +92,12 @@ int main(int argc,char *argv[])
       orb.ep_day=mjd2doy(mjd,&orb.ep_year);
       break;
 
+    case 'h':
+      usage();
+      return 0;
+
     default:
+      usage();
       return 0;
     }
   }

@@ -225,6 +225,51 @@ void plot_sites(void)
 
   return;
 }
+
+// Plot observing sites
+void plot_launch_sites(void)
+{
+  int i=0;
+  char line[LIM];
+  FILE *file;
+  double lat,lng;
+  char site[64],text[8],filename[LIM];
+  float isch;
+
+  cpgqch(&isch);
+
+  sprintf(filename,"%s/data/launchsites.txt",m.datadir);
+  file=fopen(filename,"r");
+  if (file==NULL) {
+    printf("File with site information not found!\n");
+    return;
+  }
+  while (fgets(line,LIM,file)!=NULL) {
+    // Skip
+    if (strstr(line,"#")!=NULL)
+      continue;
+
+    // Strip newline
+    line[strlen(line)-1]='\0';
+
+    // Read data
+    sscanf(line,"%lf %lf",
+	   &lat,&lng);
+    strcpy(site,line+21);
+
+    cpgsci(2);
+    cpgsch(0.5);
+    cpgpt1(lng,lat,4);
+    cpgtext(lng,lat,site);
+    cpgsci(1);
+  }
+  fclose(file);
+  cpgsch(isch);
+
+  return;
+}
+
+
 // Computes apparent position
 struct sat apparent_position(double mjd)
 {
@@ -424,7 +469,10 @@ void plot_map(void)
       cpgbox("BCTS",30.,3,"BCTS",30.,3);
 
       // Plot sites
-      plot_sites();
+      //      plot_sites();
+
+      // Plot launch sites
+      plot_launch_sites();
 
       // Plot satellites
       track_plot_track(m.tlefile,m.satno,m.mjd);

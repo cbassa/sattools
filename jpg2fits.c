@@ -297,6 +297,7 @@ struct image read_jpg(char *filename)
   // Close file
   fclose(file);
 
+  /*
   // Get exif info
   ed=exif_data_new_from_file(filename);
   if (!ed) {
@@ -310,7 +311,7 @@ struct image read_jpg(char *filename)
     img.nfd[20]='\0';
     img.mjd=nfd2mjd(img.nfd);
   }
-
+  */
   return img;
 }
 

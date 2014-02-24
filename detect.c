@@ -550,6 +550,7 @@ void write_observation(struct observation obs)
 int main(int argc,char *argv[])
 {
   int i,j,k,imax,jmax,kmax;
+  int flag=0;
   struct fourframe ff;
   struct image img,mask,hough;
   float sigma=5.0,hmax,a[2],hall,fraq;
@@ -561,6 +562,7 @@ int main(int argc,char *argv[])
   float heat_g[] = {0.0, 0.0, 0.5, 1.0, 1.0};
   float heat_b[] = {0.0, 0.0, 0.0, 0.3, 1.0};
   float zavg,zstd,zmin,zmax;
+  char filename[LIM],text[128];
 
   env=getenv("ST_COSPAR");
   // Default observation
@@ -601,14 +603,6 @@ int main(int argc,char *argv[])
   for (i=0;i<ff.naxis1*ff.naxis2;i++) 
     img.z[i]=(ff.zmax[i]-ff.zavg[i])/ff.zstd[i]>sigma;
 
-  cpgopen("/xs");
-  cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
-  cpgwnad(0.0,(float) ff.naxis1,0.0,(float) ff.naxis2);
-  cpgimag(ff.zmax,ff.naxis1,ff.naxis2,1,ff.naxis1,1,ff.naxis2,zmin,zmax,tr);
-  //cpgwnad(0.0,(float) img.nx,0.0,(float) img.ny);
-  //  cpgimag(img.z,img.nx,img.ny,1,img.nx,1,img.ny,0.0,5.0,tr);
-  cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
-
   // Loop over lines
   for (k=0;;k++) {
     // Generate mask
@@ -632,6 +626,32 @@ int main(int argc,char *argv[])
     if (hmax/hall<0.01 || hmax<20)
       break;
 
+    if (flag==0) {
+      sprintf(filename,"%s.png/png",argv[1]);
+      cpgopen(filename);
+      cpgpap(0.,1.0);
+      cpgsvp(0.1,0.95,0.1,0.8);
+      
+      cpgsch(0.8);
+      sprintf(text,"UT Date: %.23s  COSPAR ID: %04d",ff.nfd+1,ff.cospar);
+      cpgmtxt("T",6.0,0.0,0.0,text);
+      sprintf(text,"R.A.: %10.5f (%4.1f'') Decl.: %10.5f (%4.1f'')",ff.ra0,ff.xrms,ff.de0,ff.yrms);
+      cpgmtxt("T",4.8,0.0,0.0,text);
+      sprintf(text,"FoV: %.2f\\(2218)x%.2f\\(2218) Scale: %.2f''x%.2f'' pix\\u-1\\d",ff.naxis1*sqrt(ff.a[1]*ff.a[1]+ff.b[1]*ff.b[1])/3600.0,ff.naxis2*sqrt(ff.a[2]*ff.a[2]+ff.b[2]*ff.b[2])/3600.0,sqrt(ff.a[1]*ff.a[1]+ff.b[1]*ff.b[1]),sqrt(ff.a[2]*ff.a[2]+ff.b[2]*ff.b[2]));
+      cpgmtxt("T",3.6,0.0,0.0,text);
+      sprintf(text,"Stat: %5.1f+-%.1f (%.1f-%.1f)",zavg,zstd,zmin,zmax);
+      cpgmtxt("T",2.4,0.0,0.0,text);
+      
+      cpgsch(1.0);
+      cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
+      cpgwnad(0.0,(float) ff.naxis1,0.0,(float) ff.naxis2);
+      cpgimag(ff.zmax,ff.naxis1,ff.naxis2,1,ff.naxis1,1,ff.naxis2,zmin,zmax,tr);
+      //cpgwnad(0.0,(float) img.nx,0.0,(float) img.ny);
+      //  cpgimag(img.z,img.nx,img.ny,1,img.nx,1,img.ny,0.0,5.0,tr);
+      cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
+      flag=1;
+    }
+      
     printf("Hmax: %.0f/%.0f (%g), %g + %g x\n",hmax,hall,hmax/hall,a[0],a[1]);
   
     // Update mask
@@ -658,7 +678,8 @@ int main(int argc,char *argv[])
       if (ff.mask[i]>1)
 	ff.mask[i]=-1;
   }
-  cpgend();
+  if (flag==1)
+    cpgend();
 
   // Free
   free(img.z);

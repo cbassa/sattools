@@ -1,0 +1,14 @@
+  45.965    63.305    Baikonur
+  62.7167   40.2833   Plesetsk
+  28.475   -80.5528   Cape Canaveral
+  34.7508 -120.4978   Vandenberg AFB
+  30.4     130.97     Tanegashima
+  40.9605  100.2983   Jiuquan
+  28.2460  102.0265   Xichang
+  38.8491  111.6085   Taiyuan
+  19.567   110.867    Wenchang
+   5.2372  -52.7605   Kourou
+  50.8      59.5167   Dombarovsky
+  37.8433  -75.4781   Wallops
+  31.2519  131.0819   Uchinoura
+  13.7199   80.2304   Satish Dhawan
