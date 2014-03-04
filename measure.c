@@ -467,7 +467,7 @@ int main(int argc,char *argv[])
 
   // Number of images
   nimg=argc;
-
+  
   // Allocate
   img=(struct image *) malloc(sizeof(struct image)*nimg);
 
@@ -516,8 +516,9 @@ int main(int argc,char *argv[])
 
   // Forever loop
   for (;;) {
-    if (redraw==1) {
-      cpgeras();
+    if (redraw!=0) {
+      if (redraw==1) 
+	cpgeras();
       cpgsci(1);
       
       cpgsvp(0.1,0.9,0.1,0.85);
@@ -630,7 +631,10 @@ int main(int argc,char *argv[])
       iimg++;
       if (iimg>=nimg-1)
 	iimg=0;
-      redraw=1;
+      if (c==']')
+	redraw=2;
+      else
+	redraw=1;
       continue;
     }
 
@@ -639,7 +643,10 @@ int main(int argc,char *argv[])
       iimg--;
       if (iimg<0)
 	iimg=nimg-2;
-      redraw=1;
+      if (c=='[')
+	redraw=2;
+      else
+	redraw=1;
       continue;
     }
 
