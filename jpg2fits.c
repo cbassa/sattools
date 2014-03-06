@@ -103,7 +103,7 @@ struct image rebin(struct image raw,int nbin)
 
 void usage(void)
 {
-  printf("jpg2fits i:t:o:d:Z:c:T:O:b:h\n\n");
+  printf("jpg2fits i:t:o:d:Z:c:T:O:b:hF\n\n");
   printf("-i   input JPG file\n");
   printf("-o   output FITS file\n");
   printf("-t   start time (YYYY-MM-DDTHH:MM:SS.sss)\n");
@@ -113,6 +113,7 @@ void usage(void)
   printf("-c   COSPAR site number\n");
   printf("-O   observer name\n");
   printf("-b   binning factor\n");
+  printf("-F   FITS input\n");
   printf("-h   this help\n");
 
   exit(0);
@@ -133,7 +134,7 @@ int main(int argc,char *argv[])
 
   // Decode options
   if (argc>1) {
-    while ((arg=getopt(argc,argv,"i:t:o:d:Z:c:T:O:b:h"))!=-1) {
+    while ((arg=getopt(argc,argv,"i:t:o:d:Z:c:T:O:b:hF"))!=-1) {
       switch(arg) {
 	
       case 'i':
@@ -157,6 +158,10 @@ int main(int argc,char *argv[])
 	flag=1;
 	break;
 	
+      case 'F':
+	readfits=1;
+	break;
+
       case 't':
 	strcpy(nfd,optarg);
 	break;
