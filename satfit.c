@@ -148,7 +148,7 @@ int period_search(void)
 
 int revsearch(void)
 {
-  int i,satno=99300;
+  int i,satno=88300;
   double mjdmin,mjdmax;
   int ia[7]={0,0,0,0,0,0,0};
   double ecc,eccmin,eccmax,decc;
