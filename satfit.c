@@ -176,7 +176,7 @@ int revsearch(void)
 
   // Step 4: Loop over eccentricity
   for (rev=revmin;rev<revmax;rev+=drev) {
-    orb.satno=satno;
+    orb.satno=satno++;
     orb.rev=rev;
     
     // Set parameters
