@@ -20,12 +20,12 @@ long Isatsel=0;
 extern double SGDP4_jd0;
 
 struct point {
-  int flag,satno;
+  int flag,satno,site;
   char desig[10];
   double mjd,ra,de,rac,dec;
   float st,sr;
   char iod_line[LIM];
-  double dx,dy,dr,dt;
+  double dx,dy,dr,dt,dz;
   xyz_t obspos;
 };
 struct data {
@@ -391,11 +391,11 @@ int main(int argc,char *argv[])
   char c;
   int mode=0,posn=0,click=0;
   float x0,y0,x,y;
-  float xmin=0.0,xmax=360.0,ymin=-90.0,ymax=90.0;
+  float xmin=0.0,xmax=360.0,ymin=-90.0,ymax=90.0,tmin,tmax;
   char string[64],bstar[10]=" 50000-4",line0[72],line1[72],line2[72],text[10];
   char filename[64];
   int satno=-1;
-  double mjdmin,mjdmax;
+  double mjdmin,mjdmax,mjd0;
   int arg=0,elset=0,circular=0,tleout=0,noplot=0;
   char *datafile,*catalog,tlefile[LIM];
   orbit_t orb0;
@@ -548,18 +548,30 @@ int main(int argc,char *argv[])
 	}
       }
 
+      // Plot time
+      cpgsvp(0.1,0.9,0.2,0.25);
+      mjd0=56658.0;
+      cpgswin((float) mjdmin-mjd0,(float) mjdmax-mjd0,-1.0,1.0);
+      cpglab("MJD","Residual (deg)"," ");
+      cpgbox("BCTSN1",0.,0,"BCTSN",0.,0);
+
+      // Plot points
+      for (i=0;i<d.n;i++) {
+	if (d.p[i].flag>=1) {
+	  cpgpt1((float) d.p[i].mjd-mjd0,d.p[i].dz,17);
+	  if (d.p[i].flag==2) {
+	    cpgsci(2);
+	    cpgpt1((float) d.p[i].mjd-mjd0,d.p[i].dz,4);
+	    cpgsci(1);
+	  }
+	}
+      }
+
       // Plot map
-      cpgsvp(0.1,0.9,0.2,0.9);
+      cpgsvp(0.1,0.9,0.35,0.9);
+      cpglab("Right Ascension","Declination"," ");
       cpgswin(xmax,xmin,ymin,ymax);
       cpgbox("BCTSN",0.,0,"BCTSN",0.,0);
-      cpglab("Right Ascension","Declination"," ");
-
-      if (satno>0) {
-	// Plot tle
-	format_tle(orb,line1,line2);
-	cpgmtxt("T",2.0,0.0,0.0,line1);
-	cpgmtxt("T",1.0,0.0,0.0,line2);
-      }
 
       // Plot points
       for (i=0;i<d.n;i++) {
@@ -577,6 +589,13 @@ int main(int argc,char *argv[])
 	    cpgsci(1);
 	  }
 	}
+      }
+
+      // Plot tle
+      if (satno>0) {
+	format_tle(orb,line1,line2);
+	cpgmtxt("T",2.0,0.0,0.0,line1);
+	cpgmtxt("T",1.0,0.0,0.0,line2);
       }
     }
 
@@ -756,11 +775,31 @@ int main(int argc,char *argv[])
       xmax=360.0;
       ymin=-90.0;
       ymax=90.0;
+      time_range(&mjdmin,&mjdmax,-1);
       mode=0;
       click=0;
       redraw=1;
       continue;
     }
+
+    // Print residuals
+    if (c=='p') {
+      for (i=0;i<d.n;i++) 
+	if (d.p[i].flag==2)
+	  printf("%4d: %04d %14.8lf %8.4f %8.4f: %8.4f %8.4f %8.4f %8.4f\n",i+1,d.p[i].site,d.p[i].mjd,d.p[i].ra,d.p[i].de,d.p[i].dx,d.p[i].dy,d.p[i].dz,d.p[i].dt);
+    }
+
+    // Time select
+    if (c=='T') {
+      printf("Provide time range:\n");
+      scanf("%f %f",&tmin,&tmax);
+      for (i=0;i<d.n;i++) {
+	if (d.p[i].flag!=2 && d.p[i].mjd>=(tmin+mjd0) && d.p[i].mjd<(tmax+mjd0))
+	  d.p[i].flag=2;
+      }
+      redraw=1;
+    }
+    
 
     // Default tle
     if (c=='t') {
@@ -1031,6 +1070,7 @@ struct point decode_iod_observation(char *iod_line)
   // Get site
   sscanf(iod_line+16,"%4d",&site_id);
   s=get_site(site_id);
+  p.site=site_id;
 
   // Decode date/time
   sscanf(iod_line+23,"%4d%2d%2d%2d%2d%5s",&year,&month,&iday,&hour,&min,secbuf);
@@ -1204,11 +1244,11 @@ struct data read_data(char *filename)
 // Chi-squared
 double chisq(double a[])
 {
-  int i,imode,nsel;
+  int i,j,imode,nsel;
   double chisq,rms;
   xyz_t satpos,satvel;
   double dx,dy,dz;
-  double r;
+  double r,jd,ra,de,rx[2],ry[2],drx,dry;
 
   // Construct struct
   // a[0]: inclination
@@ -1248,21 +1288,39 @@ double chisq(double a[])
 
   // Loop over points
   for (i=0,nsel=0,chisq=0.0,rms=0.0;i<d.n;i++) {
-    // Get satellite position
-    satpos_xyz(d.p[i].mjd+2400000.5,&satpos,&satvel);
+    for (j=0;j<2;j++) {
+      jd=d.p[i].mjd+2400000.5+(double) j/86400;
+
+      // Get satellite position
+      satpos_xyz(jd,&satpos,&satvel);
       
-    // compute difference vector
-    dx=satpos.x-d.p[i].obspos.x;  
-    dy=satpos.y-d.p[i].obspos.y;
-    dz=satpos.z-d.p[i].obspos.z;
+      // compute difference vector
+      dx=satpos.x-d.p[i].obspos.x;  
+      dy=satpos.y-d.p[i].obspos.y;
+      dz=satpos.z-d.p[i].obspos.z;
       
-    // Celestial position
-    r=sqrt(dx*dx+dy*dy+dz*dz);
-    d.p[i].rac=modulo(atan2(dy,dx)*R2D,360.0);
-    d.p[i].dec=asin(dz/r)*R2D;
+      // Celestial position
+      r=sqrt(dx*dx+dy*dy+dz*dz);
+      ra=modulo(atan2(dy,dx)*R2D,360.0);
+      de=asin(dz/r)*R2D;
       
-    // Compute offset
-    forward(d.p[i].ra,d.p[i].de,d.p[i].rac,d.p[i].dec,&d.p[i].dx,&d.p[i].dy);
+      // Compute offset
+      forward(d.p[i].ra,d.p[i].de,ra,de,&rx[j],&ry[j]);
+
+      // Store
+      if (j==0) {
+	d.p[i].dx=rx[0];
+	d.p[i].dy=ry[0];
+	d.p[i].rac=ra;
+	d.p[i].dec=de;
+      }
+    }
+    drx=rx[1]-rx[0];
+    dry=ry[1]-ry[0];
+    d.p[i].dt=-(rx[0]*drx+ry[0]*dry)/(drx*drx+dry*dry);
+    d.p[i].dz=sqrt(pow(dry*rx[0]-drx*ry[0],2)/(drx*drx+dry*dry));
+    if ((-rx[0]*drx-ry[0]*dry)<0.0)
+      d.p[i].dz*=-1;
     d.p[i].dr=sqrt(d.p[i].dx*d.p[i].dx+d.p[i].dy*d.p[i].dy);
 
     if (d.p[i].flag==2) {
@@ -1417,8 +1475,20 @@ void time_range(double *mjdmin,double *mjdmax,int flag)
   int i,n;
   float c;
 
-  for (i=0,n=0;i<d.n;i++) {
-    if (d.p[i].flag==flag) {
+  if (flag>=0) {
+    for (i=0,n=0;i<d.n;i++) {
+      if (d.p[i].flag==flag) {
+	if (n==0) {
+	  *mjdmin=d.p[i].mjd;
+	  *mjdmax=d.p[i].mjd;
+	}
+	if (d.p[i].mjd< *mjdmin) *mjdmin=d.p[i].mjd;
+	if (d.p[i].mjd> *mjdmax) *mjdmax=d.p[i].mjd;
+	n++;
+      }
+    }
+  } else {
+    for (i=0,n=0;i<d.n;i++) {
       if (n==0) {
 	*mjdmin=d.p[i].mjd;
 	*mjdmax=d.p[i].mjd;
@@ -1429,6 +1499,8 @@ void time_range(double *mjdmin,double *mjdmax,int flag)
     }
   }
   c=0.1*(*mjdmax- *mjdmin);
+  if (c<0.1)
+    c=0.1;
   *mjdmin-=c;
   *mjdmax+=c;
 
