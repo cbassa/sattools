@@ -518,7 +518,7 @@ int main(int argc,char *argv[])
   for (;;) {
     if (redraw!=0) {
       if (redraw==1) 
-	cpgeras();
+	cpgpage();
       cpgsci(1);
       
       cpgsvp(0.1,0.9,0.1,0.85);

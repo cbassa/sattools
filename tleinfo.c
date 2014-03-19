@@ -164,7 +164,7 @@ int main(int argc,char *argv[])
   char *env;
 
   env=getenv("ST_TLEDIR");
-  sprintf(tlefile,"%s/classfd.tle",env);
+  sprintf(tlefile,"%s/bulk.tle",env);
 
   // Decode options
   while ((arg=getopt(argc,argv,"c:i:aH1ft"))!=-1) {

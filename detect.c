@@ -600,9 +600,15 @@ int main(int argc,char *argv[])
   img.nx=ff.naxis1;
   img.ny=ff.naxis2;
   img.z=(float *) malloc(img.nx*img.ny*sizeof(float));
-  for (i=0;i<ff.naxis1*ff.naxis2;i++) 
-    img.z[i]=(ff.zmax[i]-ff.zavg[i])/ff.zstd[i]>sigma;
-
+  for (i=0;i<ff.naxis1;i++) {
+    for (j=0;j<ff.naxis2;j++) {
+      k=i+ff.naxis1*j;
+      img.z[k]=(ff.zmax[k]-ff.zavg[k])/ff.zstd[k];
+      if (img.z[k]>sigma)
+	printf("%d %d %f\n",i,j,ff.dt[(int) ff.znum[k]]);
+    }
+  }
+  return 0;
   // Loop over lines
   for (k=0;;k++) {
     // Generate mask
