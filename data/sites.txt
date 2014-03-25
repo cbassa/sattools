@@ -52,7 +52,8 @@
 4160 BD   51.2793    5.4768     35    Bram Dorreman
 9000 SL   28.2997  -16.5083   2000    Slooh
 9999 GR   47.348     5.5151    100    Graves
-0000 NP   90.0000    0.0000      0    North Pole
+0000 PR   18.22    -65.66        0    Cdr. R. H. Healy
+#0000 NP   90.0000    0.0000      0    North Pole
 #0000 MP   33.3563 -116.8648   1713    Hale Telescope
 #0000 JH   28.7564  -17.8889   2308    Jan Hattenbach
 #0000 MB   44.6500  -63.6000      0    Michael Boschat
