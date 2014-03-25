@@ -14,11 +14,6 @@
 #define CK2     5.413080e-4   /* (0.5 * XJ2 * AE * AE) */
 extern double SGDP4_jd0;
 
-void usage(void)
-{
-  return;
-}
-
 // Compute Julian Day from Date
 double date2mjd(int year,int month,double day)
 {
@@ -182,6 +177,14 @@ void format_tle(orbit_t orb,char *line1,char *line2)
       csum++;
   }
   sprintf(line2,"%s%d",line2,csum%10);
+
+  return;
+}
+
+void usage(void)
+{
+  printf("launch tle c:i:t:T:I:d:\n\n");
+  printf("-c  reference tle\n-i  reference satno\n-t  reference launch time\n-T  launch time\n-I  output satno\n-d  output desig\n");
 
   return;
 }

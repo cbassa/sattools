@@ -1005,7 +1005,6 @@ struct image read_fits(char *filename)
   for (i=0;i<img.naxis1*img.naxis2;i++) 
     img.mask[i]=1;
 
-
   return img;
 }
 
