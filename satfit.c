@@ -146,6 +146,8 @@ int period_search(void)
   return;
 }
 
+
+
 int revsearch(void)
 {
   int i,satno=88300;
@@ -1478,7 +1480,8 @@ void fit(orbit_t orb,int *ia)
   int i,n;
   double a[7],da[7];
   //  double db[7]={5.0,5.0,0.1,5.0,5.0,0.5,0.0001};
-  double db[7]={1.0,1.0,0.02,1.0,1.0,0.1,0.0001};
+  //  double db[7]={1.0,1.0,0.02,1.0,1.0,0.1,0.0001};
+  double db[7]={0.1,0.1,0.002,0.1,0.1,0.01,0.00001};
 
   a[0]=orb.eqinc*R2D;
   da[0]=da[0]*R2D;

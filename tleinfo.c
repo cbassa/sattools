@@ -155,7 +155,7 @@ int main(int argc,char *argv[])
 {
   int arg=0,satno=0,header=0,oneline=0,no,time=0;
   char tlefile[LIM];
-  char line0[70],line1[70],line2[70],nfd[32];
+  char line0[LIM],line1[LIM],line2[LIM],nfd[32];
   FILE *file;
   orbit_t orb;
   float aodp,perigee,apogee,period;
@@ -217,7 +217,6 @@ int main(int argc,char *argv[])
 
     // Loop over file
     while (fgetline(file,line0,LIM)>0) {
-
       // Read data lines
       if (line0[0]!='1' || line0[0]!='2') {
 	fgetline(file,line1,LIM);

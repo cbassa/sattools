@@ -262,12 +262,17 @@ int main(int argc,char *argv[])
   initialize_setup();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:l:hS:A:aPq"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:l:hS:A:aPqm:"))!=-1) {
     switch (arg) {
       
     case 't':
       strcpy(m.nfd,optarg);
       m.mjd=nfd2mjd(m.nfd);
+      break;
+
+    case 'm':
+      m.mjd=atof(optarg);
+      mjd2date(m.mjd,m.nfd,0);
       break;
 
     case 'c':
@@ -329,6 +334,9 @@ int main(int argc,char *argv[])
   // Compute observer positions
   compute_observer_and_solar_positions();
 
+  // Reloop stderr
+  freopen("/tmp/stderr.txt","w",stderr);
+
   // Open TLE file
   file=fopen(m.tlefile,"r");
   if (file==NULL)
@@ -350,6 +358,7 @@ int main(int argc,char *argv[])
   
   // Close
   fclose(file);
+  fclose(stderr);
 
   // Sort passes
   qsort(p,npass,sizeof(struct pass),qsort_compare_mjdrise);
