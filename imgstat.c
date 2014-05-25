@@ -192,8 +192,7 @@ int main(int argc,char *argv[])
   // Get horizontal coordinates
   equatorial2horizontal(img.mjd,ra,de,&azi,&alt);
   azi=modulo(azi+180,360);
-  //  printf("%s %14.8lf %10.6f %10.6f %.2f %.2f %.2f %.2f %.2f %.2f %.1f %.1f\n",argv[1],img.mjd,img.ra0,img.de0,wx,wy,sx,sy,img.xrms,img.yrms,zavg,zstd);
-  printf("%s %14.8lf %10.6f %10.6f %10.6f %10.6f %10.6f %10.6f\n",argv[1],img.mjd,img.ra0,img.de0,ra,de,azi,alt);
+  printf("%s %14.8lf %10.6f %10.6f %10.6f %10.6f %.2f %.2f %.1f %.1f\n",argv[1],img.mjd,img.ra0,img.de0,azi,alt,img.xrms,img.yrms,zavg,zstd);
 
   return 0;
 }
