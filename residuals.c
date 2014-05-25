@@ -537,8 +537,10 @@ struct data read_data(char *filename)
 
   // Read data
   i=0;
-  while (fgetline(file,line,LIM)>0) 
-    d.p[i++]=decode_iod_observation(line);
+  while (fgetline(file,line,LIM)>0) {
+    if (isdigit(line[0]))
+      d.p[i++]=decode_iod_observation(line);
+  }
 
   // Close file
   fclose(file);
