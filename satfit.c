@@ -146,6 +146,74 @@ int period_search(void)
   return;
 }
 
+int ewsearch(void)
+{
+  int i,satno=88300;
+  double mjdmin,mjdmax;
+  int ia[7]={0,0,0,0,0,0,0};
+  double ecc,eccmin,eccmax,decc;
+  double rev,revmin,revmax,drev;
+  double argp,argpmin,argpmax,dargp;
+  char line1[70],line2[70];
+  FILE *file,*tlefile;
+  int year,month;
+  double day;
+
+  // Provide 
+  printf("Eccentricity [min, max, stepsize]: \n");
+  scanf("%lf %lf %lf",&eccmin,&eccmax,&decc);
+  printf("Argument of perigee [min, max, stepsize]: \n");
+  scanf("%lf %lf %lf",&argpmin,&argpmax,&dargp);
+
+  // Step 2: get time range
+  time_range(&mjdmin,&mjdmax,2);
+
+  // Open files
+  file=fopen("search.dat","w");
+  tlefile=fopen("search.tle","w");
+
+  // Step 4: Loop over eccentricity
+  for (ecc=eccmin;ecc<eccmax;ecc+=decc) {
+    for (argp=argpmin;argp<argpmax;argp+=dargp) {
+      orb.satno=satno++;
+      orb.ecc=ecc;
+      orb.argp=argp*D2R;
+    
+      // Set parameters
+      for (i=0;i<7;i++) 
+	ia[i]=0;
+	
+      // Step 4: loop over parameters
+      for (i=0;i<4;i++) {
+	if (i==0) ia[4]=1;
+	if (i==1) ia[1]=1;
+	if (i==2) ia[0]=1;
+	if (i==3) ia[5]=1;
+	//	if (i==4) ia[3]=1;
+	
+	// Do fit
+	fit(orb,ia);
+      }
+      fit(orb,ia);
+      fit(orb,ia);
+      fit(orb,ia);
+      printf("%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
+      fprintf(file,"%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
+      
+      format_tle(orb,line1,line2);
+      fprintf(tlefile,"OBJ\n%s\n%s\n",line1,line2);
+      mjd2date(mjdmin,&year,&month,&day);
+      fprintf(tlefile,"# %4d%02d%05.2lf-",year,month,day);
+      mjd2date(mjdmax,&year,&month,&day);
+      fprintf(tlefile,"%4d%02d%05.2lf, %d measurements, %.5lf deg rms\n",year,month,day,d.n,d.rms);
+    }
+    fprintf(file,"\n");
+  }
+  fclose(file);
+  fclose(tlefile);
+
+  return orb.satno;
+}
 
 
 int revsearch(void)
@@ -694,6 +762,13 @@ int main(int argc,char *argv[])
       satno=revsearch();
       plot_residuals=1;
       //      ia[0]=ia[1]=ia[4]=ia[5]=ia[2]=1;
+      redraw=1;
+    }
+
+    // EW search
+    if (c=='e') {
+      satno=ewsearch();
+      plot_residuals=1;
       redraw=1;
     }
 
