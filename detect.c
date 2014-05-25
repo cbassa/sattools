@@ -5,8 +5,9 @@
 #include "qfits.h"
 #include "cel.h"
 #include "cpgplot.h"
+#include <getopt.h>
 
-#define LIM 80
+#define LIM 192
 #define NMAX 256
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI
@@ -24,117 +25,24 @@ struct fourframe {
   char nfd[32];
   int cospar;
 };
-struct image {
-  int nx,ny;
-  float *z;
-  float xmin,xmax,ymin,ymax;
-};
 struct observation {
   int satno,cospar;
-  char desig[16],conditions,behavior;
+  char desig[16],conditions,behavior,catalog[32],comment[LIM];
   double mjd,ra,de;
   float terr,perr,tmid;
   char nfd[32],pos[32];
   int epoch,type;
   char iod_line[80];
-  float x[3],y[3];
+  float x[3],y[3],t[3],dxdt,dydt,drdt;
   int state;
 };
-
+struct point 
+{
+  float x,y,t,sigma;
+  int flag;
+};
 struct fourframe read_fits(char *filename);
 
-struct image hough_transform(struct image img,int nt,int nr)
-{
-  int i,j,k,l,ii,jj;
-  struct image h;
-  float x,y;
-
-  // Limits
-  h.xmin=0.0;
-  h.xmax=M_PI;
-  h.ymin=-sqrt(img.nx*img.nx+img.ny*img.ny);
-  h.ymax=sqrt(img.nx*img.nx+img.ny*img.ny);
-
-  // Initialize
-  h.nx=nt;
-  h.ny=nr;
-  h.z=(float *) malloc(h.nx*h.ny*sizeof(float));
-  for (i=0;i<h.nx*h.ny;i++)
-    h.z[i]=0.0;
-
-  // Loop over image
-  for (i=0;i<img.nx;i++) {
-    for (j=0;j<img.ny;j++) {
-      k=i+img.nx*j;
-
-      if (img.z[k]<1.0)
-	continue;
-
-      for (l=0;l<h.nx;l++) {
-	x=M_PI*(float) l/(float) (h.nx-1);
-	y=(float) i*cos(x)+(float) j*sin(x);
-	ii=(int) ((x-h.xmin)/(h.xmax-h.xmin)*h.nx);
-	jj=(int) ((y-h.ymin)/(h.ymax-h.ymin)*h.ny);
-
-	if (ii>0 && ii<h.nx && jj>0 && jj<h.ny)
-	  h.z[ii+h.nx*jj]+=1.0;
-      }
-    }
-  }
-
-  return h;
-}
-
-float hough_peak(struct image h,float *a)
-{
-  int i,j,k,imax,jmax;
-  float hmax;
-  float x,y;
-
-  for (i=0;i<h.nx;i++) {
-    for (j=0;j<h.ny;j++) {
-      k=i+h.nx*j;
-      if (k==0 || h.z[k]>hmax) {
-	imax=i;
-	jmax=j;
-	hmax=h.z[k];
-      }
-    }
-  }
-  x=h.xmin+(h.xmax-h.xmin)*(float) imax/(float) (h.nx-1);
-  y=h.ymin+(h.ymax-h.ymin)*(float) jmax/(float) (h.ny-1);
-  a[0]=y/sin(x);
-  a[1]=-cos(x)/sin(x);
-
-  return hmax;
-}
-
-void update_mask(struct fourframe *ff,float *a,float w,int l)
-{
-  int i,j,k;
-  float phi,sa,ca;
-  float x,y,x0,y0;
-
-  // Angle
-  phi=-atan2(a[1],1.0);
-  sa=sin(phi);
-  ca=cos(phi);
-
-  // Loop over pixels
-  for (i=0;i<ff->naxis1;i++) {
-    for (j=0;j<ff->naxis2;j++) {
-      k=i+ff->naxis1*j;
-      x0=(float) i;
-      y0=(float) j-a[0];
-      x=ca*x0-sa*y0;
-      y=sa*x0+ca*y0;
-      if (fabs(y)<0.5*w && ff->mask[k]==1)
-	ff->mask[k]=l;
-    }
-  }
-
-  return;
-}
 
 // Linear least squares fit                                                     
 float linear_fit(float x[],float y[],float w[],int n,float a[],float sa[])
@@ -398,7 +306,7 @@ void reduce_point(struct observation *obs,struct fourframe img,float tmid,float 
   return;
 }
 
-void fit(struct observation *obs,struct fourframe ff,int mask)
+void fit(struct observation *obs,struct fourframe ff,struct point *p,int np,int flag)
 {
   int i,j,k,l,n,m;
   float *t,*dt,*x,*y,*w;
@@ -406,88 +314,72 @@ void fit(struct observation *obs,struct fourframe ff,int mask)
   float chi2x,chi2y,ax[2],sax[2],ay[2],say[2];
   float dx,dy,dr,rmsx,rmsy;
 
-  // Iterate
-  for (m=0;m<10;m++) {
-    // Count number of points
-    for (i=0,n=0;i<ff.naxis1*ff.naxis2;i++)
-      if (ff.mask[i]==mask)
-	n++;
+  // Count number of points
+  for (i=0,n=0;i<np;i++)
+    if (p[i].flag==flag)
+      n++;
     
-    // Allocate
-    t=(float *) malloc(sizeof(float)*n);
-    dt=(float *) malloc(sizeof(float)*n);
-    x=(float *) malloc(sizeof(float)*n);
-    y=(float *) malloc(sizeof(float)*n);
-    w=(float *) malloc(sizeof(float)*n);
-    
-    // Fill
-    for (i=0,l=0;i<ff.naxis1;i++) {
-      for (j=0;j<ff.naxis2;j++) {
-	k=i+ff.naxis1*j;
-	if (ff.mask[k]==mask) {
-	  x[l]=(float) i+0.5;
-	  y[l]=(float) j+0.5;
-	  w[l]=(ff.zmax[k]-ff.zavg[k])/ff.zstd[k];
-	  t[l]=ff.dt[(int) ff.znum[k]];
-	  l++;
-	}
-      }
-    }
-    
-    // Find limits in time
-    for (i=0;i<n;i++) {
-      if (i==0) {
-	tmin=t[i];
-	tmax=t[i];
-      } else {
-	if (t[i]<tmin) tmin=t[i];
-	if (t[i]>tmax) tmax=t[i];
-      }
-    }
-    tmid=0.5*(tmin+tmax);
-    
-    // Shift in time
-    for (i=0;i<n;i++)
-      dt[i]=t[i]-tmid;
-    
-    // Fit x-pixel position
-    chi2x=linear_fit(dt,x,w,n,ax,sax);
-    
-    // Fit x-pixel position
-    chi2y=linear_fit(dt,y,w,n,ay,say);
-    
-    // Compute rms
-    for (i=0,rmsx=0.0,rmsy=0.0;i<n;i++) {
-      rmsx+=pow(x[i]-(ax[0]+ax[1]*dt[i]),2);
-      rmsy+=pow(y[i]-(ay[0]+ay[1]*dt[i]),2);
-    }
-    rmsx=sqrt(rmsx/(float) (n-1));
-    rmsy=sqrt(rmsy/(float) (n-1));
-
-    // Update mask
-    for (i=0;i<ff.naxis1;i++) {
-      for (j=0;j<ff.naxis2;j++) {
-	k=i+ff.naxis1*j;
-	if (ff.mask[k]==mask) {
-	  dx=(float) i+0.5-(ax[0]+ax[1]*(ff.dt[(int) ff.znum[k]]-tmid));
-	  dy=(float) j+0.5-(ay[0]+ay[1]*(ff.dt[(int) ff.znum[k]]-tmid));
-	  if (dx>3.0*rmsx || dy>3.0*rmsy)
-	    ff.mask[k]=0;
-	}
-      }
+  // Allocate
+  t=(float *) malloc(sizeof(float)*n);
+  dt=(float *) malloc(sizeof(float)*n);
+  x=(float *) malloc(sizeof(float)*n);
+  y=(float *) malloc(sizeof(float)*n);
+  w=(float *) malloc(sizeof(float)*n);
+  
+  // Fill
+  for (i=0,l=0;i<np;i++) {
+    if (p[i].flag==flag) {
+      x[l]=p[i].x;
+      y[l]=p[i].y;
+      w[l]=1.0;
+      t[l]=p[i].t;
+      l++;
     }
   }
-  printf("%d points, rms (%g, %g), chi2 (%g, %g)\n",n,rmsx,rmsy,chi2x,chi2y);
-  //  printf("x: %6.2f +- %.2f  %7.3f +- %.3f  %8.2f; %f pix/s\n",ax[0],sax[0],ax[1],sax[1],chi2x,ax[1]/ff.nframes*ff.exptime);
-  //  printf("y: %6.2f +- %.2f  %7.3f +- %.3f  %8.2f; %f pix/s\n",ay[0],say[0],ay[1],say[1],chi2y,ay[1]/ff.nframes*ff.exptime);
+  
+  // Find limits in time
+  for (i=0;i<n;i++) {
+    if (i==0) {
+      tmin=t[i];
+      tmax=t[i];
+    } else {
+      if (t[i]<tmin) tmin=t[i];
+      if (t[i]>tmax) tmax=t[i];
+    }
+  }
+  tmid=0.5*(tmin+tmax);
+  
+  // Shift in time
+  for (i=0;i<n;i++)
+    dt[i]=t[i]-tmid;
+  
+  // Fit x-pixel position
+  chi2x=linear_fit(dt,x,w,n,ax,sax);
+  
+  // Fit x-pixel position
+  chi2y=linear_fit(dt,y,w,n,ay,say);
+  
+  // Compute rms
+  for (i=0,rmsx=0.0,rmsy=0.0;i<n;i++) {
+    rmsx+=pow(x[i]-(ax[0]+ax[1]*dt[i]),2);
+    rmsy+=pow(y[i]-(ay[0]+ay[1]*dt[i]),2);
+  }
+  rmsx=sqrt(rmsx/(float) (n-1));
+  rmsy=sqrt(rmsy/(float) (n-1));
 
   obs->x[0]=ax[0];
   obs->y[0]=ay[0];
+  obs->t[0]=tmid;
   obs->x[1]=ax[0]+ax[1]*(tmin-tmid);
   obs->y[1]=ay[0]+ay[1]*(tmin-tmid);
+  obs->t[1]=tmin;
   obs->x[2]=ax[0]+ax[1]*(tmax-tmid);
   obs->y[2]=ay[0]+ay[1]*(tmax-tmid);
+  obs->t[2]=tmax;
   obs->state=1;
+  obs->dxdt=(obs->x[2]-obs->x[1])/(obs->t[2]-obs->t[1]);
+  obs->dydt=(obs->y[2]-obs->y[1])/(obs->t[2]-obs->t[1]);
+  obs->drdt=sqrt(obs->dxdt*obs->dxdt+obs->dydt*obs->dydt);
 
   // Reduce point
   reduce_point(obs,ff,tmid,ax[0],ay[0]);
@@ -536,55 +428,244 @@ void format_iod_line(struct observation *obs)
   return;
 }
 
+// Read a line of maximum length int lim from file FILE into string s
+int fgetline(FILE *file,char *s,int lim)
+{
+  int c,i=0;
+
+  while (--lim > 0 && (c=fgetc(file)) != EOF && c != '\n')
+    s[i++] = c;
+  if (c == '\t')
+    c=' ';
+  if (c == '\n')
+    s[i++] = c;
+  s[i] = '\0';
+  return i;
+}
+
+void find_designation(int satno0,char *desig0)
+{
+  FILE *file;
+  int satno;
+  char desig[16];
+  char *env,filename[128];
+
+  // Environment variables
+  env=getenv("ST_DATADIR");
+  sprintf(filename,"%s/data/desig.txt",env);
+
+  file=fopen(filename,"r");
+  if (file==NULL) {
+    fprintf(stderr,"Designation file not found!\n");
+    exit(0);
+  }
+  while (!feof(file)) {
+    fscanf(file,"%d %s",&satno,desig);
+    if (satno==satno0) {
+      strcpy(desig0,desig);
+      break;
+    }
+  }
+  fclose(file);
+
+  return;
+}
+
+void identify_observation(struct observation *obs,char *fileroot,float drmin,float amin)
+{
+  FILE *file;
+  float x0,y0,x1,y1,x,y,texp;
+  double mjd;
+  int satno,flag=0,i;
+  char nfd[32],filename[LIM],line[LIM],catalog[LIM];
+  float dx,dy,dr,dxdt,dydt,drdt,angle,dp;
+
+  // Open ID file
+  sprintf(filename,"%s.id",fileroot);
+  file=fopen(filename,"r");
+  if (file==NULL) {
+    fprintf(stderr,"ID file %s not found\n",filename);
+    return;
+  }
+  while (fgetline(file,line,LIM)>0) {
+    sscanf(line,"%s %f %f %f %f %f %d %s",nfd,&x0,&y0,&x1,&y1,&texp,&satno,catalog);
+
+    // Predicted pixel rates
+    dxdt=(x1-x0)/texp;
+    dydt=(y1-y0)/texp;
+    drdt=sqrt(dxdt*dxdt+dydt*dydt);
+    x=x0+dxdt*obs->t[0];
+    y=y0+dydt*obs->t[0];
+
+    // Compare
+    dx=x-obs->x[0];
+    dy=y-obs->y[0];
+    dr=sqrt(dx*dx+dy*dy);
+    dp=(dxdt*obs->dxdt+dydt*obs->dydt)/(obs->drdt*drdt);
+    if (dp<=1.0)
+      angle=acos(dp)*R2D;
+    else
+      angle=0.0;
+
+    // Identify
+    if (dr<drmin && angle<amin) {
+      obs->satno=satno;
+      if (strstr(catalog,"classfd.tle")!=NULL)
+	strcpy(obs->catalog,"classfd");
+      if (strstr(catalog,"inttels.tle")!=NULL)
+	strcpy(obs->catalog,"classfd");
+      else if (strstr(catalog,"catalog.tle")!=NULL)
+	strcpy(obs->catalog,"catalog");
+    }
+  }
+  fclose(file);
+
+  return;
+}
+
 void write_observation(struct observation obs)
 {
   FILE *file;
+  char filename[LIM];
 
-  file=fopen("detect.dat","a");
-  fprintf(file,"%s\n",obs.iod_line);
+  sprintf(filename,"%s.dat",obs.catalog);
+
+  file=fopen(filename,"a");
+  fprintf(file,"%s\n%s\n",obs.comment,obs.iod_line);
   fclose(file);
+
+  return;
+}
+
+int qsort_compare_sigma(const void *a,const void *b) 
+{ 
+  struct point *pa=(struct point *) a;
+  struct point *pb=(struct point *) b;
+
+  if (pa->sigma<pb->sigma)
+    return 1;
+  else if (pa->sigma>pb->sigma)
+    return -1;
+  else
+    return 0;
+} 
+
+void overlay_predictions(char *fitsfile,struct fourframe ff)
+{
+  float x0,y0,x1,y1,texp;
+  int satno,isch;
+  char filename[LIM],line[LIM],nfd[32],catalog[LIM],text[8];
+  FILE *file;
+  float t,x,y;
+
+  cpgqci(&isch);
+
+  sprintf(filename,"%s.id",fitsfile);
+
+  // Open ID file
+  file=fopen(filename,"r");
+  if (file==NULL) {
+    fprintf(stderr,"ID file %s not found\n",filename);
+    return;
+  }
+  while (fgetline(file,line,LIM)>0) {
+    sscanf(line,"%s %f %f %f %f %f %d %s",nfd,&x0,&y0,&x1,&y1,&texp,&satno,catalog);
+
+    if (strstr(catalog,"classfd")!=NULL)
+      cpgsci(4);
+    else if (strstr(catalog,"catalog")!=NULL)
+      cpgsci(0);
+    else if (strstr(catalog,"inttles")!=NULL)
+      cpgsci(3);
+    
+    cpgpt1(x0,y0,17);
+    cpgmove(x0,y0);
+    cpgdraw(x1,y1);
+
+    // plot text
+    cpgsch(0.65);
+    sprintf(text," %05d",satno);
+    for (t=0.0;t<1.0;t+=0.1) {
+      x=x0+(x1-x0)*t;
+      y=y0+(y1-y0)*t;
+      if (x>0.0 && y>0.0 && x<ff.naxis1 && y<ff.naxis2) {
+	cpgtext(x,y,text);
+	break;
+      }
+    }
+    cpgsch(1.0);
+    cpgsci(isch);
+  }
+  fclose(file);
+
 
   return;
 }
 
 int main(int argc,char *argv[])
 {
-  int i,j,k,imax,jmax,kmax;
-  int flag=0;
+  int i,j,k,l,m,n,flag=0;
+  int imax,jmax,mmax,mmin=50,nmax;
+  float ax,bx,ay,by,dx,dy,dr,drmin=5.0,amin=5.0,rmin=20;
   struct fourframe ff;
-  struct image img,mask,hough;
-  float sigma=5.0,hmax,a[2],hall,fraq;
   struct observation obs;
-  char *env;
+  char *env,*fitsfile;
   float tr[]={-0.5,1.0,0.0,-0.5,0.0,1.0};
   float heat_l[] = {0.0, 0.2, 0.4, 0.6, 1.0};
   float heat_r[] = {0.0, 0.5, 1.0, 1.0, 1.0};
   float heat_g[] = {0.0, 0.0, 0.5, 1.0, 1.0};
   float heat_b[] = {0.0, 0.0, 0.0, 0.3, 1.0};
   float zavg,zstd,zmin,zmax;
-  char filename[LIM],text[128];
+  char filename[LIM],text[128],catalog[128];
+  float sigma=5.0;
+  struct point *p;
+  int arg=0,satno,plot=0;
+  FILE *file;
 
-  env=getenv("ST_COSPAR");
-  // Default observation
-  obs.satno=99999;
-  strcpy(obs.desig,"99999U");
-  obs.cospar=atoi(env);
-  obs.conditions='G';
-  strcpy(obs.nfd,"YYYYMMDDHHMMSSsss");
-  obs.terr=0.1;
-  strcpy(obs.pos,"HHMMmmm+DDMMmm");
-  strcpy(obs.iod_line,"");
-  obs.perr=0.3;
-  obs.epoch=5;
-  obs.type=2;
-  obs.behavior='S';
-  obs.state=0;
+  // Decode options
+  if (argc>1) {
+    while ((arg=getopt(argc,argv,"f:s:R:r:a:pn:"))!=-1) {
+      switch(arg) {
+	
+      case 'f':
+	fitsfile=optarg;
+	break;
+	
+      case 'p':
+	plot=1;
+	break;
+
+      case 's':
+	sigma=atof(optarg);
+	break;
+
+      case 'R':
+	drmin=atof(optarg);
+	break;
+
+      case 'r':
+	rmin=atof(optarg);
+	break;
+
+      case 'n':
+	mmin=atoi(optarg);
+	break;
+
+      case 'a':
+	amin=atoi(optarg);
+	break;
+
+      default:
+	return 0;
+	break;
+      }
+    }
+  } else {
+    return 0;
+  }
 
   // Read
-  if (argc==2)
-    ff=read_fits(argv[1]);
-  else
-    ff=read_fits("test1.fits");
+  ff=read_fits(fitsfile);
 
   // Determine limits
   for (i=0,zavg=0.0;i<ff.naxis1*ff.naxis2;i++)
@@ -596,106 +677,197 @@ int main(int argc,char *argv[])
   zmin=zavg-2*zstd;
   zmax=zavg+6*zstd;
 
-  // Create image
-  img.nx=ff.naxis1;
-  img.ny=ff.naxis2;
-  img.z=(float *) malloc(img.nx*img.ny*sizeof(float));
-  for (i=0;i<ff.naxis1;i++) {
+  // Count points
+  for (i=0,n=0;i<ff.naxis1*ff.naxis2;i++) 
+    if ((ff.zmax[i]-ff.zavg[i])/ff.zstd[i]>sigma)
+      n++;
+  printf("%d points above %g sigma\n",n,sigma);
+  
+  // Exit if too many
+  if (n>2500) {
+    file=fopen("skipped.dat","a");
+    fprintf(file,"%s : %d points above %g sigma\n",fitsfile,n,sigma);
+    fclose(file);
+    return 0;
+  }
+
+  // Fill points
+  p=(struct point *) malloc(sizeof(struct point)*n);
+  for (i=0,l=0;i<ff.naxis1;i++) {
     for (j=0;j<ff.naxis2;j++) {
       k=i+ff.naxis1*j;
-      img.z[k]=(ff.zmax[k]-ff.zavg[k])/ff.zstd[k];
-      if (img.z[k]>sigma)
-	printf("%d %d %f\n",i,j,ff.dt[(int) ff.znum[k]]);
-    }
-  }
-  return 0;
-  // Loop over lines
-  for (k=0;;k++) {
-    // Generate mask
-    for (i=0,hall=0;i<img.nx*img.ny;i++) {
-      if ((ff.zmax[i]-ff.zavg[i])/ff.zstd[i]>sigma && ff.mask[i]>=0) {
-	img.z[i]=1.0;
-	ff.mask[i]=1;
-	hall++;
-      } else {
-	img.z[i]=0.0;
+      if ((ff.zmax[k]-ff.zavg[k])/ff.zstd[k]>sigma) {
+	p[l].x=(float) i;
+	p[l].y=(float) j;
+	p[l].t=ff.dt[(int) ff.znum[k]];
+	p[l].sigma=(ff.zmax[k]-ff.zavg[k])/ff.zstd[k];
+	p[l].flag=0;
+	l++;
       }
     }
+  }
 
-    // Compute Hough transform
-    hough=hough_transform(img,1000,1000);
+  // Exit if no significant points
+  if (l==0)
+    return 0;
 
-    // Find highest peak
-    hmax=hough_peak(hough,a);
+  // Sort on sigma
+  qsort(p,n,sizeof(struct point),qsort_compare_sigma);
 
-    // End
-    if (hmax/hall<0.01 || hmax<20)
+  // Loop over possible lines
+  for (l=1;l<10;l++) {
+    // Default observation
+    env=getenv("ST_COSPAR");
+    obs.satno=99999;
+    strcpy(obs.catalog,"unidentified");
+    strcpy(obs.desig,"99999U");
+    obs.cospar=atoi(env);
+    obs.conditions='G';
+    strcpy(obs.nfd,"YYYYMMDDHHMMSSsss");
+    obs.terr=0.1;
+    strcpy(obs.pos,"HHMMmmm+DDMMmm");
+    strcpy(obs.iod_line,"");
+    obs.perr=0.3;
+    obs.epoch=5;
+    obs.type=2;
+    obs.behavior=' ';
+    obs.state=0;
+
+    // Loop over start point
+    for (i=0,mmax=0;i<n;i++) {
+      // Skip if already selected
+      if (p[i].flag!=0)
+      	continue;
+
+      // Loop over end point
+      for (j=i+1;j<n;j++) {
+	// Skip if already selected
+	if (p[j].flag!=0)
+	  continue;
+
+	// Skip if times are equal
+	if (p[i].t==p[j].t)
+	  continue;
+
+	// Find line parameters
+	ax=(p[j].x-p[i].x)/(p[j].t-p[i].t);
+	bx=p[i].x-ax*p[i].t;
+	ay=(p[j].y-p[i].y)/(p[j].t-p[i].t);
+	by=p[i].y-ay*p[i].t;
+
+	// Loop over all points to find matches
+	for (k=0,m=0;k<n;k++) {
+	  dx=bx+ax*p[k].t-p[k].x;
+	  dy=by+ay*p[k].t-p[k].y;
+	  dr=sqrt(dx*dx+dy*dy);
+	  if (dr<drmin)
+	    m++;
+	}
+	if (m>mmax) {
+	  imax=i;
+	  jmax=j;
+	  mmax=m;
+	}
+      }
+    }
+    // Break if no points matched
+    if (mmax==0)
       break;
 
-    if (flag==0) {
-      sprintf(filename,"%s.png/png",argv[1]);
-      cpgopen(filename);
-      cpgpap(0.,1.0);
-      cpgsvp(0.1,0.95,0.1,0.8);
-      
-      cpgsch(0.8);
-      sprintf(text,"UT Date: %.23s  COSPAR ID: %04d",ff.nfd+1,ff.cospar);
-      cpgmtxt("T",6.0,0.0,0.0,text);
-      sprintf(text,"R.A.: %10.5f (%4.1f'') Decl.: %10.5f (%4.1f'')",ff.ra0,ff.xrms,ff.de0,ff.yrms);
-      cpgmtxt("T",4.8,0.0,0.0,text);
-      sprintf(text,"FoV: %.2f\\(2218)x%.2f\\(2218) Scale: %.2f''x%.2f'' pix\\u-1\\d",ff.naxis1*sqrt(ff.a[1]*ff.a[1]+ff.b[1]*ff.b[1])/3600.0,ff.naxis2*sqrt(ff.a[2]*ff.a[2]+ff.b[2]*ff.b[2])/3600.0,sqrt(ff.a[1]*ff.a[1]+ff.b[1]*ff.b[1]),sqrt(ff.a[2]*ff.a[2]+ff.b[2]*ff.b[2]));
-      cpgmtxt("T",3.6,0.0,0.0,text);
-      sprintf(text,"Stat: %5.1f+-%.1f (%.1f-%.1f)",zavg,zstd,zmin,zmax);
-      cpgmtxt("T",2.4,0.0,0.0,text);
-      
-      cpgsch(1.0);
-      cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
-      cpgwnad(0.0,(float) ff.naxis1,0.0,(float) ff.naxis2);
-      cpgimag(ff.zmax,ff.naxis1,ff.naxis2,1,ff.naxis1,1,ff.naxis2,zmin,zmax,tr);
-      //cpgwnad(0.0,(float) img.nx,0.0,(float) img.ny);
-      //  cpgimag(img.z,img.nx,img.ny,1,img.nx,1,img.ny,0.0,5.0,tr);
-      cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
-      flag=1;
+    // Find line parameters
+    ax=(p[jmax].x-p[imax].x)/(p[jmax].t-p[imax].t);
+    bx=p[imax].x-ax*p[imax].t;
+    ay=(p[jmax].y-p[imax].y)/(p[jmax].t-p[imax].t);
+    by=p[imax].y-ay*p[imax].t;
+    
+    // Print matches
+    for (k=0,m=0;k<n;k++) {
+      dx=bx+ax*p[k].t-p[k].x;
+      dy=by+ay*p[k].t-p[k].y;
+      dr=sqrt(dx*dx+dy*dy);
+      if (dr<drmin)
+	p[k].flag=l;
     }
+
+    // Found a match
+    if (mmax>mmin) {
+      if (flag==0) {
+	// Plot image
+	sprintf(filename,"%s_detect.png/png",fitsfile);
+	if (plot==0)
+	  cpgopen(filename);
+	else
+	  cpgopen("/xs");
+	cpgpap(0.,1.0);
+	cpgsvp(0.1,0.95,0.1,0.8);
+	
+	cpgsch(0.8);
+	sprintf(text,"UT Date: %.23s  COSPAR ID: %04d",ff.nfd+1,ff.cospar);
+	cpgmtxt("T",6.0,0.0,0.0,text);
+	sprintf(text,"R.A.: %10.5f (%4.1f'') Decl.: %10.5f (%4.1f'')",ff.ra0,ff.xrms,ff.de0,ff.yrms);
+	cpgmtxt("T",4.8,0.0,0.0,text);
+	sprintf(text,"FoV: %.2f\\(2218)x%.2f\\(2218) Scale: %.2f''x%.2f'' pix\\u-1\\d",ff.naxis1*sqrt(ff.a[1]*ff.a[1]+ff.b[1]*ff.b[1])/3600.0,ff.naxis2*sqrt(ff.a[2]*ff.a[2]+ff.b[2]*ff.b[2])/3600.0,sqrt(ff.a[1]*ff.a[1]+ff.b[1]*ff.b[1]),sqrt(ff.a[2]*ff.a[2]+ff.b[2]*ff.b[2]));
+	cpgmtxt("T",3.6,0.0,0.0,text);
+	sprintf(text,"Stat: %5.1f+-%.1f (%.1f-%.1f)",zavg,zstd,zmin,zmax);
+	cpgmtxt("T",2.4,0.0,0.0,text);
+	
+	cpgsch(1.0);
+	cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
+	cpgwnad(0.0,(float) ff.naxis1,0.0,(float) ff.naxis2);
+	cpgimag(ff.zmax,ff.naxis1,ff.naxis2,1,ff.naxis1,1,ff.naxis2,zmin,zmax,tr);
+	cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
+	cpgstbg(1);
+	flag=1;
+
+	overlay_predictions(fitsfile,ff);
+      }
+
+      // Fit
+      fit(&obs,ff,p,n,l);
       
-    printf("Hmax: %.0f/%.0f (%g), %g + %g x\n",hmax,hall,hmax/hall,a[0],a[1]);
-  
-    // Update mask
-    update_mask(&ff,a,20.0,2);
+      // Identify
+      identify_observation(&obs,fitsfile,rmin,amin);
 
-    // Fit
-    fit(&obs,ff,2);
+      // Comment
+      sprintf(obs.comment,"# %s : line %d, %d points above %g sigma ",fitsfile,l,mmax,sigma);
 
-    // Format observation
-    format_iod_line(&obs);
+      // Find designation
+      find_designation(obs.satno,obs.desig);
 
-    // Write observation
-    write_observation(obs);
+      // Format observation
+      format_iod_line(&obs);
+      
+      printf("%s\n%s\n",obs.comment,obs.iod_line);
 
-    // Plot observation
-    cpgsci(4);
-    cpgpt1(obs.x[0],obs.y[0],4);
-    cpgmove(obs.x[1],obs.y[1]);
-    cpgdraw(obs.x[2],obs.y[2]);
-    cpgsci(1);
-
-    // Reset mask
-    for (i=0;i<ff.naxis1*ff.naxis2;i++) 
-      if (ff.mask[i]>1)
-	ff.mask[i]=-1;
+      // Write observation
+      write_observation(obs);
+      
+      // Plot observation
+      cpgsci(5);
+      sprintf(text," %d: %05d",l,obs.satno);
+      cpgsch(0.65);
+      cpgtext(obs.x[0],obs.y[0],text);
+      cpgsch(1.0);
+      cpgpt1(obs.x[0],obs.y[0],4);
+      cpgmove(obs.x[1],obs.y[1]);
+      cpgdraw(obs.x[2],obs.y[2]);
+      cpgsci(1);
+    } else {
+      break;
+    }
   }
+
   if (flag==1)
     cpgend();
 
   // Free
-  free(img.z);
-  free(hough.z);
   free(ff.zavg);
   free(ff.zstd);
   free(ff.zmax);
   free(ff.znum);
   free(ff.dt);
   free(ff.mask);
+  free(p);
 
   return 0;
 }
