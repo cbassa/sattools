@@ -1,10 +1,10 @@
 # Makefile: http://www.eng.hawaii.edu/Tutor/Make/
 
 # Compiling flags
-CFLAGS = -O3 -Wno-unused-result
+CFLAGS = #-O3 -Wno-unused-result
 
 # Linking flags
-LFLAGS = -lm -lcpgplot -lpgplot -lX11 -fno-backslash -lpng -lqfits -lwcs_c -lgsl -lgslcblas -ljpeg -lexif
+LFLAGS = -lm -L/usr/local/src/pgplot-5.2.2 -lcpgplot -lpgplot -lX11 -fno-backslash -lpng -L/usr/local/src/qfits-5.4.0/lib -lqfits -lwcs_c -lgsl -lgslcblas -ljpeg -lexif
 
 # Compilers
 CC = gcc
@@ -88,10 +88,10 @@ runsched: runsched.o
 	$(CC) -o runsched runsched.o $(LFLAGS)
 
 fitskey: fitskey.o
-	$(CC) -o fitskey fitskey.o -lqfits
+	$(CC) -o fitskey fitskey.o -L/usr/local/src/qfits-5.4.0/lib -lqfits
 
 fitsheader: fitsheader.o
-	$(CC) -o fitsheader fitsheader.o -lqfits
+	$(CC) -o fitsheader fitsheader.o -L/usr/local/src/qfits-5.4.0/lib -lqfits
 
 satid: satid.o sgdp4.o satutl.o deep.o ferror.o
 	$(F77) -o satid satid.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
