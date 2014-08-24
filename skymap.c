@@ -2838,7 +2838,7 @@ void plot_iod(char *filename)
   float x,y;
 
   cpgsci(2);
-
+  cpgsch(0.8);
   file=fopen(filename,"r");
   // Read data
   while (fgets(line,LIM,file)!=NULL) {
