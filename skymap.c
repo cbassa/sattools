@@ -1526,6 +1526,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
 
       // Plot satellites
       if (flag==0) {
+	cpgsch(0.8);
 	if (s.age<25) 
 	  cpgpt1(x,y,17);
 	else if (s.age<50)
