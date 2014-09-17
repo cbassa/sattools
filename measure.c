@@ -727,6 +727,26 @@ int main(int argc,char *argv[])
       ymin=0.0;
       ymax=img[iimg].naxis2;
       iimg=0;
+
+      obs.satno=99999;
+      strcpy(obs.desig,"99999U");
+      obs.cospar=atoi(env);
+      obs.conditions='G';
+      strcpy(obs.nfd,"YYYYMMDDHHMMSSsss");
+      obs.terr=0.2;
+      strcpy(obs.pos,"HHMMmmm+DDMMmm");
+      strcpy(obs.iod_line,"");
+      obs.perr=0.1;
+      obs.epoch=5;
+      obs.type=2;
+      obs.behavior='S';
+      obs.state=0;
+      obs.cospar=img[0].cospar;
+
+      // Get fake designation
+      mjd=nfd2mjd(img[0].nfd);
+      doy=mjd2doy(mjd,&year);
+      sprintf(obs.desig,"%02d%03.0lfA",year-2000,doy+500);
       redraw=1;
       continue;
     }
