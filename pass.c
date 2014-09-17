@@ -351,7 +351,7 @@ int main(int argc,char *argv[])
       continue;
 
     // Skip non LEO objects
-    if (orb.rev>=10.0)
+    if (orb.rev>=10.0 || m.satno!=0)
       compute_track(orb);
   }
   npass=ipass;
