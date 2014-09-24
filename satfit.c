@@ -14,6 +14,9 @@
 #define XKMPER 6378.135 // Earth radius in km
 #define XKMPAU 149597879.691 // AU in km
 #define FLAT (1.0/298.257)
+#define XKE 0.07436680 // Guassian Gravitational Constant
+#define AE 1.0
+#define XMNPDA 1440.0
 
 long Isat=0;
 long Isatsel=0;
@@ -62,6 +65,36 @@ void time_range(double *mjdmin,double *mjdmax,int flag);
 void print_tle(orbit_t orb,char *filename);
 void fit(orbit_t orb,int *ia);
 void usage();
+double nfd2mjd(char *date);
+double dot(xyz_t a,xyz_t b);
+double magnitude(xyz_t a);
+xyz_t cross(xyz_t a,xyz_t b);
+orbit_t classel(int ep_year,double ep_day,xyz_t r,xyz_t v);
+orbit_t rv2el(int satno,double mjd,xyz_t r0,xyz_t v0);
+
+
+// Propagate elements
+void propagate(double mjd)
+{
+  int imode;
+  xyz_t r,v;
+  char desig[20],line1[80],line2[80];
+
+  // Store designation
+  strcpy(desig,orb.desig);
+
+  // Propagate
+  imode=init_sgdp4(&orb);
+  imode=satpos_xyz(mjd+2400000.5,&r,&v);
+  
+  // Convert
+  orb=rv2el(orb.satno,mjd,r,v);
+
+  // Copy designation
+  strcpy(orb.desig,desig);
+
+  return;
+}
 
 xyz_t get_position(double r0,int i0)
 {
@@ -390,20 +423,20 @@ int circular_fit(void)
   return orb.satno;
 }
 
-int adjust_fit(void)
+int adjust_fit(int depth)
 {
   int i;
   double mjdmin,mjdmax;
   int ia[6]={0,0,0,0,0,0};
 
-  // Step 1: select all points
-  for (i=0;i<d.n;i++)
-    d.p[i].flag=2;
-
   // Step 2: loop over parameters
-  for (i=0;i<2;i++) {
+  for (i=0;i<depth;i++) {
     if (i==0) ia[4]=1;
     if (i==1) ia[1]=1;
+    if (i==2) ia[0]=1;
+    if (i==3) ia[5]=1;
+    if (i==4) ia[2]=1;
+    if (i==5) ia[3]=1;
 
     // Do fit
     fit(orb,ia);
@@ -463,16 +496,17 @@ int main(int argc,char *argv[])
   float x0,y0,x,y;
   float xmin=0.0,xmax=360.0,ymin=-90.0,ymax=90.0;
   char string[64],bstar[10]=" 50000-4",line0[72],line1[72],line2[72],text[10];
-  char filename[64];
+  char filename[64],nfd[32];
   int satno=-1;
-  double mjdmin,mjdmax;
+  double mjdmin,mjdmax,mjd=0.0;
+  int length=864000;
   int arg=0,elset=0,circular=0,tleout=0,noplot=0;
   char *datafile,*catalog,tlefile[LIM];
   orbit_t orb0;
   FILE *file;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"d:c:i:haCo:pI"))!=-1) {
+  while ((arg=getopt(argc,argv,"d:c:i:haCo:pIt:l:m:"))!=-1) {
     switch(arg) {
     case 'd':
       datafile=optarg;
@@ -484,6 +518,25 @@ int main(int argc,char *argv[])
 
     case 'i':
       satno=atoi(optarg);
+      break;
+
+    case 't':
+      strcpy(nfd,optarg);
+      mjd=nfd2mjd(nfd);
+      break;
+
+    case 'm':
+      mjd=(double) atof(optarg);
+      break;
+
+    case 'l':
+      length=atoi(optarg);
+      if (strchr(optarg,'h')!=NULL)
+	length*=3600;
+      else if (strchr(optarg,'m')!=NULL)
+	length*=60;
+      else if (strchr(optarg,'d')!=NULL)
+	length*=86400;
       break;
 
     case 'C':
@@ -520,6 +573,18 @@ int main(int argc,char *argv[])
 
   // Read data
   d=read_data(datafile);
+
+  // Select observations based on time
+  if (mjd>0.0) {
+    mjdmin=mjd-length/86400.0;
+    mjdmax=mjd;
+    for (i=0;i<d.n;i++) {
+      if (d.p[i].mjd>mjdmin && d.p[i].mjd<=mjdmax && d.p[i].flag==1)
+	d.p[i].flag=2;
+      else
+	d.p[i].flag=0;
+    }
+  }
   time_range(&mjdmin,&mjdmax,1);
 
   // Read TLE
@@ -552,10 +617,14 @@ int main(int argc,char *argv[])
 
   // Identify
   if (identify==1) {
+    // Select all points
+    for (i=0;i<d.n;i++)
+      d.p[i].flag=2;
+
     // Loop over file
     while (read_twoline(file,0,&orb)==0) {
       orb0=orb;
-      adjust_fit();
+      adjust_fit(2);
       fit(orb,ia);
       printf("%05d %8.3f %8.3f %8.3f %s %8.3f\n",orb.satno,DEG(orb.mnan-orb0.mnan),DEG(orb.ascn-orb0.ascn),d.rms,datafile,mjdmin-(SGDP4_jd0-2400000.5));
     }
@@ -569,17 +638,42 @@ int main(int argc,char *argv[])
 
   // Adjust
   if (adjust==1) {
+    // Count observations
+    for (i=0,nobs=0;i<d.n;i++)
+	if (d.p[i].flag==2)
+	  nobs++;
+
+    // Not enough observations
+    if (nobs<10)
+      return 0;
+
+    // Get last point
+    for (i=0,j=0;i<d.n;i++) {
+      if (d.p[i].flag==2) {
+	if (j==0) mjdmax=d.p[i].mjd;
+	if (d.p[i].mjd>mjdmax) mjdmax=d.p[i].mjd;
+	j++;
+      }
+    }
+
+    // Propagate orbit to time of last observation
+    propagate(mjdmax);
     orb0=orb;
-    adjust_fit();
-    fit(orb,ia);
-    printf("%05d %8.3f %8.3f %8.3f %s %8.3f\n",satno,DEG(orb.mnan-orb0.mnan),DEG(orb.ascn-orb0.ascn),d.rms,datafile,mjdmin-(SGDP4_jd0-2400000.5));
-    plot_residuals=1;
-    redraw=1;
-    quit=1;
+
+    // Fit
+    adjust_fit(16);
+
+    // Print results
+    printf("%05d %8.3f %8.3f %8.3f %s %8.3f %d\n",satno,DEG(orb.mnan-orb0.mnan),DEG(orb.ascn-orb0.ascn),d.rms,datafile,mjdmin-(SGDP4_jd0-2400000.5),d.nsel);
 
     // Dump tle
     if (tleout==1) 
       print_tle(orb,tlefile);
+
+    // Set thingies
+    plot_residuals=1;
+    redraw=1;
+    quit=1;
   }
 
   // Exit before plotting
@@ -1536,7 +1630,7 @@ void print_tle(orbit_t orb,char *filename)
   }
 
   // Write TLE
-  file=fopen(filename,"w");
+  file=fopen(filename,"a");
   format_tle(orb,line1,line2);
   fprintf(file,"OBJ\n%s\n%s\n",line1,line2);
 
@@ -1619,4 +1713,168 @@ void usage()
   printf("h    This help\n");
 
   return;
+}
+
+// nfd2mjd
+double nfd2mjd(char *date)
+{
+  int year,month,day,hour,min,sec;
+  double mjd,dday;
+
+  sscanf(date,"%04d-%02d-%02dT%02d:%02d:%02d",&year,&month,&day,&hour,&min,&sec);
+  dday=day+hour/24.0+min/1440.0+sec/86400.0;
+
+  mjd=date2mjd(year,month,dday);
+
+  return mjd;
+}
+
+// Dot product
+double dot(xyz_t a,xyz_t b)
+{
+  return a.x*b.x+a.y*b.y+a.z*b.z;
+}
+
+// Magnitude
+double magnitude(xyz_t a)
+{
+  return sqrt(dot(a,a));
+}
+
+// Cross product
+xyz_t cross(xyz_t a,xyz_t b)
+{
+  xyz_t c;
+
+  c.x=a.y*b.z-a.z*b.y;
+  c.y=a.z*b.x-a.x*b.z;
+  c.z=a.x*b.y-a.y*b.x;
+
+  return c;
+}
+
+// Clasical elements
+orbit_t classel(int ep_year,double ep_day,xyz_t r,xyz_t v)
+{
+  int i;
+  double rm,vm,vm2,rvm,mu=1.0;;
+  double chi,xp,yp,sx,cx,b,ee;
+  double a,ecc,incl,node,peri,mm,n;
+  xyz_t h,e,kk,nn;
+  orbit_t orb;
+
+  r.x/=XKMPER;
+  r.y/=XKMPER;
+  r.z/=XKMPER;
+  v.x/=(XKE*XKMPER/AE*XMNPDA/86400.0);
+  v.y/=(XKE*XKMPER/AE*XMNPDA/86400.0);
+  v.z/=(XKE*XKMPER/AE*XMNPDA/86400.0);
+
+  rm=magnitude(r);
+  vm2=dot(v,v);
+  rvm=dot(r,v);
+  h=cross(r,v);
+  chi=dot(h,h)/mu;
+
+  e.x=(vm2/mu-1.0/rm)*r.x-rvm/mu*v.x;
+  e.y=(vm2/mu-1.0/rm)*r.y-rvm/mu*v.y;
+  e.z=(vm2/mu-1.0/rm)*r.z-rvm/mu*v.z;
+
+  a=pow(2.0/rm-vm2/mu,-1);
+  ecc=magnitude(e);
+  incl=acos(h.z/magnitude(h))*R2D;
+  
+  kk.x=0.0;
+  kk.y=0.0;
+  kk.z=1.0;
+  nn=cross(kk,h);
+  if (nn.x==0.0 && nn.y==0.0)
+    nn.x=1.0;
+  node=atan2(nn.y,nn.x)*R2D;
+  if (node<0.0)
+    node+=360.0;
+
+  peri=acos(dot(nn,e)/(magnitude(nn)*ecc))*R2D;
+  if (e.z<0.0)
+    peri=360.0-peri;
+  if (peri<0.0)
+    peri+=360.0;
+
+  // Elliptic motion
+  if (ecc<1.0) {
+    xp=(chi-rm)/ecc;
+    yp=rvm/ecc*sqrt(chi/mu);
+    b=a*sqrt(1.0-ecc*ecc);
+    cx=xp/a+ecc;
+    sx=yp/b;
+    ee=atan2(sx,cx);
+    n=XKE*sqrt(mu/(a*a*a));
+    mm=(ee-ecc*sx)*R2D;
+  } 
+  if (mm<0.0)
+    mm+=360.0;
+
+  // Fill
+  orb.satno=0;
+  orb.eqinc=incl*D2R;
+  orb.ascn=node*D2R;
+  orb.argp=peri*D2R;
+  orb.mnan=mm*D2R;
+  orb.ecc=ecc;
+  orb.rev=XKE*pow(a,-3.0/2.0)*XMNPDA/(2.0*M_PI);
+  orb.bstar=0.0;
+  orb.ep_year=ep_year;
+  orb.ep_day=ep_day;
+  orb.norb=0;
+
+  return orb;
+}
+
+// Position and velocity to elements
+orbit_t rv2el(int satno,double mjd,xyz_t r0,xyz_t v0)
+{
+  int i,imode;
+  orbit_t orb[5],orb1[5];
+  xyz_t r,v;
+  kep_t kep;
+  char line1[70],line2[70];
+  int ep_year;
+  double ep_day;
+
+  // Epoch
+  ep_day=mjd2doy(mjd,&ep_year);
+
+  // Initial guess
+  orb[0]=classel(ep_year,ep_day,r0,v0);
+  orb[0].satno=satno;
+  
+  for (i=0;i<4;i++) {
+    // Propagate
+    imode=init_sgdp4(&orb[i]);
+    imode=satpos_xyz(mjd+2400000.5,&r,&v);
+
+    // Compute initial orbital elements
+    orb1[i]=classel(ep_year,ep_day,r,v);
+
+    // Adjust
+    orb[i+1].rev=orb[i].rev+orb[0].rev-orb1[i].rev;
+    orb[i+1].ascn=orb[i].ascn+orb[0].ascn-orb1[i].ascn;
+    orb[i+1].argp=orb[i].argp+orb[0].argp-orb1[i].argp;
+    orb[i+1].mnan=orb[i].mnan+orb[0].mnan-orb1[i].mnan;
+    orb[i+1].eqinc=orb[i].eqinc+orb[0].eqinc-orb1[i].eqinc;
+    orb[i+1].ecc=orb[i].ecc+orb[0].ecc-orb1[i].ecc;
+    orb[i+1].ep_year=orb[i].ep_year;
+    orb[i+1].ep_day=orb[i].ep_day;
+    orb[i+1].satno=orb[i].satno;
+    orb[i+1].norb=orb[i].norb;
+    orb[i+1].bstar=orb[i].bstar;
+
+    // Keep in range
+    if (orb[i+1].ecc<0.0)
+      orb[i+1].ecc=0.0;
+    if (orb[i+1].eqinc<0.0)
+      orb[i+1].eqinc=0.0;
+  }
+
+  return orb[i];
 }

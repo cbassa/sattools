@@ -2095,7 +2095,7 @@ int plot_skymap(void)
       cpgsci(0);
       cpgrect(-1.5*m.w,1.5*m.w,-m.w,m.w);
       cpgsci(1);
-
+      cpgsch(1.0);
       cpgbox("BC",0.,0,"BC",0.,0);
       cpgpt1(0.0,0.0,2);
 

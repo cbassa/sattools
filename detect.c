@@ -15,7 +15,7 @@
 struct fourframe {
   char filename[64];
   int naxis1,naxis2,naxis3,nframes;
-  float *zavg,*zstd,*zmax,*znum,*ztrk;
+  float *zavg,*zstd,*zmax,*znum,*ztrk,*zsig;
   int *mask;
   double ra0,de0;
   float x0,y0;
@@ -814,7 +814,10 @@ int main(int argc,char *argv[])
 	cpgsch(1.0);
 	cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
 	cpgwnad(0.0,(float) ff.naxis1,0.0,(float) ff.naxis2);
-	cpgimag(ff.zmax,ff.naxis1,ff.naxis2,1,ff.naxis1,1,ff.naxis2,zmin,zmax,tr);
+
+	zmin=0.0;
+	zmax=10.0;
+	cpgimag(ff.zsig,ff.naxis1,ff.naxis2,1,ff.naxis1,1,ff.naxis2,zmin,zmax,tr);
 	cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
 	cpgstbg(1);
 	flag=1;
@@ -925,6 +928,7 @@ struct fourframe read_fits(char *filename)
   img.zstd=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
   img.zmax=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
   img.znum=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
+  img.zsig=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
   if (img.naxis3==5) 
     img.ztrk=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
   img.mask=(int *) malloc(sizeof(int)*img.naxis1*img.naxis2);
@@ -967,6 +971,9 @@ struct fourframe read_fits(char *filename)
       }
     }
   }
+
+  for (i=0;i<img.naxis1*img.naxis2;i++)
+    img.zsig[i]=(img.zmax[i]-img.zavg[i])/img.zstd[i];
 
   return img;
 }
