@@ -35,7 +35,7 @@ struct map {
   double h,sra,sde,sazi,salt;
   float alt,timezone;
   float fw,fh,agelimit;
-  int level,grid,site_id;
+  int level,grid,site_id,plotstars;
   int leoflag,iodflag,iodpoint,visflag,planar,pssatno,psnr,xyzflag,pflag,graves;
   float psrmin,psrmax,rvis;
 } m;
@@ -164,6 +164,7 @@ void init_skymap(void)
   m.saltmin=-6.0;
   m.pflag=1;
   m.graves=0;
+  m.plotstars=1;
 
   // Default settings
   strcpy(m.observer,"Unknown");
@@ -269,7 +270,7 @@ void read_iod(char *filename,int iobs)
   m.ra0=obs.ra;
   m.de0=obs.de;
   strcpy(m.orientation,"equatorial");
-  m.level=6;
+  m.level=4;
 
   return;
 }
@@ -482,7 +483,7 @@ int main(int argc,char *argv[])
   init_skymap();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:R:D:hs:d:l:P:r:V:p:A:E:S:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:R:D:hs:d:l:P:r:V:p:A:E:S:Q"))!=-1) {
     switch(arg) {
 
     case 't':
@@ -571,7 +572,10 @@ int main(int argc,char *argv[])
       m.level=3;
       break;
 
-
+    case 'Q':
+      m.plotstars=0;
+      break;
+      
     case 'h':
       usage();
       return 0;
@@ -2047,7 +2051,7 @@ int read_camera(int no)
 // plot skymap
 int plot_skymap(void)
 {
-  int redraw=1,fov=0,status,plotstars=1;
+  int redraw=1,fov=0,status;
   float x,y;
   char c,text[256],sra[16],sde[16],filename[LIM];
   double ra,de,azi,alt,rx,ry;
@@ -2176,7 +2180,7 @@ int plot_skymap(void)
 	skymap_plotequatorial_grid();
 	equatorial2horizontal(m.mjd,m.ra0,m.de0,&m.azi0,&m.alt0);
       }
-      if (plotstars==1) {
+      if (m.plotstars==1) {
 	sprintf(filename,"%s/data/constfig.dat",m.datadir);
 	skymap_plotconstellations(filename);
 	skymap_plotstars(m.starfile);
@@ -2257,10 +2261,10 @@ int plot_skymap(void)
 
     // Toggle plotting stars
     if (c=='Q') {
-      if (plotstars==1)
-	plotstars=0;
-      else if (plotstars==0)
-	plotstars=1;
+      if (m.plotstars==1)
+	m.plotstars=0;
+      else if (m.plotstars==0)
+	m.plotstars=1;
       redraw=1;
     }
 

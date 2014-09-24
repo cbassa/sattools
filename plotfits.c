@@ -291,7 +291,7 @@ int main(int argc,char *argv[])
   float x,y,r,rmin=1.0,rmax=10.0,mmin=5.0,mmax=10.0;
   struct catalog cat,ast;
   char c;
-  int redraw=1,click=0,nselect=0;
+  int redraw=1,click=0,nselect=0,plotstars=1;
   char filename[128],sra[20],sde[20];
   float h,q,s=0.0,mag=9;
   FILE *file;
@@ -360,12 +360,14 @@ int main(int argc,char *argv[])
       cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
     
       // Plot catalogs
-      cpgsci(3);
-      for (i=0;i<cat.n;i++) {
-	if (cat.select[i]!=0) 
-	  cpgpt1(cat.x[i],cat.y[i],6);
-	else
-	  cpgpt1(cat.x[i],cat.y[i],4);
+      if (plotstars==1) {
+	cpgsci(3);
+	for (i=0;i<cat.n;i++) {
+	  if (cat.select[i]!=0) 
+	    cpgpt1(cat.x[i],cat.y[i],6);
+	  else
+	    cpgpt1(cat.x[i],cat.y[i],4);
+	}
       }
       cpgsci(4);
       for (i=0;i<ast.n;i++) {
@@ -417,9 +419,13 @@ int main(int argc,char *argv[])
       nselect++;
     }
     
-    // Print
+    // 
     if (c=='p') {
-      
+      if (plotstars==1)
+	plotstars=0;
+      else if (plotstars==0)
+	plotstars=1;
+      redraw=1;
     }
 
     // Match catalogs
