@@ -40,7 +40,10 @@ void convert(char *line)
   // Use date of first observed as a designation
   mjd=date2mjd(foy,fom,fod);
   doy=mjd2doy(mjd,&foy);
-  sprintf(orb.desig,"%02d%3.0fA",foy-2000,doy+500);
+  if (foy>=2000)
+    sprintf(orb.desig,"%02d%3.0fA",foy-2000,doy+500);
+  else
+    sprintf(orb.desig,"%02d%3.0fA",foy-1900,doy+500);
 
   // Find epoch
   mjd=date2mjd(year,month,day+hour/24.0+min/1440.0+sec/86400.0);
