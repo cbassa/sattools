@@ -621,8 +621,12 @@ int main(int argc,char *argv[])
     for (i=0;i<d.n;i++)
       d.p[i].flag=2;
 
+    // Reset satno
+    if (satno==-1)
+      satno=0;
+
     // Loop over file
-    while (read_twoline(file,0,&orb)==0) {
+    while (read_twoline(file,satno,&orb)==0) {
       orb0=orb;
       adjust_fit(2);
       fit(orb,ia);
