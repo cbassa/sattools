@@ -16,6 +16,9 @@ all:
 fakeiod: fakeiod.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o fakeiod fakeiod.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
 
+normal: normal.o sgdp4.o satutl.o deep.o ferror.o
+	$(CC) -o normal normal.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+
 propagate: propagate.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o propagate propagate.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
 detect: detect.o
