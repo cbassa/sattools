@@ -712,14 +712,8 @@ int main(int argc,char *argv[])
 	}
       }
 
-      // Plot MJD
-      cpgsvp(0.1,0.9,0.2,0.3);
-      cpgswin(mjdmin,mjdmax,-1.0,1.0);
-      cpgbox("BCTSN",0.,0,"BC",0.,0);
-      cpglab("Right Ascension","Declination"," ");
-
       // Plot map
-      cpgsvp(0.1,0.9,0.4,0.9);
+      cpgsvp(0.1,0.9,0.2,0.9);
       cpgswin(xmax,xmin,ymin,ymax);
       cpgbox("BCTSN",0.,0,"BCTSN",0.,0);
       cpglab("Right Ascension","Declination"," ");
