@@ -108,7 +108,7 @@ void compute_residual(char *filename,struct point p)
   dr=sqrt(pow(dry*rx[0]-drx*ry[0],2)/(drx*drx+dry*dry));
   if ((-rx[0]*drx-ry[0]*dry)<0.0)
     dr*=-1;
-  printf("%s | %8.5f deg %8.3f sec %5.1f day, %.1f km\n",p.iod_line,dr,dt,age,r[0]);
+  printf("%s | %8.5f deg %8.3f sec %7.3f day, %.1f km\n",p.iod_line,dr,dt,age,r[0]);
 
   return;
 }

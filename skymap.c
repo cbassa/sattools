@@ -1943,6 +1943,7 @@ long identify_satellite(char *filename,int satno,double mjd,float rx,float ry)
   float dr,drmin,agemin;
   char line[LIM],pline[LIM];
   char sra[16],sde[16];
+  float lat,lng;
 
   // Open TLE file
   fp=fopen(filename,"rb");
@@ -1971,10 +1972,16 @@ long identify_satellite(char *filename,int satno,double mjd,float rx,float ry)
   }
   fclose(fp);
 
+  // Latitude and longitude
+  lng=modulo(atan2(smin.y,smin.x)*R2D-gmst(mjd),360.0);
+  if (lng>180.0) lng-=360.0;
+  if (lng<-180.0) lng+=360.0;
+  lat=asin(smin.z/(smin.h+XKMPER))*R2D;
+
   // Print TLE
   print_tle(filename,Isatmin);
   printf("Age: %.1f d\n\n",smin.age);
-  printf("x: %+10.2lf km; vx: %+6.3f km/s\ny: %+10.2lf km; vy: %+6.3f km/s\nz: %+10.2lf km; vz: %+6.3f km/s\nr: %10.2lf km; v:  %6.3f km/s\nh: %10.2lf km\n\n",smin.x,smin.vx,smin.y,smin.vy,smin.z,smin.vz,smin.r,smin.v,smin.h);
+  printf("x: %+10.2lf km; vx: %+6.3f km/s\ny: %+10.2lf km; vy: %+6.3f km/s\nz: %+10.2lf km; vz: %+6.3f km/s\nr: %10.2lf km; v:  %6.3f km/s\nl: %6.2lf; b: %6.2lf; h: %10.2lf km\n\n",smin.x,smin.vx,smin.y,smin.vy,smin.z,smin.vz,smin.r,smin.v,lng,lat,smin.h);
   dec2sex(smin.ra/15.0,sra,0,5);
   dec2sex(smin.de,sde,0,4);
 

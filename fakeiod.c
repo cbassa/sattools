@@ -37,16 +37,15 @@ double nfd2mjd(char *date);
 void dec2sex(double x,char *s,int type);
 double doy2mjd(int year,double doy);
 
-void compute_position(double mjd,orbit_t orb,struct site s) 
+void compute_position(double mjd,xyz_t satpos,struct site s,int satno,char *desig) 
 {
   char sra[15],sde[15],nfd[32];
-  xyz_t satpos,satvel,obspos,obsvel;
+  xyz_t obspos,obsvel;
   double dx,dy,dz,mjd0=51544.5;
   double ra,de,ra0,de0,r;
 
   // Compute positions
   obspos_xyz(mjd,s.lng,s.lat,s.alt,&obspos,&obsvel);
-  satpos_xyz(mjd+2400000.5,&satpos,&satvel);
   
   // compute difference vector
   dx=satpos.x-obspos.x;  
@@ -69,7 +68,7 @@ void compute_position(double mjd,orbit_t orb,struct site s)
   mjd2date(mjd,nfd);
 
   // Format output
-  printf("%05d %.2s %-6s %04d G %s 17 25 %s%s 37 S\n",orb.satno,orb.desig,orb.desig+2,s.id,nfd,sra,sde);
+  printf("%05d %.2s %-6s %04d G %s 17 25 %s%s 37 S\n",satno,desig,desig+2,s.id,nfd,sra,sde);
 
   return;
 }
@@ -83,8 +82,9 @@ int main(int argc,char *argv[])
   int i,imode;
   FILE *file;
   orbit_t orb;
+  xyz_t satpos,satvel;
   char *env;
-  int usefile=0,status;
+  int usefile=0,usepos=0,status;
 
   // Get site
   env=getenv("ST_COSPAR");
@@ -95,7 +95,7 @@ int main(int argc,char *argv[])
   }
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:f:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:f:p:"))!=-1) {
     switch (arg) {
       
     case 't':
@@ -120,6 +120,11 @@ int main(int argc,char *argv[])
       usefile=1;
       break;
 
+    case 'p':
+      fname=optarg;
+      usepos=1;
+      break;
+
     case 'i':
       satno=atoi(optarg);
       break;
@@ -130,7 +135,7 @@ int main(int argc,char *argv[])
   }
 
   // Get start mjd for finding elset
-  if (usefile==1) {
+  if (usefile==1 && usepos==0) {
     file=fopen(fname,"r");
     fgetline(file,line,LIM);
     status=sscanf(line,"%lf",&mjd);
@@ -138,41 +143,51 @@ int main(int argc,char *argv[])
   }
 
   // Open catalog
-  file=fopen(tlefile,"r");
-  if (file==NULL) 
-    fatal_error("Failed to open %s\n",tlefile);
-
-  // Read TLE
-  do {
-    status=read_twoline(file,satno,&orb);
-  } while (doy2mjd(orb.ep_year,orb.ep_day)<mjd && status!=-1);
-  fclose(file);
-
-  // Check for match
-  if (orb.satno!=satno) {
-    //    fprintf(stderr,"object %d not found in %s\n",p.satno,filename);
-    return;
-  }
+  if (usepos==0) {
+    file=fopen(tlefile,"r");
+    if (file==NULL) 
+      fatal_error("Failed to open %s\n",tlefile);
     
-  // Initialize
-  imode=init_sgdp4(&orb);
-  if (imode==SGDP4_ERROR) {
-    fprintf(stderr,"Error initializing SGDP4\n");
-    exit(0);
-  }
-  
-  // Compute
-  if (usefile==0) {
-    compute_position(mjd,orb,s);
+    // Read TLE
+    do {
+      status=read_twoline(file,satno,&orb);
+    } while (doy2mjd(orb.ep_year,orb.ep_day)<mjd && status!=-1);
+    fclose(file);
+
+    // Check for match
+    if (orb.satno!=satno) {
+      //    fprintf(stderr,"object %d not found in %s\n",p.satno,filename);
+      return;
+    }
+    
+    // Initialize
+    imode=init_sgdp4(&orb);
+    if (imode==SGDP4_ERROR) {
+      fprintf(stderr,"Error initializing SGDP4\n");
+      exit(0);
+    }
+    
+    // Compute
+    if (usefile==0) {
+      satpos_xyz(mjd+2400000.5,&satpos,&satvel);
+      compute_position(mjd,satpos,s,orb.satno,orb.desig);
+    } else {
+      file=fopen(fname,"r");
+      while (fgetline(file,line,LIM)>0) {
+	status=sscanf(line,"%lf",&mjd);
+	satpos_xyz(mjd+2400000.5,&satpos,&satvel);
+	compute_position(mjd,satpos,s,orb.satno,orb.desig);
+      }
+      fclose(file);
+    }
   } else {
     file=fopen(fname,"r");
     while (fgetline(file,line,LIM)>0) {
-      status=sscanf(line,"%lf",&mjd);
-      compute_position(mjd,orb,s);
+      status=sscanf(line,"%lf %lf %lf %lf",&mjd,&satpos.x,&satpos.y,&satpos.z);
+      compute_position(mjd,satpos,s,99999,"14999A");
     }
     fclose(file);
   }
-
   return 0;
 }
 
@@ -446,9 +461,9 @@ void dec2sex(double x,char *s,int type)
     fmin=100.0*(min-floor(min));
 
   if (type==0)
-    sprintf(s,"%02.0f%02.0f%03.0f",deg,floor(min),fmin);
+    sprintf(s,"%02.0f%02.0f%03.0f",deg,floor(min),floor(fmin));
   else
-    sprintf(s,"%c%02.0f%02.0f%02.0f",sign,deg,floor(min),fmin);
+    sprintf(s,"%c%02.0f%02.0f%02.0f",sign,deg,floor(min),floor(fmin));
 
   return;
 }

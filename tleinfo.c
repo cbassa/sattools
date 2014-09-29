@@ -153,7 +153,7 @@ void mjd2nfd(double mjd,char *nfd)
 
 int main(int argc,char *argv[])
 {
-  int arg=0,satno=0,header=0,oneline=0,no,time=0;
+  int arg=0,satno=0,header=0,oneline=0,no,time=0,name=0,desig=0;
   char tlefile[LIM];
   char line0[LIM],line1[LIM],line2[LIM],nfd[32];
   FILE *file;
@@ -167,7 +167,7 @@ int main(int argc,char *argv[])
   sprintf(tlefile,"%s/bulk.tle",env);
 
   // Decode options
-  while ((arg=getopt(argc,argv,"c:i:aH1ft"))!=-1) {
+  while ((arg=getopt(argc,argv,"c:i:aH1ftnd"))!=-1) {
     switch (arg) {
       
     case 'c':
@@ -184,6 +184,14 @@ int main(int argc,char *argv[])
 
     case 't':
       time=1;
+      break;
+
+    case 'n':
+      name=1;
+      break;
+
+    case 'd':
+      desig=1;
       break;
 
     case 'i':
@@ -223,8 +231,14 @@ int main(int argc,char *argv[])
 	fgetline(file,line2,LIM);
 	sscanf(line1+2,"%d",&no);
 
-	if (satno==0 || satno==no)
-	  printf("%s\n%s\n%s\n",line0,line1,line2);
+	if (satno==0 || satno==no) {
+	  if (name==1 && desig==0) 
+	    printf("%s\n",line0);
+	  else if (name==0 && desig==1)
+	    printf("%.8s\n",line1+9);
+	  else
+	    printf("%s\n%s\n%s\n",line0,line1,line2);
+	}
       } else if (line0[0]=='1') {
 	fgetline(file,line2,LIM);
 	sscanf(line1+2,"%d",&no);
@@ -253,7 +267,7 @@ int main(int argc,char *argv[])
       mjd2nfd(mjd,nfd);
       if (time==0) {
 	if (info==0) printf("%05d %10.4lf %8.4f %8.4f %8.4f %8.4f %8.6f %8.5f\n",orb.satno,mjd,DEG(orb.eqinc),DEG(orb.ascn),DEG(orb.argp),DEG(orb.mnan),orb.ecc,orb.rev);
-	if (info==1) printf("%05d %9.2f %9.2f %9.2f %8.2f %8.6f %14.8lf\n",orb.satno,aodp,perigee,apogee,period,orb.ecc,mjd);
+	if (info==1) printf("%05d %6.0f x %6.0f x %6.2f %8.2f %8.6f %14.8lf\n",orb.satno,perigee,apogee,DEG(orb.eqinc),period,orb.ecc,mjd);
       } else if (time==1) {
 	if (info==0) printf("%05d %s %7.3f %7.3f %7.3f %7.3f %7.5f %7.4f\n",orb.satno,nfd,DEG(orb.eqinc),DEG(orb.ascn),DEG(orb.argp),DEG(orb.mnan),orb.ecc,orb.rev);
 	if (info==1) printf("%05d %9.2f %9.2f %9.2f %8.2f %8.6f %s\n",orb.satno,aodp,perigee,apogee,period,orb.ecc,nfd);

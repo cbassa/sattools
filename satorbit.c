@@ -75,7 +75,7 @@ void initialize_setup(void)
   strcpy(m.orientation,"terrestial");
   nfd_now(m.nfd);
   m.mjd=nfd2mjd(m.nfd);
-  m.w=1.2;
+  m.w=6.2;
   m.h0=gmst(m.mjd);
   m.notamflag=0;
   m.xyzflag=0;
