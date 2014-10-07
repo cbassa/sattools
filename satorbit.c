@@ -7,7 +7,7 @@
 #include "cpgplot.h"
 #include "sgdp4h.h"
 
-#define LIM 90
+#define LIM 128
 #define NMAX 1024
 #define MMAX 28368
 #define D2R M_PI/180.0
@@ -19,6 +19,15 @@
 long Isat=0;
 long Isatsel=0;
 extern double SGDP4_jd0;
+
+struct coeff_lr {
+  int nd,nm,nm1,nf;
+  double sa,ca;
+} clr[60];
+struct coeff_b {
+  int nd,nm,nm1,nf;
+  double sa;
+} cb[60];
 
 struct map {
   long satno;
@@ -58,15 +67,19 @@ void usage();
 void nfd_now(char *s);
 void rotate(int axis,float angle,float *x,float *y,float *z);
 void sunpos_xyz(double mjd,xyz_t *pos,double *ra,double *de);
+void lunpos_xyz(double mjd,xyz_t *pos,double *ra,double *de);
 double gmst(double);
 double dgmst(double);
 double modulo(double,double);
 void get_site(int site_id);
+void ecliptical2equatorial(double l,double b,double *ra,double *de);
 
 // Initialize setup
 void initialize_setup(void)
 {
-  char *env;
+  int i;
+  FILE *file;
+  char *env,filename[128];
 
   // Default parameters
   m.satno=0;
@@ -75,7 +88,7 @@ void initialize_setup(void)
   strcpy(m.orientation,"terrestial");
   nfd_now(m.nfd);
   m.mjd=nfd2mjd(m.nfd);
-  m.w=6.2;
+  m.w=1.2;
   m.h0=gmst(m.mjd);
   m.notamflag=0;
   m.xyzflag=0;
@@ -104,6 +117,31 @@ void initialize_setup(void)
     printf("ST_TLEDIR environment variable not found.\n");
   }
   sprintf(m.tlefile,"%s/classfd.tle",m.tledir);
+
+  // Read LR coefficients
+  sprintf(filename,"%s/data/moonLR.dat",m.datadir);
+  file=fopen(filename,"r");
+  for (i=0;i<60;i++)
+    fscanf(file,"%d %d %d %d %lf %lf",&clr[i].nd,&clr[i].nm,&clr[i].nm1,&clr[i].nf,&clr[i].sa,&clr[i].ca);
+  fclose(file);
+
+  // Read B coefficients
+  sprintf(filename,"%s/data/moonB.dat",m.datadir);
+  file=fopen(filename,"r");
+  for (i=0;i<60;i++)
+    fscanf(file,"%d %d %d %d %lf",&cb[i].nd,&cb[i].nm,&cb[i].nm1,&cb[i].nf,&cb[i].sa);
+  fclose(file);
+
+  return;
+}
+
+// Convert ecliptical into equatorial coordinates
+void ecliptical2equatorial(double l,double b,double *ra,double *de)
+{
+  double eps=23.4392911;
+
+  *ra=modulo(atan2(sin(l*D2R)*cos(eps*D2R)-tan(b*D2R)*sin(eps*D2R),cos(l*D2R))*R2D,360.0);
+  *de=asin(sin(b*D2R)*cos(eps*D2R)+cos(b*D2R)*sin(eps*D2R)*sin(l*D2R))*R2D;
 
   return;
 }
@@ -348,7 +386,7 @@ void plot_track(void)
 // plot satellite track
 void plot_xyz(void)
 {
-  int i=0,nstep=500;
+  int i=0,nstep=500,flag=0;
   orbit_t orb;
   xyz_t pos,vel;
   double jd,dt,h,mjd,mjd0;
@@ -376,6 +414,10 @@ void plot_xyz(void)
   while (fgetline(fp,line,LIM)>0) {
     // Get satellite position
     sscanf(line,"%lf %lf %lf %lf",&mjd,&satpos.x,&satpos.y,&satpos.z);
+
+    // Mark point to plot
+    if (mjd>m.mjd && mjd0<=m.mjd && flag==0 && i>0)
+      flag=1;
 
     // Get positions
     sunpos_xyz(m.mjd,&sunpos,&sra,&sde);
@@ -426,7 +468,9 @@ void plot_xyz(void)
       cpgsci(7);
     
     // Plot
-    if (i==0) {
+    if (flag==1) {
+      printf("%lf %lf\n",m.mjd,mjd);
+      flag=2;
       plot_footprint(s);
       if (!(sqrt(x*x+y*y)<XKMPER && z<0.0)) {
 	sprintf(norad," xyz");
@@ -435,6 +479,8 @@ void plot_xyz(void)
 	cpgsch(isch);
 	cpgpt1(x,y,17);
       }
+    } 
+    if (i==0) {
       cpgmove(x,y);
       i++;
     } else if (s.r>XKMPER) {
@@ -443,7 +489,7 @@ void plot_xyz(void)
       else
 	cpgdraw(x,y);
     }
-    
+    mjd0=mjd;
   }
   cpgsls(1);
   cpgsci(isci);
@@ -560,6 +606,78 @@ void plot_grid(void)
 	flag=0;
     }
   }
+
+  return;
+}
+
+// Plot terminator
+void plot_moon(void)
+{
+  xyz_t s;
+  float r,h;
+  float l,b,l0,b0;
+  float x0,y0,z0,x,y,z;
+  double lra,lde;
+  int isci;
+
+  cpgqci(&isci);
+  cpgsci(14);
+
+  // Get positions
+  lunpos_xyz(m.mjd,&s,&lra,&lde);
+
+  // GMST
+  h=gmst(m.mjd);
+
+  // Lunar subpoint
+  l0=modulo(lra-h,360.0);
+  b0=lde;
+  if (l0>180.0)
+    l0-=360.0;
+
+  // Convert
+  z0=cos(l0*D2R)*cos(b0*D2R)*XKMPER;
+  x0=sin(l0*D2R)*cos(b0*D2R)*XKMPER;
+  y0=sin(b0*D2R)*XKMPER;
+
+  rotate(1,m.l0,&x0,&y0,&z0);
+  rotate(0,m.b0,&x0,&y0,&z0);    
+
+  // Plot sub lunar point
+  if (z0>0.0) 
+    cpgpt1(x0,y0,17);
+
+  // Lunar antipode
+  l0=modulo(lra-h-180,360.0);
+  b0=-lde;
+  if (l0>180.0)
+    l0-=360.0;
+
+  // Convert
+  z0=cos(l0*D2R)*cos(b0*D2R)*XKMPER;
+  x0=sin(l0*D2R)*cos(b0*D2R)*XKMPER;
+  y0=sin(b0*D2R)*XKMPER;
+
+  rotate(1,m.l0,&x0,&y0,&z0);
+  rotate(0,m.b0,&x0,&y0,&z0);    
+
+  // Plot antipode
+  if (z0>0.0) 
+    cpgpt1(x0,y0,2);
+
+  // Plot moon
+  z=s.z;
+  x=s.x;
+  y=s.y;
+
+  rotate(0,-90.0,&x,&y,&z);
+  rotate(1,90.0,&x,&y,&z);
+  rotate(1,m.l0+h,&x,&y,&z);
+  rotate(0,m.b0,&x,&y,&z);
+
+  cpgcirc(x,y,1737.5);
+
+  cpgsci(isci);
 
   return;
 }
@@ -820,6 +938,9 @@ void plot_map(void)
 
       // Plot terminator
       plot_terminator();
+
+      // Plot moon
+      plot_moon();
 
       // Plot Grid
       cpgsls(2);
@@ -1156,6 +1277,85 @@ void rotate(int axis,float angle,float *x,float *y,float *z)
 
   return;
 }
+
+// Moon position
+void lunpos_xyz(double mjd,xyz_t *pos,double *ra,double *de)
+{
+  int i;
+  double t,t2,t3,t4;
+  double l1,d,m,m1,f,a1,a2,a3,e,ef;
+  double suml,sumb,sumr,arglr,argb;
+  double l,b,r;
+
+  // Julian Centuries
+  t=(mjd-51544.5)/36525.0;
+
+  // Powers of t
+  t2=t*t;
+  t3=t2*t;
+  t4=t3*t;
+
+  // angles
+  l1=modulo(218.3164477+481267.88123421*t-0.0015786*t2+t3/538841.0-t4/65194000.0,360.0)*D2R;
+  d=modulo(297.8501921+445267.1114034*t-0.0018819*t2+t3/545868.0-t4/113065000.0,360.0)*D2R;
+  m=modulo(357.5291092+35999.0502909*t-0.0001536*t2+t3/24490000.0,360.0)*D2R;
+  m1=modulo(134.9633964+477198.8675055*t+0.0087417*t2+t3/69699.0-t4/14712000.0,360.0)*D2R;
+  f=modulo(93.2720950+483202.0175233*t-0.0036539*t2-t3/3526000.0+t4/86331000.0,360.0)*D2R;
+  a1=modulo(119.75+131.849*t,360.0)*D2R;
+  a2=modulo(53.09+479264.290*t,360.0)*D2R;
+  a3=modulo(313.45+481266.484*t,360.0)*D2R;
+  e=1.0-0.002516*t-0.0000074*t2;
+
+  // Compute sums
+  for (i=0,suml=sumb=sumr=0.0;i<60;i++) {
+    // Arguments
+    arglr=clr[i].nd*d+clr[i].nm*m+clr[i].nm1*m1+clr[i].nf*f;
+    argb=cb[i].nd*d+cb[i].nm*m+cb[i].nm1*m1+cb[i].nf*f;
+    
+    // E multiplication factor
+    if (abs(clr[i].nm)==1)
+      ef=e;
+    else if (abs(clr[i].nm)==2)
+      ef=e*e;
+    else
+      ef=1.0;
+
+    // Sums
+    suml+=clr[i].sa*sin(arglr)*ef;
+    sumr+=clr[i].ca*cos(arglr)*ef;
+
+    // E multiplication factor
+    if (abs(cb[i].nm)==1)
+      ef=e;
+    else if (abs(cb[i].nm)==2)
+      ef=e*e;
+    else
+      ef=1.0;
+
+    // Sums
+    sumb+=cb[i].sa*sin(argb)*ef;
+  }
+
+  // Additives
+  suml+=3958*sin(a1)+1962*sin(l1-f)+318*sin(a2);
+  sumb+=-2235*sin(l1)+382*sin(a3)+175*sin(a1-f)+175*sin(a1+f)+127*sin(l1-m1)-115*sin(l1+m1);
+
+  // Ecliptic longitude, latitude and distance
+  l=modulo(l1*R2D+suml/1000000.0,360.0);
+  b=sumb/1000000.0;
+  r=385000.56+sumr/1000.0;
+
+  // Equatorial
+  ecliptical2equatorial(l,b,ra,de);
+
+  // Position
+  pos->x=r*cos(*de*D2R)*cos(*ra*D2R);
+  pos->y=r*cos(*de*D2R)*sin(*ra*D2R);
+  pos->z=r*sin(*de*D2R);
+
+  return;
+}
+
 
 // Solar position
 void sunpos_xyz(double mjd,xyz_t *pos,double *ra,double *de)
