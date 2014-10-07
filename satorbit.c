@@ -376,7 +376,6 @@ void plot_xyz(void)
   while (fgetline(fp,line,LIM)>0) {
     // Get satellite position
     sscanf(line,"%lf %lf %lf %lf",&mjd,&satpos.x,&satpos.y,&satpos.z);
-    printf("%lf %f %f %f\n",mjd,satpos.x,satpos.y,satpos.z);
 
     // Get positions
     sunpos_xyz(m.mjd,&sunpos,&sra,&sde);
