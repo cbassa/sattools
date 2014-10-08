@@ -39,7 +39,7 @@ struct map {
   char orientation[LIM];
   char nfd[LIM],tlefile[LIM],observer[32];
   char datadir[LIM],tledir[LIM],notamfile[LIM],xyzfile[LIM];
-  int site_id,notamflag,xyzflag;
+  int site_id,notamflag,xyzflag,moonflag;
   float w;
 } m;
 struct globe {
@@ -92,6 +92,7 @@ void initialize_setup(void)
   m.h0=gmst(m.mjd);
   m.notamflag=0;
   m.xyzflag=0;
+  m.moonflag=0;
 
   // Default settings
   strcpy(m.observer,"Unknown");
@@ -469,7 +470,6 @@ void plot_xyz(void)
     
     // Plot
     if (flag==1) {
-      printf("%lf %lf\n",m.mjd,mjd);
       flag=2;
       plot_footprint(s);
       if (!(sqrt(x*x+y*y)<XKMPER && z<0.0)) {
@@ -617,11 +617,12 @@ void plot_moon(void)
   float r,h;
   float l,b,l0,b0;
   float x0,y0,z0,x,y,z;
-  double lra,lde;
+  double lra,lde,dmjd;
   int isci;
+  char text[8];
 
   cpgqci(&isci);
-  cpgsci(14);
+  cpgsci(3);
 
   // Get positions
   lunpos_xyz(m.mjd,&s,&lra,&lde);
@@ -663,7 +664,7 @@ void plot_moon(void)
 
   // Plot antipode
   if (z0>0.0) 
-    cpgpt1(x0,y0,2);
+    cpgpt1(x0,y0,6);
 
   // Plot moon
   z=s.z;
@@ -676,6 +677,37 @@ void plot_moon(void)
   rotate(0,m.b0,&x,&y,&z);
 
   cpgcirc(x,y,1737.5);
+
+  // Plot antipode travel
+  for (dmjd=1.0;dmjd<7.0;dmjd+=1.0) {
+    // Get positions
+    lunpos_xyz(m.mjd+dmjd,&s,&lra,&lde);
+
+    // GMST
+    h=gmst(m.mjd);
+
+    // Lunar antipode
+    l0=modulo(lra-h-180,360.0);
+    b0=-lde;
+    if (l0>180.0)
+      l0-=360.0;
+
+    // Convert
+    z0=cos(l0*D2R)*cos(b0*D2R)*XKMPER;
+    x0=sin(l0*D2R)*cos(b0*D2R)*XKMPER;
+    y0=sin(b0*D2R)*XKMPER;
+    
+    rotate(1,m.l0,&x0,&y0,&z0);
+    rotate(0,m.b0,&x0,&y0,&z0);    
+    
+    // Plot antipode
+    if (z0>0.0) {
+      sprintf(text," %.0f",dmjd);
+      cpgpt1(x0,y0,2);
+      cpgtext(x0,y0,text);
+    }
+  }
+
 
   cpgsci(isci);
 
@@ -940,7 +972,8 @@ void plot_map(void)
       plot_terminator();
 
       // Plot moon
-      plot_moon();
+      if (m.moonflag==1)
+	plot_moon();
 
       // Plot Grid
       cpgsls(2);
@@ -1079,7 +1112,7 @@ int main(int argc,char *argv[])
   initialize_setup();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:l:hN:p:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:l:hN:p:mL:B:"))!=-1) {
     switch (arg) {
       
     case 't':
@@ -1108,9 +1141,21 @@ int main(int argc,char *argv[])
       m.notamflag=1;
       break;
 
+    case 'L':
+      m.lng=atof(optarg);
+      break;
+
+    case 'B':
+      m.lat=atof(optarg);
+      break;
+
     case 'p':
       strcpy(m.xyzfile,optarg);
       m.xyzflag=1;
+      break;
+
+    case 'm':
+      m.moonflag=1;
       break;
 
     case 'h':
