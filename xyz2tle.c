@@ -208,6 +208,8 @@ struct data read_data(char *filename,double mjd0)
   i=0;
   while (fgetline(file,line,LIM)>0) {
     status=sscanf(line,"%d,%lf,%lf,%lf",&min,&x,&y,&z);
+    if (d.n==1008)
+      min*=10;
     d.p[i].mjd=mjd0+(double) min/1440.0;
 
     // Precess position
@@ -610,7 +612,7 @@ int main(int argc,char *argv[])
   // Write data
   sprintf(filename,"%06d.xyz",satname);
   file=fopen(filename,"w");
-  for (i=0;i<d.n;i+=10) 
+  for (i=0;i<d.n;i++) 
     fprintf(file,"%lf %f %f %f\n",d.p[i].mjd,d.p[i].r.x,d.p[i].r.y,d.p[i].r.z);
   fclose(file);
 
@@ -619,7 +621,7 @@ int main(int argc,char *argv[])
   file=fopen(filename,"w");
 
   // Estimate orbit
-  k=5040;
+  k=504;
   if (usecatalog==0) {
     // Set initial state vector
     r.x=d.p[k].r.x;
@@ -649,7 +651,7 @@ int main(int argc,char *argv[])
   for (j=0;j<d.n;j++)
     d.p[j].flag=0;
     
-  for (j=0;j<d.n;j+=10)
+  for (j=0;j<d.n;j++)
     d.p[j].flag=1;
   
   // Fit orbit
