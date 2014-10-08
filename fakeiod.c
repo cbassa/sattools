@@ -6,7 +6,7 @@
 #include "sgdp4h.h"
 #include <getopt.h>
 
-#define LIM 80
+#define LIM 128
 #define NMAX 256
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI

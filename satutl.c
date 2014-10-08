@@ -47,51 +47,46 @@ int read_twoline(FILE *fp, long search_satno, orbit_t *orb)
   int found;
   double bm, bx;
   
+  // Set defaults
+  strcpy(orb->desig,"");
+
   st1 = line1;
   st2 = line2;
   
   do {
-    if(fgets(line1, ST_SIZE-1, fp) == NULL) return -1;
+    if(fgets(line1, ST_SIZE-1, fp) == NULL) 
+      return -1;
     st1 = st_start(line1);
   } while(st1[0] != '1');
   
-  if(search_satno > 0)
-    {
+  if(search_satno > 0) {
       found = 0;
-    }
-  else
-    {
-      found = 1;
-      search_satno = atol(st1+2);
-    }
-  
+  } else {
+    found = 1;
+    search_satno = atol(st1+2);
+  }
   sprintf(search, "1 %05ld", search_satno);
   
   do {
     st1 = st_start(line1);
-    if(strncmp(st1, search, 7) == 0)
-      {
-	found = 1;
-	break;
-      }
+    if(strncmp(st1, search, 7) == 0) {
+      found = 1;
+      break;
+    }
   } while(fgets(line1, ST_SIZE-1, fp) != NULL);
   
+    sprintf(search, "2 %05ld", search_satno);
   
-  sprintf(search, "2 %05ld", search_satno);
+  if(found) {
+    fgets(line2, ST_SIZE-1, fp);
+    st2 = st_start(line2);
+  }
   
-  if(found)
-    {
-      fgets(line2, ST_SIZE-1, fp);
-      st2 = st_start(line2);
-    }
-  
-  if(!found || strncmp(st2, search, 7) != 0)
-    {
-      return -1;
-    }
-  
+  if(!found || strncmp(st2, search, 7) != 0) {
+    return -1;
+  }
   orb->ep_year = (int)i_read(st1, 19, 20);
-  
+
   if(orb->ep_year < 57) orb->ep_year += 2000;
   else orb->ep_year += 1900;
   

@@ -170,20 +170,20 @@ typedef struct orbit_s
 {
     /* Add the epoch time if required. */
 
-	int		ep_year;/* Year of epoch, e.g. 94 for 1994, 100 for 2000AD */
-	double	ep_day;	/* Day of epoch from 00:00 Jan 1st ( = 1.0 ) */
-	double	rev;	/* Mean motion, revolutions per day */
-	double	bstar;	/* Drag term .*/
-	double	eqinc;	/* Equatorial inclination, radians */
-	double	ecc;	/* Eccentricity */
-	double	mnan;	/* Mean anomaly at epoch from elements, radians */
-	double	argp;	/* Argument of perigee, radians */
-	double	ascn;	/* Right ascension (ascending node), radians */
-	double	smjaxs;	/* Semi-major axis, km */
+  int ep_year;/* Year of epoch, e.g. 94 for 1994, 100 for 2000AD */
+  double ep_day;	/* Day of epoch from 00:00 Jan 1st ( = 1.0 ) */
+  double rev;	/* Mean motion, revolutions per day */
+  double bstar;	/* Drag term .*/
+  double eqinc;	/* Equatorial inclination, radians */
+  double ecc;	/* Eccentricity */
+  double mnan;	/* Mean anomaly at epoch from elements, radians */
+  double argp;	/* Argument of perigee, radians */
+  double ascn;	/* Right ascension (ascending node), radians */
+  double smjaxs;	/* Semi-major axis, km */
   double ndot2,nddot6;  /* Mean motion derivatives */
-    char    desig[10]; /* International designation */
-	long	norb;	/* Orbit number, for elements */
-	int		satno;	/* Satellite number. */
+  char desig[10]; /* International designation */
+  long norb;	/* Orbit number, for elements */
+  int satno;	/* Satellite number. */
 
 } orbit_t;
 
