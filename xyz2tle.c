@@ -113,7 +113,7 @@ void format_tle(orbit_t orb,char *line1,char *line2)
   }
   // Print lines
   sprintf(line1,"1 %05dU %-8s %2d%012.8f  .00000000  00000-0 %8s 0    0",orb.satno,orb.desig,orb.ep_year-2000,orb.ep_day,sbstar);
-  sprintf(line2,"2 %05d %8.4f %8.4f %07.0f %8.4f %8.4f %11.8f    0",orb.satno,DEG(orb.eqinc),DEG(orb.ascn),1E7*orb.ecc,DEG(orb.argp),DEG(orb.mnan),orb.rev);
+  sprintf(line2,"2 %05d %8.4f %8.4f %07.0f %8.4f %8.4f %11.8f%5ld",orb.satno,DEG(orb.eqinc),DEG(orb.ascn),1E7*orb.ecc,DEG(orb.argp),DEG(orb.mnan),orb.rev,orb.norb);
 
   // Compute checksums
   for (i=0,csum=0;i<strlen(line1);i++) {
@@ -571,15 +571,17 @@ void fit(orbit_t orb,int *ia)
 int main(int argc,char *argv[])
 {
   int i,j,k,arg=0,satno=0,satname=0,usecatalog=0,imode,m=10;
+  long norb;
   char *datafile,*catalog,filename[32];
   int ia[7]={0,0,0,0,0,0,0};
   char line1[70],line2[70],desig[10];
-  double mjd;
+  double mjd,sma,perigee,apogee,xno;
+  float mag=0.0,dm;
   xyz_t r,v;
   FILE *file;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"d:c:i:"))!=-1) {
+  while ((arg=getopt(argc,argv,"d:c:i:n:m:"))!=-1) {
     switch(arg) {
 
     case 'd':
@@ -595,10 +597,23 @@ int main(int argc,char *argv[])
       satno=atoi(optarg);
       break;
 
+    case 'n':
+      norb=atoi(optarg);
+      if (norb<0)
+	norb=0;
+      break;
+
+    case 'm':
+      mag=atof(optarg);
+      break;
+
     default:
       return 0;
     }
   }
+
+  // Magnitude offset
+  dm=5.0*log10(1000.0/40000.0);
 
   // Reloop stderr
   freopen("/tmp/stderr.txt","w",stderr);
@@ -634,6 +649,7 @@ int main(int argc,char *argv[])
     // Estimate initial orbit from elements
     orb=rv2el(99999,d.p[k].mjd,r,v);
     strcpy(orb.desig,"14999A");
+    orb.norb=norb;
   } else {
     // Read orbit
     orb=read_tle(catalog,satno);
@@ -645,6 +661,7 @@ int main(int argc,char *argv[])
     //      orb.satno=99999;
     //      strcpy(orb.desig,"14999A");
     strcpy(orb.desig,desig);
+    orb.norb=norb;
   }
 
   // Set flags
@@ -666,10 +683,17 @@ int main(int argc,char *argv[])
     fit(orb,ia);
   }
 
+  // Compute orbit size
+  xno=orb.rev*2.0*M_PI/XMNPDA;
+  sma=pow(XKE/xno,2.0/3.0)*XKMPER;
+  perigee=sma*(1.0-orb.ecc)-XKMPER;
+  apogee=sma*(1.0+orb.ecc)-XKMPER;
+  
   // Format TLE
   format_tle(orb,line1,line2);
-  fprintf(file,"SO %d\n%s\n%s\n# %d positions, %.1f km rms\n",satname,line1,line2,d.nsel,d.rms);
-  printf("SO %d\n%s\n%s\n# %d positions, %.1f km rms\n",satname,line1,line2,d.nsel,d.rms);
+
+  fprintf(file,"SO %6d                      %4.1f             %7.0fkm  x%7.0fkm\n%s\n%s\n# %d positions, %.1f km rms\n",satname,mag+dm,perigee,apogee,line1,line2,d.nsel,d.rms);
+  printf("SO %6d                      %4.1f             %7.0fkm  x%7.0fkm\n%s\n%s\n# %d positions, %.1f km rms\n",satname,mag+dm,perigee,apogee,line1,line2,d.nsel,d.rms);
 
   // Close output file
   fclose(file);
