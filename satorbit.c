@@ -73,6 +73,7 @@ double dgmst(double);
 double modulo(double,double);
 void get_site(int site_id);
 void ecliptical2equatorial(double l,double b,double *ra,double *de);
+void plot_launch_sites(void);
 
 // Initialize setup
 void initialize_setup(void)
@@ -971,10 +972,6 @@ void plot_map(void)
       // Plot terminator
       plot_terminator();
 
-      // Plot moon
-      if (m.moonflag==1)
-	plot_moon();
-
       // Plot Grid
       cpgsls(2);
       cpgsci(14);
@@ -996,6 +993,13 @@ void plot_map(void)
 	plot_notam(m.notamfile);
 	cpgsci(1);
       }
+
+      // Plot moon
+      if (m.moonflag==1)
+	plot_moon();
+
+      // Plot launch sites
+      plot_launch_sites();
 
       // Plot track
       if (m.xyzflag==0)
@@ -1112,7 +1116,7 @@ int main(int argc,char *argv[])
   initialize_setup();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:l:hN:p:mL:B:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:l:hN:p:mL:B:R:S"))!=-1) {
     switch (arg) {
       
     case 't':
@@ -1147,6 +1151,14 @@ int main(int argc,char *argv[])
 
     case 'B':
       m.lat=atof(optarg);
+      break;
+
+    case 'R':
+      m.w=atof(optarg);
+      break;
+
+    case 'S':
+      strcpy(m.orientation,"sidereal");
       break;
 
     case 'p':
@@ -1510,5 +1522,66 @@ void get_site(int site_id)
   }
   fclose(file);
   
+  return;
+}
+
+// Plot launch sites
+void plot_launch_sites(void)
+{
+  int i=0;
+  char line[LIM];
+  FILE *file;
+  double lat,lng;
+  char site[64],text[8],filename[LIM];
+  float isch;
+  float x0,y0,z0,l0,b0;
+
+
+  cpgqch(&isch);
+
+  sprintf(filename,"%s/data/launchsites.txt",m.datadir);
+  file=fopen(filename,"r");
+  if (file==NULL) {
+    printf("File with site information not found!\n");
+    return;
+  }
+  while (fgets(line,LIM,file)!=NULL) {
+    // Skip
+    if (strstr(line,"#")!=NULL)
+      continue;
+
+    // Strip newline
+    line[strlen(line)-1]='\0';
+
+    // Read data
+    sscanf(line,"%lf %lf",
+	   &lat,&lng);
+    strcpy(site,line+21);
+
+    l0=modulo(lng,360.0);
+    b0=lat;
+    if (l0>180.0)
+      l0-=360.0;
+
+    // Convert
+    z0=cos(l0*D2R)*cos(b0*D2R)*XKMPER;
+    x0=sin(l0*D2R)*cos(b0*D2R)*XKMPER;
+    y0=sin(b0*D2R)*XKMPER;
+
+    rotate(1,m.l0,&x0,&y0,&z0);
+    rotate(0,m.b0,&x0,&y0,&z0);    
+
+    // Plot location
+    if (z0>0.0) {
+      cpgsci(2);
+      cpgsch(0.5);
+      cpgpt1(x0,y0,4);
+      cpgtext(x0,y0,site);
+      cpgsci(1);
+    }
+  }
+  fclose(file);
+  cpgsch(isch);
+
   return;
 }

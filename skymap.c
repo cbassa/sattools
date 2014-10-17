@@ -1981,7 +1981,7 @@ long identify_satellite(char *filename,int satno,double mjd,float rx,float ry)
   // Print TLE
   print_tle(filename,Isatmin);
   printf("Age: %.1f d\n\n",smin.age);
-  printf("x: %+10.2lf km; vx: %+6.3f km/s\ny: %+10.2lf km; vy: %+6.3f km/s\nz: %+10.2lf km; vz: %+6.3f km/s\nr: %10.2lf km; v:  %6.3f km/s\nl: %6.2lf; b: %6.2lf; h: %10.2lf km\n\n",smin.x,smin.vx,smin.y,smin.vy,smin.z,smin.vz,smin.r,smin.v,lng,lat,smin.h);
+  printf("x: %+12.4lf km; vx: %+8.5f km/s\ny: %+12.4lf km; vy: %+8.5f km/s\nz: %+12.4lf km; vz: %+8.5f km/s\nr: %10.2lf km; v:  %6.3f km/s\nl: %6.2lf; b: %6.2lf; h: %10.2lf km\n\n",smin.x,smin.vx,smin.y,smin.vy,smin.z,smin.vz,smin.r,smin.v,lng,lat,smin.h);
   dec2sex(smin.ra/15.0,sra,0,5);
   dec2sex(smin.de,sde,0,4);
 
