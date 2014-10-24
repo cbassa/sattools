@@ -39,7 +39,7 @@ struct map {
   char orientation[LIM];
   char nfd[LIM],tlefile[LIM],observer[32];
   char datadir[LIM],tledir[LIM],notamfile[LIM],xyzfile[LIM];
-  int site_id,notamflag,xyzflag,moonflag;
+  int site_id,notamflag,xyzflag,moonflag,launchsitesflag;
   float w;
 } m;
 struct globe {
@@ -94,6 +94,7 @@ void initialize_setup(void)
   m.notamflag=0;
   m.xyzflag=0;
   m.moonflag=0;
+  m.launchsitesflag=0;
 
   // Default settings
   strcpy(m.observer,"Unknown");
@@ -999,13 +1000,14 @@ void plot_map(void)
 	plot_moon();
 
       // Plot launch sites
-      plot_launch_sites();
+      if (m.launchsitesflag==1)
+	plot_launch_sites();
 
       // Plot track
-      if (m.xyzflag==0)
-	plot_track();
-      else
+      if (m.xyzflag==1)
 	plot_xyz();
+      else
+	plot_track();
     }
     
     // Reset redraw
@@ -1091,7 +1093,7 @@ void plot_map(void)
       redraw=1;
     }
     
-    // Integration lenght
+    // Integration length
     if (c=='l') {
       printf("Enter integration length (s): ");
       status=scanf("%d",&m.length);
@@ -1116,7 +1118,7 @@ int main(int argc,char *argv[])
   initialize_setup();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:l:hN:p:mL:B:R:S"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:l:hN:p:mL:B:R:Sq"))!=-1) {
     switch (arg) {
       
     case 't':
@@ -1134,6 +1136,10 @@ int main(int argc,char *argv[])
 
     case 'i':
       m.satno=atoi(optarg);
+      break;
+
+    case 'q':
+      m.launchsitesflag=1;
       break;
 
     case 'l':

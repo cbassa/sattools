@@ -18,7 +18,7 @@
 1747 DD   45.7275  -72.3526    191    Daniel Deak
 1775 KF   44.6062  -75.6910    200    Kevin Fetter
 2018 PW   51.0945   -1.1188    124    Peter Wakelin
-2115 MW   51.3286    0.7950     75    Mike Waterman
+2115 MW   51.3286   -0.7950     75    Mike Waterman
 2420 RE   55.9486   -3.1386     40    Russell Eberst
 2563 PN   51.0524    2.4043     10    Pierre Nierinck
 2675 DB   52.1358   -2.3264     70    David Brierley
