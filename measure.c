@@ -92,6 +92,8 @@ void plot_objects(char *filename)
       cpgsci(4);
     if (strstr(catalog,"inttles")!=NULL)
       cpgsci(3);
+    if (strstr(catalog,"jsc")!=NULL)
+      cpgsci(5);
 
     cpgmove(x0,y0);
     cpgdraw(x1,y1);
@@ -438,6 +440,35 @@ struct image maximum_image(struct image *raw,int n)
   return img;
 }
 
+// Read pixel catalog
+struct catalog read_pixel_catalog(char *filename)
+{
+  int i=0;
+  FILE *file;
+  char line[LIM];
+  struct catalog c;
+
+  // Read catalog
+  file=fopen(filename,"r");
+  if (file==NULL) {
+    fprintf(stderr,"%s not found!\n",filename);
+    exit(0);
+  }
+  while (fgetline(file,line,LIM)>0) {
+    if (i>=NMAX)
+      break;
+    if (strstr(line,"#")!=NULL) 
+      continue;
+    sscanf(line,"%f %f %f",&c.x[i],&c.y[i],&c.mag[i]);
+    c.select[i]=0;
+    i++;
+  }
+  fclose(file);
+  c.n=i;
+
+  return c;
+}
+
 int main(int argc,char *argv[])
 {
   int i,iimg=0,nimg;
@@ -447,9 +478,9 @@ int main(int argc,char *argv[])
   float heat_r[] = {0.0, 0.5, 1.0, 1.0, 1.0};
   float heat_g[] = {0.0, 0.0, 0.5, 1.0, 1.0};
   float heat_b[] = {0.0, 0.0, 0.0, 0.3, 1.0};
-  int redraw=1,plotobj=1,click=0,nselect=0;
+  int redraw=1,plotobj=1,click=0,nselect=0,plotcat=0;
   float x,y,width;
-  char c,pixcat[LIM],text[128];
+  char c,pixcat[128],text[128];
   struct catalog cat,ast;
   float sx,sy,q;
   char *env,idfile[128];
@@ -459,7 +490,7 @@ int main(int argc,char *argv[])
   int year;
   float frac=0.5;
   float fx=0.5,fy=0.333;
-  int ix=0,iy=0;
+  int ix=0,iy=0,istar;
   struct image *img;
 
   // Environment variables
@@ -568,6 +599,20 @@ int main(int argc,char *argv[])
       format_iod_line(&obs);
       cpgmtxt("T",1.0,0.5,0.5,obs.iod_line);
 
+      // Read pixel catalog
+      if (plotcat==1) {
+	if (iimg<nimg-1) {
+	  sprintf(pixcat,"%s.cat",img[iimg].filename);
+	  cat=read_pixel_catalog(pixcat);
+	  
+	  // Plot stars
+	  cpgsci(3);
+	  for (i=0;i<cat.n;i++)
+	    cpgpt1(cat.x[i],cat.y[i],6);
+	  cpgsci(1);
+	}
+      }
+
       redraw=0;
     }
 
@@ -594,6 +639,15 @@ int main(int argc,char *argv[])
 	plotobj=0;
       else
 	plotobj=1;
+      redraw=1;
+    }
+
+    // Plot catalog
+    if (c=='l') {
+      if (plotcat==1)
+	plotcat=0;
+      else
+	plotcat=1;
       redraw=1;
     }
 
@@ -759,6 +813,8 @@ int main(int argc,char *argv[])
 
     // Measure
     if (c=='m' || c=='D') {
+      istar=select_nearest(cat,x,y);
+      printf("%f %f -> %f %f %f\n",x,y,cat.x[istar],cat.y[istar],cat.mag[istar]);
       reduce_point(&obs,img[iimg],frac*img[iimg].exptime,x,y);
       obs.x[0]=x;
       obs.y[0]=y;

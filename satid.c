@@ -119,8 +119,6 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
   float rsun,rearth,psun,pearth,p;
   char filename[128];
 
-  cpgqch(&isch);
-
   // Image determinant
   d=img.a[1]*img.b[2]-img.a[2]*img.b[1];
 
@@ -338,7 +336,8 @@ int main(int argc,char *argv[])
   sprintf(filename,"%s/inttles.tle",env);
   plot_satellites(filename,img,0,img.mjd,img.exptime,3);
   sprintf(filename,"%s/catalog.tle",env);
-  plot_satellites(filename,img,0,img.mjd,img.exptime,0);
+  plot_satellites(filename,img,0,img.mjd,img.exptime,1);
+  plot_satellites("/home/bassa/jsc_20141006.txt",img,0,img.mjd,img.exptime,5);
 
   cpgend();
 
