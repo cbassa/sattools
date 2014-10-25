@@ -40,6 +40,7 @@ struct map {
   char nfd[LIM],tlefile[LIM],observer[32];
   char datadir[LIM],tledir[LIM],notamfile[LIM],xyzfile[LIM];
   int site_id,notamflag,xyzflag,moonflag,launchsitesflag;
+  int plotfootprint;
   float w;
 } m;
 struct globe {
@@ -95,6 +96,7 @@ void initialize_setup(void)
   m.xyzflag=0;
   m.moonflag=0;
   m.launchsitesflag=0;
+  m.plotfootprint=1;
 
   // Default settings
   strcpy(m.observer,"Unknown");
@@ -348,7 +350,8 @@ void plot_track(void)
       
       // Plot
       if (i==0) {
-	plot_footprint(s);
+	if (m.plotfootprint==1)
+	  plot_footprint(s);
 	if (!(sqrt(x*x+y*y)<XKMPER && z<0.0)) {
 	  sprintf(norad," %ld",Isat);
 	  cpgsch(0.6);
@@ -473,7 +476,8 @@ void plot_xyz(void)
     // Plot
     if (flag==1) {
       flag=2;
-      plot_footprint(s);
+      if (m.plotfootprint==1)
+	plot_footprint(s);
       if (!(sqrt(x*x+y*y)<XKMPER && z<0.0)) {
 	sprintf(norad," xyz");
 	cpgsch(0.6);
@@ -1023,6 +1027,33 @@ void plot_map(void)
       redraw=1;
     }
 
+    // Footprint toggle
+    if (c=='f') {
+      if (m.plotfootprint==1)
+	m.plotfootprint=0;
+      else
+	m.plotfootprint=1;
+      redraw=1;
+    }
+
+    // Moon toggle
+    if (c=='m') {
+      if (m.moonflag==1)
+	m.moonflag=0;
+      else
+	m.moonflag=1;
+      redraw=1;
+    }
+
+    // Launchsites toggle
+    if (c=='L') {
+      if (m.launchsitesflag==1)
+	m.launchsitesflag=0;
+      else
+	m.launchsitesflag=1;
+      redraw=1;
+    }
+
     // Orientation
     if (c=='o') {
       if (strcmp(m.orientation,"terrestial")==0)
@@ -1060,19 +1091,19 @@ void plot_map(void)
 
     // Pan
     if (c=='{') {
-      m.lat-=10.0;
+      m.lat-=2.0;
       redraw=1;
     }      
     if (c=='}') {
-      m.lat+=10.0;
+      m.lat+=2.0;
       redraw=1;
     }      
     if (c=='[') {
-      m.lng-=10.0;
+      m.lng-=2.0;
       redraw=1;
     }
     if (c==']') {
-      m.lng+=10.0;
+      m.lng+=2.0;
       redraw=1;
     }
     
