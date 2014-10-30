@@ -40,6 +40,15 @@ xyz_t cross(xyz_t a,xyz_t b)
   return c;
 }
 
+// Return x modulo y [0,y)
+double modulo(double x,double y)
+{
+  x=fmod(x,y);
+  if (x<0.0) x+=y;
+
+  return x;
+}
+
 // Compute Date from Julian Day
 void mjd2date(double mjd,int *year,int *month,double *day)
 {
@@ -215,6 +224,9 @@ orbit_t rv2el(int satno,double mjd,xyz_t r0,xyz_t v0)
       orb[i+1].ecc=0.0;
     if (orb[i+1].eqinc<0.0)
       orb[i+1].eqinc=0.0;
+    orb[i+1].mnan=modulo(orb[i+1].mnan,2.0*M_PI);
+    orb[i+1].ascn=modulo(orb[i+1].ascn,2.0*M_PI);
+    orb[i+1].argp=modulo(orb[i+1].argp,2.0*M_PI);
   }
 
   return orb[i];

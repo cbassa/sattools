@@ -713,6 +713,34 @@ void plot_moon(void)
       cpgtext(x0,y0,text);
     }
   }
+  for (dmjd=-6.0;dmjd<0.0;dmjd+=1.0) {
+    // Get positions
+    lunpos_xyz(m.mjd+dmjd,&s,&lra,&lde);
+
+    // GMST
+    h=gmst(m.mjd);
+
+    // Lunar antipode
+    l0=modulo(lra-h-180,360.0);
+    b0=-lde;
+    if (l0>180.0)
+      l0-=360.0;
+
+    // Convert
+    z0=cos(l0*D2R)*cos(b0*D2R)*XKMPER;
+    x0=sin(l0*D2R)*cos(b0*D2R)*XKMPER;
+    y0=sin(b0*D2R)*XKMPER;
+    
+    rotate(1,m.l0,&x0,&y0,&z0);
+    rotate(0,m.b0,&x0,&y0,&z0);    
+    
+    // Plot antipode
+    if (z0>0.0) {
+      sprintf(text," %.0f",dmjd);
+      cpgpt1(x0,y0,2);
+      cpgtext(x0,y0,text);
+    }
+  }
 
 
   cpgsci(isci);
@@ -902,6 +930,11 @@ void plot_notam(char *filename)
   file=fopen(filename,"r");
   while (fgetline(file,line,LIM)>0) {
     sscanf(line,"%f %f",&b,&l);
+    if (strlen(line)<2) {
+      flag=0;
+      continue;
+    }
+
     z=cos(l*D2R)*cos(b*D2R)*XKMPER;
     x=sin(l*D2R)*cos(b*D2R)*XKMPER;
     y=sin(b*D2R)*XKMPER;
@@ -1010,7 +1043,7 @@ void plot_map(void)
       // Plot track
       if (m.xyzflag==1)
 	plot_xyz();
-      else
+      //      else
 	plot_track();
     }
     

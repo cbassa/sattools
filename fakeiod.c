@@ -75,10 +75,10 @@ void compute_position(double mjd,xyz_t satpos,struct site s,int satno,char *desi
 
 int main(int argc,char *argv[])
 {
-  int arg=0,satno;
+  int arg=0,satno=99999;
   struct site s;
   double mjd=0;
-  char nfd[32],tlefile[LIM],*fname,line[LIM];
+  char nfd[32],tlefile[LIM],*fname,line[LIM],desig[10]="14999A";
   int i,imode;
   FILE *file;
   orbit_t orb;
@@ -95,7 +95,7 @@ int main(int argc,char *argv[])
   }
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:f:p:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:f:p:d:"))!=-1) {
     switch (arg) {
       
     case 't':
@@ -127,6 +127,10 @@ int main(int argc,char *argv[])
 
     case 'i':
       satno=atoi(optarg);
+      break;
+
+    case 'd':
+      strcpy(desig,optarg);
       break;
 
     default:
@@ -184,7 +188,7 @@ int main(int argc,char *argv[])
     file=fopen(fname,"r");
     while (fgetline(file,line,LIM)>0) {
       status=sscanf(line,"%lf %lf %lf %lf",&mjd,&satpos.x,&satpos.y,&satpos.z);
-      compute_position(mjd,satpos,s,99999,"14999A");
+      compute_position(mjd,satpos,s,satno,desig);
     }
     fclose(file);
   }
