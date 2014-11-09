@@ -340,7 +340,7 @@ int fgetline(FILE *file,char *s,int lim)
 
 int main(int argc,char *argv[])
 {
-  int imode,satno=99999,arg;
+  int imode,satno=99000,arg;
   FILE *file;
   orbit_t orb;
   xyz_t r,v;
@@ -389,6 +389,7 @@ int main(int argc,char *argv[])
 
     format_tle(orb,line1,line2);
     printf("%s\n%s\n",line1,line2);
+    satno++;
   }
   fclose(file);
 

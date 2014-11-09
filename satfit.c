@@ -1403,8 +1403,8 @@ double chisq(double a[])
   }
   if (a[5]>20.0)
     a[5]=20.0;
-  if (a[5]<0.1)
-    a[5]=0.1;
+  if (a[5]<0.05)
+    a[5]=0.05;
   
 
   // Set parameters

@@ -1043,7 +1043,7 @@ void plot_map(void)
       // Plot track
       if (m.xyzflag==1)
 	plot_xyz();
-      //      else
+      else
 	plot_track();
     }
     
