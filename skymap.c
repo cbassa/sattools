@@ -483,7 +483,7 @@ int main(int argc,char *argv[])
   init_skymap();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:R:D:hs:d:l:P:r:V:p:A:E:S:Q"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:R:D:hs:d:l:P:r:V:p:A:E:S:Qa"))!=-1) {
     switch(arg) {
 
     case 't':
@@ -576,6 +576,10 @@ int main(int argc,char *argv[])
       m.plotstars=0;
       break;
       
+    case 'a':
+      m.leoflag=0;
+      break;
+
     case 'h':
       usage();
       return 0;
@@ -1944,6 +1948,7 @@ long identify_satellite(char *filename,int satno,double mjd,float rx,float ry)
   char line[LIM],pline[LIM];
   char sra[16],sde[16];
   float lat,lng;
+  double mjd0,ra0,de0;
 
   // Open TLE file
   fp=fopen(filename,"rb");
@@ -1986,6 +1991,13 @@ long identify_satellite(char *filename,int satno,double mjd,float rx,float ry)
   dec2sex(smin.de,sde,0,4);
 
   printf("R.A.: %s  Decl.: %s\n",sra,sde);
+
+  // Precess position to J2000
+  mjd0=51544.5;
+  precess(mjd,smin.ra,smin.de,mjd0,&ra0,&de0);
+  dec2sex(ra0/15.0,sra,0,5);
+  dec2sex(de0,sde,0,4);
+  printf("R.A.: %s  Decl.: %s (J2000)\n",sra,sde);
   printf("Azi.: %.1f Alt.: %.1f\n\n",modulo(smin.azi-180.0,360.0),smin.alt);
 
   printf("Phase: %.2f\nMagnitude: %.2f\n",smin.phase,smin.mag);
