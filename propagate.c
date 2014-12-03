@@ -293,6 +293,25 @@ double date2mjd(int year,int month,double day)
   return jd-2400000.5;
 }
 
+// DOY to MJD
+double doy2mjd(int year,double doy)
+{
+  int month,k=2;
+  double day;
+
+  if (year%4==0 && year%400!=0)
+    k=1;
+
+  month=floor(9.0*(k+doy)/275.0+0.98);
+  
+  if (doy<32)
+    month=1;
+
+  day=doy-floor(275.0*month/9.0)+k*floor((month+9.0)/12.0)+30.0;
+
+  return date2mjd(year,month,day);
+}
+
 // nfd2mjd
 double nfd2mjd(char *date)
 {
@@ -309,7 +328,7 @@ double nfd2mjd(char *date)
 
 void usage(void)
 {
-  printf("proparage c:i:t:m:\n\nPropagates orbital elements to a new epoch using the SGP4/SDP4 model.\nDefault operation propagates classfd.tle to now,\n\n-c  input catalog\n-i  Satellite number\n-t  New epoch (YYYY-MM-DDTHH:MM:SS)\n-m  New epoch (MJD)\n");
+  printf("proparage c:i:t:m:e:\n\nPropagates orbital elements to a new epoch using the SGP4/SDP4 model.\nDefault operation propagates classfd.tle to now,\n\n-c  input catalog\n-i  Satellite number\n-t  New epoch (YYYY-MM-DDTHH:MM:SS)\n-m  New epoch (MJD)\n-e  New epoch (YYDDD.ddddddd)\n");
 
   return;
 }
@@ -323,8 +342,9 @@ int main(int argc,char *argv[])
   xyz_t r,v;
   char tlefile[LIM],nfd[32];
   char line1[80],line2[80],desig[20];
-  double mjd;
+  double mjd,epoch,ep_day;
   char *env;
+  int ep_year;
 
   // Get environment variable
   env=getenv("ST_TLEDIR");
@@ -335,12 +355,25 @@ int main(int argc,char *argv[])
   mjd=nfd2mjd(nfd);
 
   // Decode options
-  while ((arg=getopt(argc,argv,"c:i:t:m:h"))!=-1) {
+  while ((arg=getopt(argc,argv,"c:i:t:m:he:"))!=-1) {
     switch (arg) {
 
     case 't':
       strcpy(nfd,optarg);
       mjd=nfd2mjd(nfd);
+      break;
+
+    case 'e':
+      epoch=(double) atof(optarg);
+      ep_year=(int) floor(epoch/1000.0);
+      ep_day=epoch-1000*ep_year;
+      printf("%d %f\n",ep_year,ep_day);
+      if (ep_year<50)
+	ep_year+=2000;
+      else
+	ep_year+=1900;
+      
+      mjd=doy2mjd(ep_year,ep_day);
       break;
 
     case 'm':
