@@ -187,7 +187,12 @@ int main(int argc,char *argv[])
   } else {
     file=fopen(fname,"r");
     while (fgetline(file,line,LIM)>0) {
-      status=sscanf(line,"%lf %lf %lf %lf",&mjd,&satpos.x,&satpos.y,&satpos.z);
+      if (line[10]=='T') {
+	status=sscanf(line,"%s %lf %lf %lf",nfd,&satpos.x,&satpos.y,&satpos.z);
+	mjd=nfd2mjd(nfd);
+      } else {
+	status=sscanf(line,"%lf %lf %lf %lf",&mjd,&satpos.x,&satpos.y,&satpos.z);
+      }
       compute_position(mjd,satpos,s,satno,desig);
     }
     fclose(file);
@@ -434,10 +439,11 @@ void mjd2date(double mjd,char *date)
 // nfd2mjd
 double nfd2mjd(char *date)
 {
-  int year,month,day,hour,min,sec;
+  int year,month,day,hour,min;
+  float sec;
   double mjd,dday;
 
-  sscanf(date,"%04d-%02d-%02dT%02d:%02d:%02d",&year,&month,&day,&hour,&min,&sec);
+  sscanf(date,"%04d-%02d-%02dT%02d:%02d:%f",&year,&month,&day,&hour,&min,&sec);
   dday=day+hour/24.0+min/1440.0+sec/86400.0;
 
   mjd=date2mjd(year,month,dday);

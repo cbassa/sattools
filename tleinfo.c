@@ -223,6 +223,24 @@ int main(int argc,char *argv[])
     if (file==NULL) 
       fatal_error("File open failed for reading \"%s\"",tlefile);
 
+    while (fgetline(file,line1,LIM)>0) {
+      // Find TLE line
+      if (line1[0]=='1') {
+	fgetline(file,line2,LIM);
+	sscanf(line1+2,"%d",&no);
+	if (satno==0 || satno==no) {
+	  if (name==1 && desig==0) 
+	    printf("%s\n",line0);
+	  else if (name==0 && desig==1)
+	    printf("%.8s\n",line1+9);
+	  else
+	    printf("%s\n%s\n%s\n",line0,line1,line2);
+	}
+      }
+      strcpy(line0,line1);
+    }
+
+    /*
     // Loop over file
     while (fgetline(file,line0,LIM)>0) {
       // Read data lines
@@ -247,7 +265,7 @@ int main(int argc,char *argv[])
 	  printf("%s\n%s\n",line0,line2);
       }
     }
-
+    */
     fclose(file);
   } else if (oneline==1) {
     // Open file

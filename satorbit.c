@@ -401,7 +401,7 @@ void plot_xyz(void)
   long imode;
   int isci;
   float isch;
-  char norad[7],line[LIM];
+  char norad[7],line[LIM],nfd[32];
   struct sat s;
   double rsun,rearth;
   double dx,dy,dz,sra,sde;
@@ -419,7 +419,12 @@ void plot_xyz(void)
       
   while (fgetline(fp,line,LIM)>0) {
     // Get satellite position
-    sscanf(line,"%lf %lf %lf %lf",&mjd,&satpos.x,&satpos.y,&satpos.z);
+    if (line[10]=='T') {
+      sscanf(line,"%s %lf %lf %lf",nfd,&satpos.x,&satpos.y,&satpos.z);
+      mjd=nfd2mjd(nfd);
+    } else {
+      sscanf(line,"%lf %lf %lf %lf",&mjd,&satpos.x,&satpos.y,&satpos.z);
+    }
 
     // Mark point to plot
     if (mjd>m.mjd && mjd0<=m.mjd && flag==0 && i>0)

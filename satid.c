@@ -339,6 +339,8 @@ int main(int argc,char *argv[])
   plot_satellites(filename,img,0,img.mjd,img.exptime,3);
   sprintf(filename,"%s/catalog.tle",env);
   plot_satellites(filename,img,0,img.mjd,img.exptime,0);
+  sprintf(filename,"/home/bassa/jsc.txt");
+  plot_satellites(filename,img,0,img.mjd,img.exptime,5);
 
   cpgend();
 

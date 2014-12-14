@@ -2191,6 +2191,11 @@ int plot_skymap(void)
       cpgsch(1.0);
 
       // Plot everything
+      if (m.plotstars==1) {
+	sprintf(filename,"%s/data/constfig.dat",m.datadir);
+	skymap_plotconstellations(filename);
+	skymap_plotstars(m.starfile);
+      }
       if (strcmp(m.orientation,"horizontal")==0) {
        	skymap_plothorizontal_grid();
 	horizontal2equatorial(m.mjd,m.azi0,m.alt0,&m.ra0,&m.de0);
@@ -2198,11 +2203,6 @@ int plot_skymap(void)
       } else if (strcmp(m.orientation,"equatorial")==0) {
 	skymap_plotequatorial_grid();
 	equatorial2horizontal(m.mjd,m.ra0,m.de0,&m.azi0,&m.alt0);
-      }
-      if (m.plotstars==1) {
-	sprintf(filename,"%s/data/constfig.dat",m.datadir);
-	skymap_plotconstellations(filename);
-	skymap_plotstars(m.starfile);
       }
       skymap_plotsun();
 

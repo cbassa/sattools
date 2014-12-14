@@ -50,42 +50,7 @@
 6242 JM   42.9453   -2.8284    623    Jon Mikel
 6241 JM   42.9565   -2.8203    619    Jon Mikel
 4160 BD   51.2793    5.4768     35    Bram Dorreman
-9000 SL   28.2997  -16.5083   2000    Slooh
-9988 AA   44.4783    8.9567      0    IK1FJI
-9989 EC   60.6750 -151.118       0    KL7UW
-9996 AA   51.4390    5.3790      0    PE1ITR
-9992 AA   44.772    -0.621       0    F1TE
-9991 AA   45.4198 -122.8167      0    N7ZO
-9998 AA   53.398    26.629       0    ES5PC
-9990 AA   60.675  -151.118       0    PA0JMV
-9994 AA   48.698     6.3308      0    ON4BSM
-9993 AA   52.273    -0.538       0    G3WDG
-9995 AA   50.603     3.957       0    ON4KHG
-9997 AA   53.228     6.957       0    PA3ARK
 9999 GR   47.348     5.5151    100    Graves
 9000 NJ   51.4198    5.4086     25    Nico Janssen
-0000 CT   37.7441   23.9093      0    Christos Tsiplakos
-#0000 GW   35.9676  -84.0249    348    Greg Williams
-#0000 JO   60.45     22.2667      0    Juha Ojanpera
-#0000 LW   52.6963    1.2456      0    Les West
-#0000 BK   46.8     -92.1000      0    Bob King
-#0000 PR   18.22    -65.66        0    Cdr. R. H. Healy
-#0000 NP   90.0000    0.0000      0    North Pole
-#0000 MP   33.3563 -116.8648   1713    Hale Telescope
-#0000 JH   28.7564  -17.8889   2308    Jan Hattenbach
-#0000 MB   44.6500  -63.6000      0    Michael Boschat
-#0000 IS   54.2825   26.7466      0    Ivan Serhey
-#0000 RL   38.9483 -104.5617   2073    Ron Lee
-#0000 CW   59.3104   18.1003      0    Christoffer Wallstenius
-#0000 BK   46.7217  -92.4592      0    Bob King
-#0000 TL   41.5960  -71.0910      0    Tom Loebit
-#0000 WH   53.9067   11.9170      0    Wolfgang Hamburg
-#0000 CB   52.8361    6.3612      0    Cees Bassa
-#0000 CL  -32.449    118.861      0    Colin Legg
-#0000 PA   31.7361    6.0422      0    Petter Aslaksen
-#0000 PA   63.4303   10.4525      0    Petter Aslaksen
-#0000 RB   37.2620  -121.977     72    Rick Baldridge
-#0000 AM   44.3932   33.9701     44    Andriy Makeyev
-#0000 CB  -15.8769  -48.087       0    Carlos Bella
-#0000 SC   46.1911    9.0223    203    Simone 
-#0000 AA   38.0       23.75       0    Anthony A
+9990 WS   53.0574   -2.5688     65    William Stewart
+9992 DB   53.3478   -6.2597      0    Dublin

@@ -1,4 +1,4 @@
-  45.965    63.305    Baikonur
+  46.0336   63.0289   Baikonur
   62.7167   40.2833   Plesetsk
   28.475   -80.5528   Cape Canaveral
   34.7508 -120.4978   Vandenberg AFB

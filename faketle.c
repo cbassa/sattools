@@ -21,6 +21,8 @@ double mjd2doy(double mjd,int *yr);
 double nfd2mjd(char *date);
 double date2mjd(int year,int month,double day);
 void mjd2date(double mjd,int *year,int *month,double *day);
+double gmst(double mjd);
+double modulo(double x,double y);
 
 void usage(void)
 {
@@ -45,7 +47,7 @@ int main(int argc,char *argv[])
   float aodp,perigee,apogee,period,dt=0.0;
   char line1[70],line2[70];
   int arg=0;
-  double mjd;
+  double mjd,dh;
 
   // Initialize
   orb.satno=99999;
@@ -108,13 +110,13 @@ int main(int argc,char *argv[])
 
   orb.ep_day=mjd2doy(mjd+dt/86400.0,&orb.ep_year);
 
-
   perigee+=XKMPER;
   apogee+=XKMPER;
   aodp=0.5*(perigee+apogee)/XKMPER;
   orb.ecc=0.5*(apogee-perigee)/(aodp*XKMPER);
   orb.rev=XKE*pow(aodp,-1.5)*XMNPDA/(2.0*M_PI);
-
+  if (orb.rev<10)
+    orb.bstar=0.0;
   orbit(orb,&aodp,&perigee,&apogee,&period);
 
   format_tle(orb,line1,line2);
@@ -274,4 +276,25 @@ void mjd2date(double mjd,int *year,int *month,double *day)
     *year=c-4715;
 
   return;
+}
+
+// Greenwich Mean Sidereal Time
+double gmst(double mjd)
+{
+  double t,gmst;
+
+  t=(mjd-51544.5)/36525.0;
+
+  gmst=modulo(280.46061837+360.98564736629*(mjd-51544.5)+t*t*(0.000387933-t/38710000),360.0);
+
+  return gmst;
+}
+
+// Return x modulo y [0,y)
+double modulo(double x,double y)
+{
+  x=fmod(x,y);
+  if (x<0.0) x+=y;
+
+  return x;
 }
