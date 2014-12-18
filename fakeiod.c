@@ -95,7 +95,7 @@ int main(int argc,char *argv[])
   }
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:f:p:d:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:f:p:d:m:"))!=-1) {
     switch (arg) {
       
     case 't':

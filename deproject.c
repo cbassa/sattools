@@ -6,6 +6,7 @@
 #include "cpgplot.h"
 #include "cel.h"
 #include <jpeglib.h>
+#include <getopt.h>
 
 struct image {
   int naxis1,naxis2,naxis3;
@@ -27,77 +28,91 @@ struct jpeg_image {
 struct jpeg_image read_jpg(char *filename);
 void write_jpg(char *filename,struct jpeg_image img);
 struct image read_fits(char *filename,int pnum);
-
-// Get a x and y from a RA and Decl
-void forward(double ra0,double de0,double ra,double de,double *x,double *y)
-{
-  int i;
-  char pcode[4]="STG";
-  double phi,theta;
-  struct celprm cel;
-  struct prjprm prj;
-  double rx,ry;
-
-  // Initialize Projection Parameters
-  prj.flag=0;
-  prj.r0=0.;
-  for (i=0;i<10;prj.p[i++]=0.);
-
-  // Initialize Reference Angles
-  cel.ref[0]=ra0;
-  cel.ref[1]=de0;
-  cel.ref[2]=999.;
-  cel.ref[3]=999.;
-  cel.flag=0.;
-
-  if (celset(pcode,&cel,&prj)) {
-    printf("Error in Projection (celset)\n");
-    return;
-  } else {
-    if (celfwd(pcode,ra,de,&cel,&phi,&theta,&prj,&rx,&ry)) {
-      printf("Error in Projection (celfwd)\n");
-      return;
-    }
-  }
-  *x=rx*3600.;
-  *y=ry*3600.;
-
-  return;
-}
+void forward(double ra0,double de0,double ra,double de,double *x,double *y);
+void reverse(double ra0,double de0,double x,double y,double *ra,double *de);
 
 int main(int argc,char *argv[])
 {
   int i,j,k,l,m;
   struct image img;
   struct jpeg_image jpg,out;
-  double rx,ry,rx0,ry0;
+  double rx,ry,ra,de,rx0,ry0;
   double x,y,d;
   double drx=-10.0,dry=10.0;
-  double ra0=346.10,de0=-8.48;
+  double ra0=237.0,de0=12.5;
+  int arg=0;
+  char *fitsfile,*jpgfile,*outfile;
+
+    // Decode options
+  while ((arg=getopt(argc,argv,"j:f:o:R:D:s:"))!=-1) {
+    switch(arg) {
+
+    case 'j':
+      jpgfile=optarg;
+      break;
+
+    case 'f':
+      fitsfile=optarg;
+      break;
+
+    case 'o':
+      outfile=optarg;
+      break;
+
+    case 'R':
+      ra0=atof(optarg);
+      break;
+
+    case 'D':
+      de0=atof(optarg);
+      break;
+
+    case 's':
+      dry=atof(optarg);
+      drx=-dry;
+      break;
+
+    default:
+      return 0;
+    }
+  }
+
 
   // Read image
-  img=read_fits(argv[1],0);
-  jpg=read_jpg(argv[2]);
+  img=read_fits(fitsfile,0);
+  jpg=read_jpg(jpgfile);
 
-  // Offset
-  forward(img.ra0,img.de0,ra0,de0,&rx0,&ry0);
-
-  out.nx=6000;
-  out.ny=4000;
+  out.nx=3000;
+  out.ny=2000;
   out.nz=3;
+
+  img.x0*=4.0;
+  img.y0*=4.0;
+  img.a[1]/=4.0;
+  img.a[2]/=4.0;
+  img.b[1]/=4.0;
+  img.b[2]/=4.0;
 
   out.z=(float *) malloc(sizeof(float)*out.nx*out.ny*out.nz);
 
   for (i=0;i<out.nx;i++) {
     for (j=0;j<out.ny;j++) {
-      rx=drx*(float) (i-0.5*out.nx)+rx0;
-      ry=dry*(float) (j-0.5*out.ny)+ry0;
+      // Set rx,ry
+      rx=drx*(float) (i-0.5*out.nx);
+      ry=dry*(float) (j-0.5*out.ny);
 
+      // Obtain ra/dec for output image
+      reverse(ra0,de0,rx,ry,&ra,&de);
+      
+      // Obtain rx/ry for input image
+      forward(img.ra0,img.de0,ra,de,&rx0,&ry0);
+
+      // Compute pixel position
       d=img.a[1]*img.b[2]-img.a[2]*img.b[1];
+      x=(+rx0*img.b[2]-ry0*img.a[2])/d+img.x0;
+      y=(-rx0*img.b[1]+ry0*img.a[1])/d+img.y0;
 
-      x=(+rx*img.b[2]-ry*img.a[2])/d+img.x0;
-      y=(-rx*img.b[1]+ry*img.a[1])/d+img.y0;
-
+      // Fill image
       for (k=0;k<jpg.nz;k++) {
 	l=out.nz*(i+out.nx*(out.ny-j-1))+k;
 	m=jpg.nz*((int) x+jpg.nx*(int) (jpg.ny-y-1))+k;
@@ -105,11 +120,13 @@ int main(int argc,char *argv[])
 	  out.z[l]=jpg.z[m];
 	else
 	  out.z[l]=0.0;
+	
       }
     }
   }
 
-  write_jpg(argv[3],out);
+  // Dump
+  write_jpg(outfile,out);
 
   // Free
   free(img.z);
@@ -302,5 +319,78 @@ void write_jpg(char *filename,struct jpeg_image img)
   jpeg_destroy_compress(&cinfo);
   fclose(outfile);
 
+  return;
+}
+
+// Get a x and y from a RA and Decl
+void forward(double ra0,double de0,double ra,double de,double *x,double *y)
+{
+  int i;
+  char pcode[4]="TAN";
+  double phi,theta;
+  struct celprm cel;
+  struct prjprm prj;
+  double rx,ry;
+
+  // Initialize Projection Parameters
+  prj.flag=0;
+  prj.r0=0.;
+  for (i=0;i<10;prj.p[i++]=0.);
+
+  // Initialize Reference Angles
+  cel.ref[0]=ra0;
+  cel.ref[1]=de0;
+  cel.ref[2]=999.;
+  cel.ref[3]=999.;
+  cel.flag=0.;
+
+  if (celset(pcode,&cel,&prj)) {
+    printf("Error in Projection (celset)\n");
+    return;
+  } else {
+    if (celfwd(pcode,ra,de,&cel,&phi,&theta,&prj,&rx,&ry)) {
+      printf("Error in Projection (celfwd)\n");
+      return;
+    }
+  }
+  *x=rx*3600.;
+  *y=ry*3600.;
+
+  return;
+}
+
+// Get a RA and Decl from x and y
+void reverse(double ra0,double de0,double x,double y,double *ra,double *de)
+{
+  int i;
+  char pcode[4]="TAN";
+  double phi,theta;
+  struct celprm cel;
+  struct prjprm prj;
+
+  x/=3600.;
+  y/=3600.;
+
+  // Initialize Projection Parameters
+  prj.flag=0;
+  prj.r0=0.;
+  for (i=0;i<10;prj.p[i++]=0.);
+
+  // Initialize Reference Angles
+  cel.ref[0]=ra0;
+  cel.ref[1]=de0;
+  cel.ref[2]=999.;
+  cel.ref[3]=999.;
+  cel.flag=0.;
+
+  if (celset(pcode,&cel,&prj)) {
+    printf("Error in Projection (celset)\n");
+    return;
+  } else {
+    if (celrev(pcode,x,y,&prj,&phi,&theta,&cel,ra,de)) {
+      printf("Error in Projection (celrev)\n");
+      return;
+    }
+  }
   return;
 }
