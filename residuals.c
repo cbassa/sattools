@@ -48,7 +48,7 @@ void obspos_xyz(double mjd,double lng,double lat,float alt,xyz_t *pos,xyz_t *vel
 struct data read_data(char *filename);
 void forward(double ra0,double de0,double ra,double de,double *x,double *y);
 
-void compute_residual(char *filename,struct point p)
+void compute_residual(char *filename,struct point p,int satno)
 {
   int i,imode;
   FILE *file;
@@ -66,11 +66,14 @@ void compute_residual(char *filename,struct point p)
     fatal_error("Failed to open %s\n",filename);
 
   // Read TLE
-  read_twoline(file,p.satno,&orb);
+  if (satno==0)
+    read_twoline(file,p.satno,&orb);
+  else
+    read_twoline(file,satno,&orb);
   fclose(file);
 
   // Check for match
-  if (orb.satno!=p.satno) {
+  if (orb.satno!=p.satno && satno==0) {
     //    fprintf(stderr,"object %d not found in %s\n",p.satno,filename);
     return;
   }
@@ -109,6 +112,7 @@ void compute_residual(char *filename,struct point p)
   if ((-rx[0]*drx-ry[0]*dry)<0.0)
     dr*=-1;
   printf("%s | %8.5f deg %8.3f sec %7.3f day, %.1f km\n",p.iod_line,dr,dt,age,r[0]);
+  //printf("%12.8lf %8.3f %8.3f\n",p.mjd,3600*rx[0],3600*ry[0]);
 
   return;
 }
@@ -151,12 +155,12 @@ int main(int argc,char *argv[])
   char *datafile,catalog[LIM];
   char *env;
   float dt;
-  int verbose=0;
+  int verbose=0,satno=0;
 
   env=getenv("ST_TLEDIR");
   sprintf(catalog,"%s/classfd.tle",env);
   // Decode options
-  while ((arg=getopt(argc,argv,"d:c:hs:v"))!=-1) {
+  while ((arg=getopt(argc,argv,"d:c:hs:vi:"))!=-1) {
     switch(arg) {
     case 'd':
       datafile=optarg;
@@ -164,6 +168,10 @@ int main(int argc,char *argv[])
 
     case 'v':
       verbose=1;
+      break;
+
+    case 'i':
+      satno=atoi(optarg);
       break;
 
     case 'c':
@@ -199,7 +207,7 @@ int main(int argc,char *argv[])
     split_file(d,dt);
   } else {
     for (i=0;i<d.n;i++)
-      compute_residual(catalog,d.p[i]);
+      compute_residual(catalog,d.p[i],satno);
   }
 
   return 0;

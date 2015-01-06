@@ -37,7 +37,7 @@ double nfd2mjd(char *date);
 void dec2sex(double x,char *s,int type);
 double doy2mjd(int year,double doy);
 
-void compute_position(double mjd,xyz_t satpos,struct site s,int satno,char *desig) 
+void compute_position(double mjd,xyz_t satpos,struct site s,int satno,char *desig,int precess_flag) 
 {
   char sra[15],sde[15],nfd[32];
   xyz_t obspos,obsvel;
@@ -58,7 +58,12 @@ void compute_position(double mjd,xyz_t satpos,struct site s,int satno,char *desi
   de=asin(dz/r)*R2D;
   
   // Precess position
-  precess(mjd,ra,de,mjd0,&ra0,&de0);
+  if (precess_flag==1) {
+    precess(mjd,ra,de,mjd0,&ra0,&de0);
+  } else {
+    ra0=ra;
+    de0=de;
+  }
 
   // Angle format 2: RA/DEC = HHMMmmm+DDMMmm MX   (MX in minutes of arc)
   dec2sex(ra0/15.0,sra,0);
@@ -84,7 +89,7 @@ int main(int argc,char *argv[])
   orbit_t orb;
   xyz_t satpos,satvel;
   char *env;
-  int usefile=0,usepos=0,status;
+  int usefile=0,usepos=0,status,gmat=0,precess_flag=1;
 
   // Get site
   env=getenv("ST_COSPAR");
@@ -95,12 +100,20 @@ int main(int argc,char *argv[])
   }
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:f:p:d:m:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:f:p:d:m:gP"))!=-1) {
     switch (arg) {
       
     case 't':
       strcpy(nfd,optarg);
       mjd=nfd2mjd(nfd);
+      break;
+
+    case 'g':
+      gmat=1;
+      break;
+
+    case 'P':
+      precess_flag=0;
       break;
 
     case 'm':
@@ -174,26 +187,30 @@ int main(int argc,char *argv[])
     // Compute
     if (usefile==0) {
       satpos_xyz(mjd+2400000.5,&satpos,&satvel);
-      compute_position(mjd,satpos,s,orb.satno,orb.desig);
+      compute_position(mjd,satpos,s,orb.satno,orb.desig,precess_flag);
     } else {
       file=fopen(fname,"r");
       while (fgetline(file,line,LIM)>0) {
 	status=sscanf(line,"%lf",&mjd);
 	satpos_xyz(mjd+2400000.5,&satpos,&satvel);
-	compute_position(mjd,satpos,s,orb.satno,orb.desig);
+	compute_position(mjd,satpos,s,orb.satno,orb.desig,precess_flag);
       }
       fclose(file);
     }
   } else {
     file=fopen(fname,"r");
     while (fgetline(file,line,LIM)>0) {
+      if (!isdigit(line[0]))
+	continue;
       if (line[10]=='T') {
 	status=sscanf(line,"%s %lf %lf %lf",nfd,&satpos.x,&satpos.y,&satpos.z);
 	mjd=nfd2mjd(nfd);
       } else {
 	status=sscanf(line,"%lf %lf %lf %lf",&mjd,&satpos.x,&satpos.y,&satpos.z);
+	if (gmat==1)
+	  mjd+=29999.5; 
       }
-      compute_position(mjd,satpos,s,satno,desig);
+      compute_position(mjd,satpos,s,satno,desig,precess_flag);
     }
     fclose(file);
   }

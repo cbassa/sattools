@@ -1453,7 +1453,15 @@ double chisq(double a[])
   }
   if (nsel>0) 
     rms=sqrt(rms/(float) nsel);
-
+  /*
+  // Perigee match
+  satpos_xyz(57022.84238426+2400000.5,&satpos,&satvel);
+  dx=-1557.4323-satpos.x;
+  dy=+3594.7374-satpos.y;
+  dz=-7566.5506-satpos.z;
+  chisq+=1000*(dx*dx+dy*dy+dz*dz);
+  printf("%f %f %f\n",dx,dy,dz);
+  */
   d.chisq=chisq;
   d.rms=rms;
   d.nsel=nsel;
