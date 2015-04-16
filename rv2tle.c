@@ -224,10 +224,11 @@ orbit_t rv2el(int satno,double mjd,xyz_t r0,xyz_t v0)
       orb[i+1].ecc=0.0;
     if (orb[i+1].eqinc<0.0)
       orb[i+1].eqinc=0.0;
-    orb[i+1].mnan=modulo(orb[i+1].mnan,2.0*M_PI);
-    orb[i+1].ascn=modulo(orb[i+1].ascn,2.0*M_PI);
-    orb[i+1].argp=modulo(orb[i+1].argp,2.0*M_PI);
   }
+
+  orb[i].mnan=modulo(orb[i].mnan,2.0*M_PI);
+  orb[i].ascn=modulo(orb[i].ascn,2.0*M_PI);
+  orb[i].argp=modulo(orb[i].argp,2.0*M_PI);
 
   return orb[i];
 }
@@ -298,7 +299,7 @@ double date2mjd(int year,int month,double day)
 
   if (year<1582) b=0;
   if (year==1582 && month<10) b=0;
-  if (year==1852 && month==10 && day<=4) b=0;
+  if (year==1582 && month==10 && day<=4) b=0;
 
   jd=floor(365.25*(year+4716))+floor(30.6001*(month+1))+day+b-1524.5;
 

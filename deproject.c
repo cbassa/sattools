@@ -83,16 +83,17 @@ int main(int argc,char *argv[])
   jpg=read_jpg(jpgfile);
 
   out.nx=3000;
-  out.ny=2000;
+  out.ny=6000;
   out.nz=3;
 
+  /*
   img.x0*=4.0;
   img.y0*=4.0;
   img.a[1]/=4.0;
   img.a[2]/=4.0;
   img.b[1]/=4.0;
   img.b[2]/=4.0;
-
+  */
   out.z=(float *) malloc(sizeof(float)*out.nx*out.ny*out.nz);
 
   for (i=0;i<out.nx;i++) {

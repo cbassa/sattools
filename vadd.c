@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include "cpgplot.h"
 #include "sgdp4h.h"
 #include "satutl.h"
 #include <getopt.h>
@@ -20,6 +21,15 @@ extern double SGDP4_jd0;
 float dot(xyz_t a,xyz_t b)
 {
   return a.x*b.x+a.y*b.y+a.z*b.z;
+}
+
+// Return x modulo y [0,y)
+double modulo(double x,double y)
+{
+  x=fmod(x,y);
+  if (x<0.0) x+=y;
+
+  return x;
 }
 
 // Magnitude
@@ -297,25 +307,6 @@ double date2mjd(int year,int month,double day)
   return jd-2400000.5;
 }
 
-// DOY to MJD
-double doy2mjd(int year,double doy)
-{
-  int month,k=2;
-  double day;
-
-  if (year%4==0 && year%400!=0)
-    k=1;
-
-  month=floor(9.0*(k+doy)/275.0+0.98);
-  
-  if (doy<32)
-    month=1;
-
-  day=doy-floor(275.0*month/9.0)+k*floor((month+9.0)/12.0)+30.0;
-
-  return date2mjd(year,month,day);
-}
-
 // nfd2mjd
 double nfd2mjd(char *date)
 {
@@ -332,7 +323,7 @@ double nfd2mjd(char *date)
 
 void usage(void)
 {
-  printf("proparage c:i:t:m:e:\n\nPropagates orbital elements to a new epoch using the SGP4/SDP4 model.\nDefault operation propagates classfd.tle to now,\n\n-c  input catalog\n-i  Satellite number\n-t  New epoch (YYYY-MM-DDTHH:MM:SS)\n-m  New epoch (MJD)\n-e  New epoch (YYDDD.ddddddd)\n");
+  printf("propagate c:i:t:m:\n\nPropagates orbital elements to a new epoch using the SGP4/SDP4 model.\nDefault operation propagates classfd.tle to now,\n\n-c  input catalog\n-i  Satellite number\n-t  New epoch (YYYY-MM-DDTHH:MM:SS)\n-m  New epoch (MJD)\n");
 
   return;
 }
@@ -340,15 +331,16 @@ void usage(void)
 
 int main(int argc,char *argv[])
 {
-  int imode,satno=0,arg;
+  int imode,satno=0,arg,satnomin,flag=0,satnonew=-1;
   FILE *file;
   orbit_t orb;
-  xyz_t r,v;
+  xyz_t r,v,n,dv;
   char tlefile[LIM],nfd[32];
   char line1[80],line2[80],desig[20];
-  double mjd,epoch,ep_day;
+  double mjd,ra,de,dr,drmin;
+  float vadd=0.0;
+  char direction[16]="radial";
   char *env;
-  int ep_year;
 
   // Get environment variable
   env=getenv("ST_TLEDIR");
@@ -359,25 +351,12 @@ int main(int argc,char *argv[])
   mjd=nfd2mjd(nfd);
 
   // Decode options
-  while ((arg=getopt(argc,argv,"c:i:t:m:he:"))!=-1) {
+  while ((arg=getopt(argc,argv,"c:i:t:m:hv:d:I:"))!=-1) {
     switch (arg) {
 
     case 't':
       strcpy(nfd,optarg);
       mjd=nfd2mjd(nfd);
-      break;
-
-    case 'e':
-      epoch=(double) atof(optarg);
-      ep_year=(int) floor(epoch/1000.0);
-      ep_day=epoch-1000*ep_year;
-      printf("%d %f\n",ep_year,ep_day);
-      if (ep_year<50)
-	ep_year+=2000;
-      else
-	ep_year+=1900;
-      
-      mjd=doy2mjd(ep_year,ep_day);
       break;
 
     case 'm':
@@ -397,33 +376,78 @@ int main(int argc,char *argv[])
       return 0;
       break;
 
+    case 'v':
+      vadd=atof(optarg);
+      break;
+
+    case 'd':
+      strcpy(direction,optarg);
+      break;
+
+    case 'I':
+      satnonew=atoi(optarg);
+      break;
+
     default:
       usage();
       return 0;
     }
   }
 
+  // Reloop stderr
+  freopen("/tmp/stderr.txt","w",stderr);
 
   // Open file
   file=fopen(tlefile,"r");
   while (read_twoline(file,satno,&orb)==0) {
     format_tle(orb,line1,line2);
-    //    printf("Input:\n%s\n%s\n",line1,line2);
     strcpy(desig,orb.desig);
 
     // Propagate
     imode=init_sgdp4(&orb);
     imode=satpos_xyz(mjd+2400000.5,&r,&v);
     
+    // Compute normal
+    n=cross(r,v);
+
+    // Add velocity
+    if (strcmp(direction,"prograde")==0) {
+      dv.x=vadd*v.x/magnitude(v);
+      dv.y=vadd*v.y/magnitude(v);
+      dv.z=vadd*v.z/magnitude(v);
+    } else if (strcmp(direction,"radial")==0) {
+      dv.x=vadd*r.x/magnitude(r);
+      dv.y=vadd*r.y/magnitude(r);
+      dv.z=vadd*r.z/magnitude(r);
+    } else if (strcmp(direction,"normal")==0) {
+      dv.x=vadd*n.x/magnitude(n);
+      dv.y=vadd*n.y/magnitude(n);
+      dv.z=vadd*n.z/magnitude(n);
+    } else {
+      dv.x=0.0;
+      dv.y=0.0;
+      dv.z=0.0;
+    }
+    v.x+=dv.x/1000.0;
+    v.y+=dv.y/1000.0;
+    v.z+=dv.z/1000.0;
+
     // Convert
     orb=rv2el(orb.satno,mjd,r,v);
 
-    strcpy(orb.desig,desig);
+    if (satnonew==-1) {
+      strcpy(orb.desig,desig);
+    } else {
+      strcpy(orb.desig,"15999A");
+      orb.satno=satnonew;
+    }
 
+    // Print tle
     format_tle(orb,line1,line2);
-    printf("%s\n%s\n",line1,line2);
+    printf("%s\n%s\n# %05d + %g m/s %s\n",line1,line2,satno,vadd,direction);
   }
   fclose(file);
+
 
   return 0;
 }

@@ -301,7 +301,7 @@ void plot_track(void)
     
     Isat=orb.satno;
     imode=init_sgdp4(&orb);
-    
+
     if(imode == SGDP4_ERROR) continue;
 
     jd=m.mjd+2400000.5;
@@ -1371,7 +1371,7 @@ double date2mjd(int year,int month,double day)
 
   if (year<1582) b=0;
   if (year==1582 && month<10) b=0;
-  if (year==1852 && month==10 && day<=4) b=0;
+  if (year==1582 && month==10 && day<=4) b=0;
 
   jd=floor(365.25*(year+4716))+floor(30.6001*(month+1))+day+b-1524.5;
 
