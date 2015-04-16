@@ -22,8 +22,8 @@ va_list arg_ptr;
     fprintf(stderr, "\nNow terminating the program...\n");
     fflush(stderr);
 
-    exit(5);
-
+    //exit(5);
+    return;
 }
 
 /* ===================================================================== */

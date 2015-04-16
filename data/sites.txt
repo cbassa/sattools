@@ -53,4 +53,7 @@
 9999 GR   47.348     5.5151    100    Graves
 9000 NJ   51.4198    5.4086     25    Nico Janssen
 9990 WS   53.0574   -2.5688     65    William Stewart
+9001 ES  -24.6272  -70.4047   2635    Cerro Paranal
 9992 DB   53.3478   -6.2597      0    Dublin
+0501 IS   43.6986  132.1656    273    ISON
+9002 PK  -32.9999  148.2623      0    Parkes

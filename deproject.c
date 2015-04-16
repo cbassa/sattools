@@ -73,12 +73,12 @@ int main(int argc,char *argv[])
   double rx,ry,rx0,ry0;
   double x,y,d;
   double drx=-10.0,dry=10.0;
-  double ra0=346.10,de0=-8.48;
+  double ra0=245.578,de0=40.613;
 
   // Read image
   img=read_fits(argv[1],0);
   jpg=read_jpg(argv[2]);
-
+  printf("%d %d %d\n",jpg.nx,jpg.ny,jpg.nz);
   // Offset
   forward(img.ra0,img.de0,ra0,de0,&rx0,&ry0);
 
