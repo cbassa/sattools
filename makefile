@@ -13,6 +13,9 @@ F77 = gfortran
 all:
 	make addwcs angular calibrate dec2sex faketle fitsheader fitskey imgstat jpg2fits jpgstack measure pgm2fits plotfits pstrack rde2iod reduce residuals runsched satfit satid satmap satorbit sex2dec skymap tle2ole tleinfo uk2iod viewer wcsfit deproject slewto waitfor pass detect launchtle propagate fakeiod csv2tle normal posmatch posvel xyz2tle mvtle
 
+tle2rv: tle2rv.o sgdp4.o satutl.o deep.o ferror.o
+	$(CC) -o tle2rv tle2rv.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)	
+
 mvtle: mvtle.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o mvtle mvtle.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
 
@@ -34,11 +37,15 @@ posvel: posvel.o sgdp4.o satutl.o deep.o ferror.o
 normal: normal.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o normal normal.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
 
+vadd: vadd.o sgdp4.o satutl.o deep.o ferror.o
+	$(CC) -o vadd vadd.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+
 posmatch: posmatch.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o posmatch posmatch.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
 
 propagate: propagate.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o propagate propagate.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+
 detect: detect.o
 	$(F77) -o detect detect.o -lm $(LFLAGS)
 
