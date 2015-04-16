@@ -4,7 +4,7 @@
 CFLAGS = #-O3 -Wno-unused-result
 
 # Linking flags
-LFLAGS = -lm -L/usr/local/src/pgplot-5.2.2 -lcpgplot -lpgplot -lX11 -fno-backslash -lpng -L/usr/local/src/qfits-5.4.0/lib -lqfits -lwcs_c -lgsl -lgslcblas -ljpeg -lexif
+LFLAGS = -lm -L/usr/local/src/pgplot-5.2.2 -lcpgplot -lpgplot -lX11 -fno-backslash -lpng -L/usr/local/src/qfits-5.2.0/lib -lqfits -lwcs_c -lgsl -lgslcblas -ljpeg -lexif
 
 # Compilers
 CC = gcc
@@ -36,6 +36,9 @@ posvel: posvel.o sgdp4.o satutl.o deep.o ferror.o
 
 normal: normal.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o normal normal.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+
+vadd: vadd.o sgdp4.o satutl.o deep.o ferror.o
+	$(CC) -o vadd vadd.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
 
 posmatch: posmatch.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o posmatch posmatch.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
