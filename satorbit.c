@@ -121,7 +121,8 @@ void initialize_setup(void)
   } else {
     printf("ST_TLEDIR environment variable not found.\n");
   }
-  sprintf(m.tlefile,"%s/classfd.tle",m.tledir);
+  //  sprintf(m.tlefile,"%s/classfd.tle",m.tledir);
+  strcpy(m.tlefile,"");
 
   // Read LR coefficients
   sprintf(filename,"%s/data/moonLR.dat",m.datadir);
@@ -286,6 +287,9 @@ void plot_track(void)
   struct sat s;
   float rmin,rmax;
   float xmin,ymin,zmin,xmax,ymax,zmax;
+
+  if (strcmp(m.tlefile,"")==0)
+    return;
 
   cpgqci(&isci);
   cpgqch(&isch);
@@ -928,13 +932,14 @@ void plot_notam(char *filename)
 {
   int i,flag=0;
   float x,y,z;
-  float l,b;
+  float l,b,r;
   char line[LIM];
   FILE *file;
 
   file=fopen(filename,"r");
   while (fgetline(file,line,LIM)>0) {
-    sscanf(line,"%f %f",&b,&l);
+    r=0.0;
+    sscanf(line,"%f %f %f",&b,&l,&r);
     if (strlen(line)<2) {
       flag=0;
       continue;
