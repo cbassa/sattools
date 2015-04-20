@@ -181,15 +181,6 @@ orbit_t classel(int ep_year,double ep_day,xyz_t r,xyz_t v)
   return orb;
 }
 
-// Return x modulo y [0,y)
-double modulo(double x,double y)
-{
-  x=fmod(x,y);
-  if (x<0.0) x+=y;
-
-  return x;
-}
-
 orbit_t rv2el(int satno,double mjd,xyz_t r0,xyz_t v0)
 {
   int i,imode;
