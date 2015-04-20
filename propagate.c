@@ -16,6 +16,15 @@
 
 extern double SGDP4_jd0;
 
+// Return x modulo y [0,y)
+double modulo(double x,double y)
+{
+  x=fmod(x,y);
+  if (x<0.0) x+=y;
+
+  return x;
+}
+
 // Dot product
 float dot(xyz_t a,xyz_t b)
 {

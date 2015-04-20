@@ -4,7 +4,7 @@
 CFLAGS = #-O3 -Wno-unused-result
 
 # Linking flags
-LFLAGS = -lm -L/usr/local/src/pgplot-5.2.2 -lcpgplot -lpgplot -lX11 -fno-backslash -lpng -L/usr/local/src/qfits-5.2.0/lib -lqfits -lwcs_c -lgsl -lgslcblas -ljpeg -lexif
+LFLAGS = -lm -lcpgplot -lpgplot -lX11 -fno-backslash -lpng -L/usr/local/lib -lqfits -lwcs_c -lgsl -lgslcblas -ljpeg -lexif
 
 # Compilers
 CC = gcc
@@ -17,34 +17,35 @@ tle2rv: tle2rv.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o tle2rv tle2rv.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)	
 
 mvtle: mvtle.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o mvtle mvtle.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+	$(CC) -o mvtle mvtle.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 rv2tle: rv2tle.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o rv2tle rv2tle.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
 
 xyz2tle: xyz2tle.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o
-	$(CC) -o xyz2tle xyz2tle.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o $(LFLAGS)
+	$(CC) -o xyz2tle xyz2tle.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o -lm
 
 csv2tle: csv2tle.o satutl.o ferror.o
-	$(CC) -o csv2tle csv2tle.o satutl.o ferror.o $(LFLAGS)
+	$(CC) -o csv2tle csv2tle.o satutl.o ferror.o -lm
 
 fakeiod: fakeiod.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o fakeiod fakeiod.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+	$(CC) -o fakeiod fakeiod.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 posvel: posvel.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o posvel posvel.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+	$(CC) -o posvel posvel.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 normal: normal.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o normal normal.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+	$(CC) -o normal normal.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 vadd: vadd.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o vadd vadd.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
 
 posmatch: posmatch.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o posmatch posmatch.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+	$(CC) -o posmatch posmatch.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 propagate: propagate.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o propagate propagate.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+	$(CC) -o propagate propagate.o sgdp4.o satutl.o deep.o ferror.o -lm
+
 detect: detect.o
 	$(F77) -o detect detect.o -lm $(LFLAGS)
 
@@ -79,34 +80,34 @@ measure: measure.o
 	$(F77) -o measure measure.o $(LFLAGS)
 
 jpg2fits: jpg2fits.o
-	$(CC) -o jpg2fits jpg2fits.o $(LFLAGS)
+	$(CC) -o jpg2fits jpg2fits.o -lm -L/usr/local/lib -lqfits -ljpeg
 
 pstrack: pstrack.o sgdp4.o satutl.o deep.o ferror.o
 	$(F77) -o pstrack pstrack.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
 
 faketle: faketle.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o faketle faketle.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+	$(CC) -o faketle faketle.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 imgstat: imgstat.o
-	$(CC) -o imgstat imgstat.o $(LFLAGS)
+	$(CC) -o imgstat imgstat.o -lm -L/usr/local/lib -lqfits
 
 satfit: satfit.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o
 	$(F77) -o satfit satfit.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o $(LFLAGS)
 
 uk2iod: uk2iod.o
-	$(CC) -o uk2iod uk2iod.o $(LFLAGS)
+	$(CC) -o uk2iod uk2iod.o -lm
 
 rde2iod: rde2iod.o
-	$(CC) -o rde2iod rde2iod.o $(LFLAGS)
+	$(CC) -o rde2iod rde2iod.o -lm
 
 viewer: viewer.o
-	$(CC) -o viewer viewer.o $(LFLAGS)
+	$(CC) -o viewer viewer.o -lm -L/usr/local/lib -lqfits
 
 residuals: residuals.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o residuals residuals.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+	$(CC) -o residuals residuals.o sgdp4.o satutl.o deep.o ferror.o -lm -lwcs_c
 
 tleinfo: tleinfo.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o tleinfo tleinfo.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+	$(CC) -o tleinfo tleinfo.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 satmap: satmap.o sgdp4.o satutl.o deep.o ferror.o
 	$(F77) -o satmap satmap.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
@@ -115,13 +116,13 @@ satorbit: satorbit.o sgdp4.o satutl.o deep.o ferror.o
 	$(F77) -o satorbit satorbit.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
 
 runsched: runsched.o
-	$(CC) -o runsched runsched.o $(LFLAGS)
+	$(CC) -o runsched runsched.o -lm
 
 fitskey: fitskey.o
-	$(CC) -o fitskey fitskey.o -L/usr/local/src/qfits-5.4.0/lib -lqfits
+	$(CC) -o fitskey fitskey.o -L/usr/local/lib -lqfits
 
 fitsheader: fitsheader.o
-	$(CC) -o fitsheader fitsheader.o -L/usr/local/src/qfits-5.4.0/lib -lqfits
+	$(CC) -o fitsheader fitsheader.o -L/usr/local/lib -lqfits
 
 satid: satid.o sgdp4.o satutl.o deep.o ferror.o
 	$(F77) -o satid satid.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
