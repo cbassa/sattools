@@ -89,6 +89,7 @@ void skymap_plotequatorial_grid();
 void skymap_plotconstellations(char *);
 void equatorial2horizontal(double,double,double,double *,double *);
 void graves_equatorial2horizontal(double,double,double,double *,double *);
+void graves_horizontal2equatorial(double,double,double,double *,double *);
 void horizontal2equatorial(double,double,double,double *,double *);
 void skymap_plotstars(char *);
 void obspos_xyz(double,xyz_t *,xyz_t *);
@@ -627,6 +628,72 @@ int main(int argc,char *argv[])
   fclose(stderr);
 
   return 0;
+}
+
+void plot_graves_visibility(void)
+{
+  int i,j,k,nx=32,ny=8;
+  double azi,alt,ra,de;
+  double ax,ay,az,dr,dx,dy,dz,h,r,r1,r2,rx,ry;
+  xyz_t grvpos,grvvel,satpos,obspos,obsvel;
+  float azil[]={-90,-80,-70,-60,-50,-40,-30,-20,-10,0,10,20,30,40,50,60,70,80,90,90,90,90,90,90,80,70,60,50,40,30,20,10,0,-10,-20,-30,-40,-50,-60,-70,-80,-90,-90,-90,-90,-90,-90};
+  float altl[]={15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,20,25,30,35,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,35,30,25,20,15};
+
+
+  // Get observer and solar position
+  graves_xyz(m.mjd,&grvpos,&grvvel);
+  obspos_xyz(m.mjd,&obspos,&obsvel);
+
+  cpgsci(2);
+  for (h=300;h<=1200;h+=100) {
+    for (i=0;i<sizeof(azil)/sizeof(azil[0]);i++) {
+      graves_horizontal2equatorial(m.mjd,azil[i],altl[i],&ra,&de);
+      
+      // Compute unit vector
+      ax=cos(ra*D2R)*cos(de*D2R);
+      ay=sin(ra*D2R)*cos(de*D2R);
+      az=sin(de*D2R);
+      
+      // Find distance
+      for (k=0,r1=h;k<20;k++) { 
+	dx=r1*ax;
+	dy=r1*ay;
+	dz=r1*az;
+	satpos.x=grvpos.x+dx;
+	satpos.y=grvpos.y+dy;
+	satpos.z=grvpos.z+dz;
+	r=sqrt(satpos.x*satpos.x+satpos.y*satpos.y+satpos.z*satpos.z);
+	dr=h+XKMPER-r;
+	
+	if (dr<1.0)
+	  break;
+	r1+=dr;
+      }
+      
+      // Compute observer distance
+      dx=satpos.x-obspos.x;
+      dy=satpos.y-obspos.y;
+      dz=satpos.z-obspos.z;
+      r2=sqrt(dx*dx+dy*dy+dz*dz);
+      ra=modulo(atan2(dy,dx)*R2D,360.0);
+      de=asin(dz/r2)*R2D;
+      
+      // Convert and project
+      if (strcmp(m.orientation,"horizontal")==0) {
+	equatorial2horizontal(m.mjd,ra,de,&azi,&alt);
+	forward(azi,alt,&rx,&ry);
+      } else if (strcmp(m.orientation,"equatorial")==0) {
+	forward(ra,de,&rx,&ry);
+      }
+      if (i==0) 
+	cpgmove(rx,ry);
+      else
+	cpgdraw(rx,ry);
+    }
+  }
+  cpgsci(1);
+
+  return;
 }
 
 // Plot visibility contours
@@ -1323,6 +1390,21 @@ void horizontal2equatorial(double mjd,double azi,double alt,double *ra,double *d
   h=atan2(sin(azi*D2R),cos(azi*D2R)*sin(m.lat*D2R)+tan(alt*D2R)*cos(m.lat*D2R))*R2D;
   *ra=modulo(gmst(mjd)+m.lng-h,360.0);
   *de=asin(sin(m.lat*D2R)*sin(alt*D2R)-cos(m.lat*D2R)*cos(alt*D2R)*cos(azi*D2R))*R2D;
+  if (*ra<0.0)
+    *ra+=360.0;
+
+  return;
+}
+
+// Convert horizontal into equatorial coordinates
+void graves_horizontal2equatorial(double mjd,double azi,double alt,double *ra,double *de)
+{
+  double h;
+  float lat=47.3480,lng=5.5151;
+
+  h=atan2(sin(azi*D2R),cos(azi*D2R)*sin(lat*D2R)+tan(alt*D2R)*cos(lat*D2R))*R2D;
+  *ra=modulo(gmst(mjd)+lng-h,360.0);
+  *de=asin(sin(lat*D2R)*sin(alt*D2R)-cos(lat*D2R)*cos(alt*D2R)*cos(azi*D2R))*R2D;
   if (*ra<0.0)
     *ra+=360.0;
 
@@ -2291,6 +2373,10 @@ int plot_skymap(void)
     // Plot visibility
     if (m.visflag==1 && strcmp(m.orientation,"horizontal")==0)
       plot_visibility(m.rvis);
+
+    // Graves visibility
+    if (m.graves==1)
+      plot_graves_visibility();
 
     // Get time
     cpgcurs(&x,&y,&c);

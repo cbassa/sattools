@@ -8,7 +8,7 @@
 
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI
-#define LIM 128
+#define LIM 256
 
 struct image {
   char filename[64];
@@ -56,6 +56,130 @@ void mjd2date(double mjd,char *date);
 void dec2sex(double x,char *s,int type);
 float linear_fit(float x[],float y[],int n,float a[],float sa[]);
 int fgetline(FILE *file,char *s,int lim);
+
+
+// Find peak
+float find_peak(float *z,int kx,int ky,int xmin,int xmax,int ymin,int ymax,float s,int mx,int my,float *x0,float *y0)
+{
+  int i,j,k,l,i0,j0,k0,i1,j1,k1,nx,ny;
+  int imid,jmid,imax,jmax,flag;
+  float *d,*g,*w,*h;
+  float sg,sgg,sgn,den,s1,s2;
+  float hmax,havg,hstd;
+  float x,y;
+
+  printf("%d %d %d %d -> %d %d\n",xmin,xmax,ymin,ymax,kx,ky);
+  // Select image
+  if (xmin<0.0) xmin=0.0;
+  if (ymin<0.0) ymin=0.0;
+  if (xmax>=kx) xmax=kx;
+  if (ymax>=ky) ymax=ky;
+  nx=(int) (xmax-xmin);
+  ny=(int) (ymax-ymin);
+  d=(float *) malloc(sizeof(float)*nx*ny);
+  for (i=xmin,i0=0;i<xmax;i++,i0++) {
+    for (j=ymin,j0=0;j<ymax;j++,j0++) {
+      k=i+kx*j;
+      k0=i0+nx*j0;
+      d[k0]=z[k];
+    }
+  }
+  printf("%d %d %d %d -> %d %d\n",xmin,xmax,ymin,ymax,nx,ny);
+  // Make kernel
+  g=(float *) malloc(sizeof(float)*mx*my);
+  for (i=0,imid=mx/2,jmid=my/2,sg=0.0,sgg=0.0;i<mx;i++) {
+    x=((float) (i-imid))/s;
+    for (j=0;j<my;j++) {
+      y=((float) (j-jmid))/s;
+      k=i+mx*j;
+      g[k]=exp(-0.5*(x*x+y*y));
+      sg+=g[k];
+      sgg+=g[k]*g[k];
+    }
+  }
+  sgn=sg/(float) (mx*my);
+  den=sgg-sg*sg/(float) (mx*my);
+
+  // Compute weights
+  w=(float *) malloc(sizeof(float)*mx*my);
+  for (i=0;i<mx;i++) {
+    for (j=0;j<my;j++) {
+      k=i+mx*j;
+      w[k]=(g[k]-sgn)/den;
+    }
+  }
+
+  // Compute H array
+  h=(float *) malloc(sizeof(float)*nx*ny);
+  for (i=0;i<nx;i++) {
+    for (j=0;j<ny;j++) {
+      k=i+nx*j;
+      h[k]=0.0;
+      for (i0=0;i0<mx;i0++) {
+	for (j0=0;j0<my;j0++) {
+	  k0=i0+mx*j0;
+	  i1=i+i0-imid;
+	  j1=j+j0-jmid;
+	  // Keep in range
+	  if (i1<0 || i1>=nx || j1<0 || j1>=ny)
+	    continue;
+	  k1=i1+nx*j1;
+	  h[k]+=w[k0]*d[k1];
+	}
+      }
+      h[k]/=(float) (mx*my);
+    }
+  }
+  
+  // Locate maximum
+  for (i=mx,flag=0;i<nx-mx;i++) {
+    for (j=my;j<ny-my;j++) {
+      k=i+nx*j;
+      if (flag==0) {
+	imax=i;
+	jmax=j;
+	hmax=h[k];
+	flag=1;
+      }
+      if (h[k]>hmax) {
+	imax=i;
+	jmax=j;
+	hmax=h[k];
+      }
+    }
+  }
+
+  // Compute mean value
+  for (i=mx,s1=0.0,s2=0.0;i<nx-mx;i++) {
+    for (j=my;j<ny-my;j++) {
+      k=i+nx*j;
+      s1+=h[k];
+      s2+=1.0;
+    }
+  }
+  havg=s1/s2;
+
+  // Standard deviation
+  for (i=mx,s1=0.0,s2=0.0;i<nx-mx;i++) {
+    for (j=my;j<ny-my;j++) {
+      k=i+nx*j;
+      s1+=(h[k]-havg)*(h[k]-havg);
+      s2+=1.0;
+    }
+  }
+  hstd=sqrt(s1/s2);
+
+  // Free
+  free(g);
+  free(w);
+  free(h);
+  free(d);
+
+  *x0=imax+xmin+0.5;
+  *y0=jmax+ymin+0.5;
+
+  return (hmax-havg)/hstd;
+}
 
 // MJD to DOY
 double mjd2doy(double mjd,int *yr)
@@ -422,6 +546,12 @@ void track(char *fileroot,struct observation obs,struct image *img,float frac)
   }
   while (fgetline(file,line,LIM)>0) {
     sscanf(line,"%s %f %f %f %f %f %d",filename,&x0,&y0,&x1,&y1,&texp,&satno);
+    trk.x0=x0;
+    trk.y0=y0;
+    trk.x1=x1;
+    trk.y1=y1;
+    trk.satno=satno;
+    trk.texp=texp;
     if (satno==obs.satno)
       break;
   }
@@ -485,7 +615,7 @@ void track(char *fileroot,struct observation obs,struct image *img,float frac)
   return;
 }
 
-int autotrack(char *fileroot,struct observation obs,struct image *img)
+int autotrack(char *fileroot,struct observation obs,struct image *img,int cflag)
 {
   FILE *file;
   char line[LIM],filename[LIM];
@@ -502,7 +632,7 @@ int autotrack(char *fileroot,struct observation obs,struct image *img)
     return;
   }
   while (fgetline(file,line,LIM)>0) {
-    if (strstr(line,"classfd")==NULL)
+    if (cflag==1 && strstr(line,"classfd")==NULL)
       continue;
     sscanf(line,"%s %f %f %f %f %f %d",filename,&trk.x0,&trk.y0,&trk.x1,&trk.y1,&trk.texp,&trk.satno);
     if (i==iobject) {
@@ -542,6 +672,7 @@ int main(int argc,char *argv[])
   double doy,mjd;
   int year;
   char *env;
+  float sigma,xa,ya;
 
   env=getenv("ST_COSPAR");
 
@@ -617,18 +748,24 @@ int main(int argc,char *argv[])
 	if (layer==2) z[i]=img.zmax[i]*img.mask[i];
 	if (layer==3) z[i]=img.znum[i]*img.mask[i];
 	if (layer==4) z[i]=img.zd[i]*img.mask[i];
+	if (layer==5) z[i]=(img.zmax[i]-img.zavg[i])/img.zstd[i];
       }
       
       if (layer==0) compute_cuts(img.zavg,img.mask,img.naxis1*img.naxis2,&zmin,&zmax,lcut,hcut);
       if (layer==1) compute_cuts(img.zstd,img.mask,img.naxis1*img.naxis2,&zmin,&zmax,lcut,hcut);
       if (layer==2) compute_cuts(img.zmax,img.mask,img.naxis1*img.naxis2,&zmin,&zmax,lcut,hcut);
       if (layer==4) compute_cuts(img.zd,img.mask,img.naxis1*img.naxis2,&zmin,&zmax,lcut,hcut);
+      if (layer==5) {
+	zmin=3.0;
+	zmax=10.0;
+      }
 
       if (layer==0) cpgimag(img.zavg,img.naxis1,img.naxis2,1,img.naxis1,1,img.naxis2,zmin,zmax,tr);
       if (layer==1) cpgimag(img.zstd,img.naxis1,img.naxis2,1,img.naxis1,1,img.naxis2,zmin,zmax,tr);
       if (layer==2) cpgimag(z,img.naxis1,img.naxis2,1,img.naxis1,1,img.naxis2,zmin,zmax,tr);
       if (layer==3) cpgimag(z,img.naxis1,img.naxis2,1,img.naxis1,1,img.naxis2,0.0,(float) img.nframes,tr);
       if (layer==4) cpgimag(z,img.naxis1,img.naxis2,1,img.naxis1,1,img.naxis2,zmin,zmax,tr);
+      if (layer==5) cpgimag(z,img.naxis1,img.naxis2,1,img.naxis1,1,img.naxis2,zmin,zmax,tr);
 
       cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
 
@@ -672,6 +809,31 @@ int main(int argc,char *argv[])
     if (c=='q')
       break;
 
+    // End
+    if (c=='a') {
+      status=autotrack(argv[1],obs,&img,0);
+      if (status==1) {
+	obs.satno=trk.satno;
+	find_designation(obs.satno,obs.desig);
+	track(argv[1],obs,&img,frac);
+	redraw=1;
+	layer=4;
+      }
+      continue;
+    }
+
+    // Find peak
+    if (c=='p') {
+      sigma=find_peak(img.zd,img.naxis1,img.naxis2,(int) xmin,(int) xmax,(int) ymin,(int) ymax,2.0,11,11,&x,&y);
+      printf("%f %f %f\n",x,y,sigma);
+      reduce_point(&obs,img,frac*img.exptime,x,y);
+      obs.x[0]=x;
+      obs.y[0]=y;
+      obs.state=2;
+      redraw=1;
+      continue;
+    }
+    
     // Track
     if (c=='t') {
       printf("Provide satellite ID: ");
@@ -683,7 +845,7 @@ int main(int argc,char *argv[])
     }
 	
     if (c=='\t') {
-      status=autotrack(argv[1],obs,&img);
+      status=autotrack(argv[1],obs,&img,1);
       if (status==1) {
 	obs.satno=trk.satno;
 	find_designation(obs.satno,obs.desig);
