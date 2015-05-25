@@ -1627,7 +1627,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
       }
 
       // Graves colouring
-      if (m.graves==1) {
+      if (m.graves!=0) {
 	if (s.illumg==1)
 	  cpgsci(2);
 	else
@@ -1841,7 +1841,7 @@ struct sat apparent_position(double mjd)
   }
 
   // Compute position at Graves
-  if (m.graves==1) {
+  if (m.graves!=0) {
     graves_xyz(mjd,&grvpos,&grvvel);  
     dx=satpos.x-grvpos.x;  
     dy=satpos.y-grvpos.y;
@@ -2375,7 +2375,7 @@ int plot_skymap(void)
       plot_visibility(m.rvis);
 
     // Graves visibility
-    if (m.graves==1)
+    if (m.graves==2)
       plot_graves_visibility();
 
     // Get time
@@ -2573,9 +2573,8 @@ int plot_skymap(void)
     
     // Toggle Graves illumination
     if (c=='G') {
-      if (m.graves==0)
-	m.graves=1;
-      else if (m.graves==1)
+      m.graves++;
+      if (m.graves==3)
 	m.graves=0;
       redraw=1;
     }

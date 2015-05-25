@@ -49,6 +49,9 @@ propagate: propagate.o sgdp4.o satutl.o deep.o ferror.o
 detect: detect.o
 	$(F77) -o detect detect.o -lm $(LFLAGS)
 
+autodetect: autodetect.o
+	$(F77) -o autodetect autodetect.o -lm $(LFLAGS)
+
 launchtle: launchtle.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o launchtle launchtle.o sgdp4.o satutl.o deep.o ferror.o -lm
 

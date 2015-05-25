@@ -6,6 +6,7 @@
 #include "cpgplot.h"
 #include "cel.h"
 #include <gsl/gsl_multifit.h>
+#include <getopt.h>
 
 #define LIM 256
 #define NMAX 8192
@@ -33,7 +34,7 @@ struct catalog {
   int select[NMAX];
 };
 struct image read_fits(char *filename,int pnum);
-struct catalog read_pixel_catalog(char *filename);
+struct catalog read_pixel_catalog(char *filename,float,float,float);
 int fgetline(FILE *file,char *s,int lim);
 struct catalog read_astrometric_catalog(char *filename,float mmin,float sx,float sy,float angle);
 void forward(double ra0,double de0,double ra,double de,double *x,double *y);
@@ -42,10 +43,16 @@ void lfit2d(float *x,float *y,float *z,int n,float *a);
 void fit_transformation(struct catalog cat,struct catalog ast,int nselect);
 struct catalog reread_astrometric_catalog(char *filename,float mmin);
 int match_catalogs(struct catalog *cat,struct catalog *ast,float rmax);
+double sex2dec(char *s);
+
+void usage(void)
+{
+  return;
+}
 
 int main(int argc,char *argv[])
 {
-  int i;
+  int i,j;
   float xmin,xmax,ymin,ymax,zmin,zmax;
   float tr[]={-0.5,1.0,0.0,-0.5,0.0,1.0};
   float heat_l[] = {0.0, 0.2, 0.4, 0.6, 1.0};
@@ -56,27 +63,92 @@ int main(int argc,char *argv[])
   float x,y,width;
   char c,pixcat[LIM];
   struct catalog cat,ast;
-  float sx=-10.0,sy=10.0,q;
+  float sx=-10.0,sy=10.0,q=0.0;
   char *env,starfile[128];
-  float r,rmin=1.0,rmax=10.0,mmin=2.0,mmax=8.0,mag=9.0;
+  float r,srmin=1.0,srmax=10.0,smmin=2.0,smmax=8.0,mag=9.0,rmax=10.0,rmask=-1;
+  int arg=0;
+  char *fitsfile=NULL;
+  char sra[16],sde[16];
+  double ra,de;
+  FILE *file;
 
   // Environment variables
   env=getenv("ST_DATADIR");
   sprintf(starfile,"%s/data/tycho2.dat",env);
 
-  // Read image
-  img=read_fits(argv[1],0);
+  // Decode options
+  while ((arg=getopt(argc,argv,"f:R:D:s:q:m:r:M:"))!=-1) {
+    switch(arg) {
 
-  // Hard coded
-  img.ra0=atof(argv[2]);
-  img.de0=atof(argv[3]);
-  q=atof(argv[4]);
+    case 'f':
+      fitsfile=optarg;
+      break;
+
+    case 'R':
+      strcpy(sra,optarg);
+      if (strchr(sra,':')!=NULL)
+	ra=15.0*sex2dec(sra);
+      else
+	ra=atof(sra);
+      break;
+
+    case 'D':
+      strcpy(sde,optarg);
+      if (strchr(sde,':')!=NULL)
+	de=sex2dec(sde);
+      else
+	de=atof(sde);
+      break;
+
+    case 's':
+      if (strchr(optarg,',')!=NULL) {
+	sscanf(optarg,"%f,%f",&sx,&sy);
+      } else {
+	sx=-atof(optarg);
+	sy=-sx;
+      }
+      break;
+
+    case 'q':
+      q=atof(optarg);
+      break;
+
+    case 'm':
+      mag=atof(optarg);
+      break;
+
+    case 'M':
+      rmask=atof(optarg);
+      break;
+
+    case 'r':
+      rmax=atof(optarg);
+      break;
+
+    case 'h':
+      usage();
+      return 0;
+      break;
+
+    default:
+      usage();
+      return 0;
+    }
+  }
+
+  // Read image
+  img=read_fits(fitsfile,0);
+
+  // Set variables
+  img.ra0=ra;
+  img.de0=de;
   img.x0=0.5*(float) img.naxis1;
   img.y0=0.5*(float) img.naxis2;
 
+
   // Read pixel catalog
-  sprintf(pixcat,"%s.cat",argv[1]);
-  cat=read_pixel_catalog(pixcat);
+  sprintf(pixcat,"%s.cat",fitsfile);
+  cat=read_pixel_catalog(pixcat,img.x0,img.y0,rmask);
 
   // Read astrometric catalog
   ast=read_astrometric_catalog(starfile,mag,sx,sy,q);
@@ -124,7 +196,7 @@ int main(int argc,char *argv[])
 
       cpgsci(4);
       for (i=0;i<ast.n;i++) {
-	r=rmax-(rmax-rmin)*(ast.mag[i]-mmin)/(mmax-mmin);
+	r=srmax-(srmax-srmin)*(ast.mag[i]-smmin)/(smmax-smmin);
 
 	// Upscale for image size
 	r*=img.naxis1/752.0;
@@ -190,7 +262,7 @@ int main(int argc,char *argv[])
 
     // Match catalogs
     if (c=='m') {
-      nselect=match_catalogs(&cat,&ast,10.0);
+      nselect=match_catalogs(&cat,&ast,rmax);
       redraw=1;
     }
 
@@ -220,6 +292,20 @@ int main(int argc,char *argv[])
       ymax=0.5*(img.naxis2+width);
       redraw=1;
       continue;
+    }
+
+    // Dump
+    if (c=='d') {
+      file=fopen("dump.dat","w");
+      for (i=0;i<nselect;i++) {
+	for (j=0;j<cat.n;j++) 
+	  if (cat.select[j]==i+1) 
+	    fprintf(file,"%lf %lf ",cat.x[j]-img.x0,cat.y[j]-img.y0);
+	for (j=0;j<ast.n;j++) 
+	  if (ast.select[j]==i+1) 
+	    fprintf(file,"%lf %lf\n",ast.ra[j],ast.de[j]);
+      }
+      fclose(file);
     }
   }
 
@@ -286,12 +372,13 @@ struct image read_fits(char *filename,int pnum)
 }
 
 // Read pixel catalog
-struct catalog read_pixel_catalog(char *filename)
+struct catalog read_pixel_catalog(char *filename,float x0,float y0,float rmin)
 {
   int i=0;
   FILE *file;
   char line[LIM];
   struct catalog c;
+  float dx,dy,r;
 
   // Read catalog
   file=fopen(filename,"r");
@@ -305,6 +392,11 @@ struct catalog read_pixel_catalog(char *filename)
     if (strstr(line,"#")!=NULL) 
       continue;
     sscanf(line,"%f %f %f",&c.x[i],&c.y[i],&c.mag[i]);
+    dx=c.x[i]-x0;
+    dy=c.y[i]-y0;
+    r=sqrt(dx*dx+dy*dy);
+    if (r>rmin && rmin>0.0)
+      continue;
     c.select[i]=0;
     i++;
   }
@@ -575,4 +667,23 @@ int match_catalogs(struct catalog *cat,struct catalog *ast,float rmax)
 
   printf("%d stars matched\n",n);
   return n;
+}
+
+// Convert Sexagesimal into Decimal
+double sex2dec(char *s)
+{
+  double x;
+  float deg,min,sec;
+  char t[LIM];
+
+  strcpy(t,s);
+
+  deg=fabs(atof(strtok(t," :")));
+  min=fabs(atof(strtok(NULL," :")));
+  sec=fabs(atof(strtok(NULL," :")));
+
+  x=(double) deg+(double) min/60.+(double) sec/3600.;
+  if (s[0]=='-') x= -x;
+
+  return x;
 }

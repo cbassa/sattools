@@ -816,6 +816,22 @@ int main(int argc,char *argv[])
 	obs.satno=trk.satno;
 	find_designation(obs.satno,obs.desig);
 	track(argv[1],obs,&img,frac);
+	x=frac*(trk.x1-trk.x0)+trk.x0;
+	y=frac*(trk.y1-trk.y0)+trk.y0;
+	width=100;
+	xmin=x-0.5*width;
+	xmax=x+0.5*width;
+	ymin=y-0.5*width*img.naxis2/img.naxis1;
+	ymax=y+0.5*width*img.naxis2/img.naxis1;
+	sigma=find_peak(img.zd,img.naxis1,img.naxis2,(int) xmin,(int) xmax,(int) ymin,(int) ymax,2.0,11,11,&x,&y);
+	printf("%f %f %f\n",x,y,sigma);
+	if (sigma>5.0) {
+	  reduce_point(&obs,img,frac*img.exptime,x,y);
+	  obs.x[0]=x;
+	  obs.y[0]=y;
+	  obs.state=2;
+	}
+
 	redraw=1;
 	layer=4;
       }

@@ -113,7 +113,7 @@ int read_twoline(FILE *fp, long search_satno, orbit_t *orb)
   //  sscanf(st1+9,"%s",orb->desig);
   strncpy(orb->desig,st1+9,8);
   orb->desig[8]='\0';
-  
+
   return 0;
 }
 

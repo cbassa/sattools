@@ -46,17 +46,17 @@ void compute_position(double mjd,xyz_t satpos,struct site s,int satno,char *desi
 
   // Compute positions
   obspos_xyz(mjd,s.lng,s.lat,s.alt,&obspos,&obsvel);
-  
+
   // compute difference vector
   dx=satpos.x-obspos.x;  
   dy=satpos.y-obspos.y;
   dz=satpos.z-obspos.z;
-  
+
   // Celestial position
   r=sqrt(dx*dx+dy*dy+dz*dz);
   ra=modulo(atan2(dy,dx)*R2D,360.0);
   de=asin(dz/r)*R2D;
-  
+
   // Precess position
   if (precess_flag==1) {
     precess(mjd,ra,de,mjd0,&ra0,&de0);
@@ -176,7 +176,7 @@ int main(int argc,char *argv[])
       //    fprintf(stderr,"object %d not found in %s\n",p.satno,filename);
       return;
     }
-    
+
     // Initialize
     imode=init_sgdp4(&orb);
     if (imode==SGDP4_ERROR) {
@@ -189,10 +189,12 @@ int main(int argc,char *argv[])
       satpos_xyz(mjd+2400000.5,&satpos,&satvel);
       compute_position(mjd,satpos,s,orb.satno,orb.desig,precess_flag);
     } else {
+
       file=fopen(fname,"r");
       while (fgetline(file,line,LIM)>0) {
 	status=sscanf(line,"%lf",&mjd);
 	satpos_xyz(mjd+2400000.5,&satpos,&satvel);
+	strcpy(orb.desig,"14999A"); // FIX!
 	compute_position(mjd,satpos,s,orb.satno,orb.desig,precess_flag);
       }
       fclose(file);
