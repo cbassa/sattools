@@ -1879,11 +1879,13 @@ void planar_search(char *filename,int satno,float rmin,float rmax,int nr,int gra
   int withvel,rv;
   double tsince,radius,jd;
   double st,ct,sn,cn,si,ci,t;
-  xyz_t satpos,obspos,obsvel,sunpos;
+  xyz_t satpos,obspos,obsvel,sunpos,grvpos,grvvel;
   double r,ra,de,dx,dy,dz,rsun,rearth,psun,pearth,p,azi,alt,rx,ry,rx0,ry0,ra0,de0;
   double sra,sde;
+  double rg,rag,deg,azig,altg;
   float phase,mag,mmin;
   char state[10];
+  int illumg;
 
   // Open TLE file
   fp=fopen(filename,"rb");
@@ -1997,6 +1999,25 @@ void planar_search(char *filename,int satno,float rmin,float rmax,int nr,int gra
 	mmin=mag;
       }
 
+      // Compute position at Graves
+      if (graves!=0) {
+	graves_xyz(m.mjd,&grvpos,&grvvel);  
+	dx=satpos.x-grvpos.x;  
+	dy=satpos.y-grvpos.y;
+	dz=satpos.z-grvpos.z;
+	
+	// Celestial position
+	rg=sqrt(dx*dx+dy*dy+dz*dz);
+	rag=modulo(atan2(dy,dx)*R2D,360.0);
+	deg=asin(dz/rg)*R2D;  
+	graves_equatorial2horizontal(m.mjd,rag,deg,&azig,&altg);
+	
+	// Illuminated?
+	if (altg>=15.0 && altg<=40.0 && modulo(azig-180.0,360.0)>=90.0 && modulo(azig-180.0,360.0)<=270.0)
+	  cpgsci(2);
+	else
+	  cpgsci(15);
+      } 
       if (i==0)
 	cpgmove((float) rx,(float) ry);
       else
@@ -2005,10 +2026,12 @@ void planar_search(char *filename,int satno,float rmin,float rmax,int nr,int gra
     }
     
     // Plot brightest point
-    cpgsch(1.0);
-    cpgsci(7);
-    cpgpt1((float) rx0,(float) ry0,4);
-    cpgsci(1);
+    if (graves==0) {
+      cpgsch(1.0);
+      cpgsci(7);
+      cpgpt1((float) rx0,(float) ry0,4);
+      cpgsci(1);
+    }
   }
 
   return;
@@ -2359,7 +2382,7 @@ int plot_skymap(void)
       if (m.pssatno==0) 
 	printf("Please select a satellite.\n");
       else
-	planar_search(m.tlefile,m.pssatno,m.psrmin,m.psrmax,m.psnr);
+	planar_search(m.tlefile,m.pssatno,m.psrmin,m.psrmax,m.psnr,m.graves);
     }
     
     // Plot IOD points
