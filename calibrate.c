@@ -47,6 +47,15 @@ double sex2dec(char *s);
 
 void usage(void)
 {
+
+  printf("-f <file>      FITS file to calibrate\n");
+  printf("-R <hh:mm:ss>  RA of center\n");
+  printf("-D <ddd:mm:ss> Decl of center\n");
+  printf("-s <scale>     Pixel scale (arcseconds) [10.0]\n");
+  printf("-q <parang>    Parallactic angle (degrees) [0.0]\n");
+  printf("-m <limmag>    Magnitude limit [9.0]\n");
+  printf("-r <radius>    Matching radius (pixels) [10]\n");
+
   return;
 }
 

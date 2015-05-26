@@ -1870,7 +1870,7 @@ struct sat apparent_position(double mjd)
 }
 
 // Planar search
-void planar_search(char *filename,int satno,float rmin,float rmax,int nr)
+void planar_search(char *filename,int satno,float rmin,float rmax,int nr,int graves)
 {
   int i,j,imode;
   FILE *fp;
