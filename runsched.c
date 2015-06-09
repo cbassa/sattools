@@ -129,14 +129,14 @@ void send_position(char *sra,char *sde)
   close(skt); 
  
   // Set restart
-  file=fopen("/media/storage/satobs/control/state.txt","w");
+  file=fopen("/data1/satobs/control/state.txt","w");
   if (file!=NULL) {
     fprintf(file,"restart");
     fclose(file);
   }
 
   // Set position
-  file=fopen("/media/storage/satobs/control/position.txt","w");
+  file=fopen("/data1/satobs/control/position.txt","w");
   if (file!=NULL) {
     fprintf(file,"%s %s\n",sra,sde);
     fclose(file);

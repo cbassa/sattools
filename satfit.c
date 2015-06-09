@@ -31,9 +31,14 @@ struct point {
   double dx,dy,dr,dt;
   xyz_t obspos;
 };
+struct doppler {
+  double mjd,freq,v;
+  xyz_t obspos,obsvel;
+};
 struct data {
-  int n,nsel;
+  int n,nsel,m;
   struct point *p;
+  struct doppler *q;
   double chisq,rms;
 } d;
 struct site {
@@ -45,6 +50,7 @@ struct site {
 orbit_t orb;
 struct site get_site(int site_id);
 struct point decode_iod_observation(char *iod_line);
+struct doppler decode_doppler_observation(char *line);
 int fgetline(FILE *file,char *s,int lim);
 double modulo(double x,double y);
 double gmst(double mjd);
@@ -55,7 +61,7 @@ void mjd2date(double mjd,int *year,int *month,double *day);
 void obspos_xyz(double mjd,double lng,double lat,float alt,xyz_t *pos,xyz_t *vel);
 void precess(double mjd0,double ra0,double de0,double mjd,double *ra,double *de);
 void forward(double ra0,double de0,double ra,double de,double *x,double *y);
-struct data read_data(char *filename);
+struct data read_data(char *iodfname,char *dopfname);
 void versafit(int m,int n,double *a,double *da,double (*func)(double *),double dchisq,double tol,char *opt);
 double chisq(double a[]);
 orbit_t read_tle(char *filename,int satno);
@@ -501,15 +507,20 @@ int main(int argc,char *argv[])
   double mjdmin,mjdmax,mjd=0.0;
   int length=864000;
   int arg=0,elset=0,circular=0,tleout=0,noplot=0;
-  char *datafile,*catalog,tlefile[LIM];
+  char *ioddatafile=NULL,*dopdatafile=NULL,*catalog,tlefile[LIM];
   orbit_t orb0;
   FILE *file;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"d:c:i:haCo:pIt:l:m:"))!=-1) {
+  while ((arg=getopt(argc,argv,"d:r:c:i:haCo:pIt:l:m:"))!=-1) {
     switch(arg) {
+
     case 'd':
-      datafile=optarg;
+      ioddatafile=optarg;
+      break;
+
+    case 'r':
+      dopdatafile=optarg;
       break;
 
     case 'c':
@@ -572,7 +583,7 @@ int main(int argc,char *argv[])
   }
 
   // Read data
-  d=read_data(datafile);
+  d=read_data(ioddatafile,dopdatafile);
 
   // Select observations based on time
   if (mjd>0.0) {
@@ -630,7 +641,7 @@ int main(int argc,char *argv[])
       orb0=orb;
       adjust_fit(2);
       fit(orb,ia);
-      printf("%05d %8.3f %8.3f %8.3f %s %8.3f\n",orb.satno,DEG(orb.mnan-orb0.mnan),DEG(orb.ascn-orb0.ascn),d.rms,datafile,mjdmin-(SGDP4_jd0-2400000.5));
+      printf("%05d %8.3f %8.3f %8.3f %s %8.3f\n",orb.satno,DEG(orb.mnan-orb0.mnan),DEG(orb.ascn-orb0.ascn),d.rms,ioddatafile,mjdmin-(SGDP4_jd0-2400000.5));
     }
     fclose(file);
     
@@ -668,7 +679,7 @@ int main(int argc,char *argv[])
     adjust_fit(16);
 
     // Print results
-    printf("%05d %8.3f %8.3f %8.3f %s %8.3f %d\n",satno,DEG(orb.mnan-orb0.mnan),DEG(orb.ascn-orb0.ascn),d.rms,datafile,mjdmin-(SGDP4_jd0-2400000.5),d.nsel);
+    printf("%05d %8.3f %8.3f %8.3f %s %8.3f %d\n",satno,DEG(orb.mnan-orb0.mnan),DEG(orb.ascn-orb0.ascn),d.rms,ioddatafile,mjdmin-(SGDP4_jd0-2400000.5),d.nsel);
 
     // Dump tle
     if (tleout==1) 
@@ -682,7 +693,8 @@ int main(int argc,char *argv[])
 
   // Exit before plotting
   if (quit==1 && noplot==1) {
-    free(d.p);
+    if (d.n) free(d.p);
+    if (d.m) free(d.q);
     fclose(stderr);
     return 0;
   }
@@ -997,7 +1009,8 @@ int main(int argc,char *argv[])
 
   cpgend();
 
-  free(d.p);
+  if (d.n) free(d.p);
+  if (d.m) free(d.q);
 
   fclose(stderr);
   return 0;
@@ -1291,6 +1304,26 @@ struct point decode_iod_observation(char *iod_line)
   return p;
 }
 
+// Decode doppler Observations
+struct doppler decode_doppler_observation(char *line)
+{
+  struct doppler q;
+  struct site s;
+  float flux;
+  int site_id;
+
+  // Read line
+  sscanf(line,"%lf %lf %f %d",&q.mjd,&q.freq,&flux,&site_id);
+
+  // Get site
+  s=get_site(site_id);
+
+  // Get observer position
+  obspos_xyz(q.mjd,s.lng,s.lat,s.alt,&q.obspos,&q.obsvel);
+
+  return q;
+}
+
 // Get a x and y from an AZI, ALT
 void forward(double ra0,double de0,double ra,double de,double *x,double *y)
 {
@@ -1339,39 +1372,76 @@ int fgetline(FILE *file,char *s,int lim)
   return i;
 }
 
-// Read data
-struct data read_data(char *filename)
+// Read IOD data
+struct data read_data(char *iodfname,char *dopfname)
 {
   int i=0;
   char line[LIM];
   FILE *file;
   struct data d;
 
-  // Open file
-  file=fopen(filename,"r");
-  if (file==NULL) {
-    fprintf(stderr,"Failed to open %s\n",filename);
-    exit(1);
+  d.n=0;
+  d.m=0;
+
+  // Read IOD data
+  if (iodfname!=NULL) {
+    // Open file
+    file=fopen(iodfname,"r");
+    if (file==NULL) {
+      fprintf(stderr,"Failed to open %s\n",iodfname);
+      exit(1);
+    }
+    
+    // Count lines
+    while (fgetline(file,line,LIM)>0) 
+      i++;
+    d.n=i;
+
+    // Allocate
+    d.p=(struct point *) malloc(sizeof(struct point)*d.n);
+    
+    // Rewind file
+    rewind(file);
+    
+    // Read data
+    i=0;
+    while (fgetline(file,line,LIM)>0) 
+      d.p[i++]=decode_iod_observation(line);
+    
+    // Close file
+    fclose(file);
   }
 
-  // Count lines
-  while (fgetline(file,line,LIM)>0) 
-    i++;
-  d.n=i;
+  // Read doppler data
+  if (dopfname!=NULL) {
+    // Open file
+    file=fopen(iodfname,"r");
+    if (file==NULL) {
+      fprintf(stderr,"Failed to open %s\n",dopfname);
+      exit(1);
+    }
+    
+    // Count lines
+    i=0;
+    while (fgetline(file,line,LIM)>0) 
+      i++;
+    d.m=i;
+    
+    // Allocate
+    d.q=(struct doppler *) malloc(sizeof(struct doppler)*d.m);
 
-  // Allocate
-  d.p=(struct point *) malloc(sizeof(struct point)*d.n);
+    // Rewind file
+    rewind(file);
+    
+    // Read data
+    i=0;
+    while (fgetline(file,line,LIM)>0) 
+      d.q[i++]=decode_doppler_observation(line);
 
-  // Rewind file
-  rewind(file);
+    // Close file
+    fclose(file);
+  }
 
-  // Read data
-  i=0;
-  while (fgetline(file,line,LIM)>0) 
-    d.p[i++]=decode_iod_observation(line);
-
-  // Close file
-  fclose(file);
 
   return d;
 }
