@@ -6,7 +6,7 @@
 #include "satutl.h"
 #include <getopt.h>
 
-#define LIM 128
+#define LIM 1024
 #define XKE 0.07436680 // Guassian Gravitational Constant
 #define XKMPER 6378.135
 #define AE 1.0
@@ -341,7 +341,7 @@ int fgetline(FILE *file,char *s,int lim)
 
 int main(int argc,char *argv[])
 {
-  int imode,satno=99000,arg;
+  int imode,satno=99000,arg,gmat=0;
   FILE *file;
   orbit_t orb;
   xyz_t r,v;
@@ -351,7 +351,7 @@ int main(int argc,char *argv[])
   char *env;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"p:i:d:"))!=-1) {
+  while ((arg=getopt(argc,argv,"p:i:d:g"))!=-1) {
     switch (arg) {
 
     case 'p':
@@ -371,6 +371,10 @@ int main(int argc,char *argv[])
       return 0;
       break;
 
+    case 'g':
+      gmat=1;
+      break;
+
     default:
       usage();
       return 0;
@@ -383,6 +387,11 @@ int main(int argc,char *argv[])
   while (fgetline(file,line,LIM)>0) {
     sscanf(line,"%lf %lf %lf %lf %lf %lf %lf",&mjd,&r.x,&r.y,&r.z,&v.x,&v.y,&v.z);
       
+    // Convert to MJD
+    if (gmat==1)
+      mjd+=29999.5;
+
+
     // Convert
     orb=rv2el(orb.satno,mjd,r,v);
     orb.satno=satno;
