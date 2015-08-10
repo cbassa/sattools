@@ -562,7 +562,7 @@ int main(int argc,char *argv[])
       cpgmtxt("T",6.0,0.0,0.0,text);
       sprintf(text,"R.A.: %10.5f (%4.1f'') Decl.: %10.5f (%4.1f'')",img[iimg].ra0,img[iimg].xrms,img[iimg].de0,img[iimg].yrms);
       cpgmtxt("T",4.8,0.0,0.0,text);
-      sprintf(text,"FoV: %.2f\\(2218)x%.2f\\(2218) Scale: %.2f''x%.2f'' pix\\u-1\\d",img[iimg].naxis1*sqrt(img[iimg].a[1]*img[iimg].a[1]+img[iimg].b[1]*img[iimg].b[1])/3600.0,img[iimg].naxis2*sqrt(img[iimg].a[2]*img[iimg].a[2]+img[iimg].b[2]*img[iimg].b[2])/3600.0,sqrt(img[iimg].a[1]*img[iimg].a[1]+img[iimg].b[1]*img[iimg].b[1]),sqrt(img[iimg].a[2]*img[iimg].a[2]+img[iimg].b[2]*img[iimg].b[2]));
+      sprintf(text,"FoV: %.2f\\(2218)x%.2f\\(2218) Scale: %.2f''x%.2f'' pix\\u-1\\d Fraction: %.1f",img[iimg].naxis1*sqrt(img[iimg].a[1]*img[iimg].a[1]+img[iimg].b[1]*img[iimg].b[1])/3600.0,img[iimg].naxis2*sqrt(img[iimg].a[2]*img[iimg].a[2]+img[iimg].b[2]*img[iimg].b[2])/3600.0,sqrt(img[iimg].a[1]*img[iimg].a[1]+img[iimg].b[1]*img[iimg].b[1]),sqrt(img[iimg].a[2]*img[iimg].a[2]+img[iimg].b[2]*img[iimg].b[2]),frac);
       cpgmtxt("T",3.6,0.0,0.0,text);
 
       zmin=img[iimg].zmin;
@@ -632,6 +632,7 @@ int main(int argc,char *argv[])
       else if (frac<0.49)
 	frac=0.5;
       printf("Fraction: %.1f\n",frac);
+      redraw=1;
     }
 
     if (c=='p' || c=='X') {
@@ -821,6 +822,27 @@ int main(int argc,char *argv[])
       obs.state=2;
       redraw=1;
       continue;
+    }
+
+    // Help
+    if (c=='h') {
+      printf("q         Quit\n");
+      printf("e         Change of exposure (0.0 = start, 0.5 = middle, 1.0 = end)\n");
+      printf("p (right) Plot objects\n");
+      printf("l         Plot star catalog\n");
+      printf("d         Set object NORAD designation\n");
+      printf("c         Center on cursor\n");
+      printf("0-9       Set zoom level\n");
+      printf("s/]       Cycle through images forward\n");
+      printf("a/[       Cycle through images backward\n");
+      printf("o         Show maximum pixels of all images\n");
+      printf("TAB       Cycle through frame at current zoom level\n");
+      printf("z/+       Zoom in on cursor\n");
+      printf("x/-       Zoom out on cursor\n");
+      printf("r         Reset zoom\n");
+      printf("R         Reset setup\n");
+      printf("w         Write IOD observation\n");
+      printf("m (mid)   measure position\n");
     }
   }
 
