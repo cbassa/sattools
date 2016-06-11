@@ -12,12 +12,16 @@
 #define AE      1.0                 /* Earth radius in "chosen units". */
 #define XKE     0.743669161e-1
 #define CK2     5.413080e-4   /* (0.5 * XJ2 * AE * AE) */
+#define D2R M_PI/180.0
+#define R2D 180.0/M_PI
+
 extern double SGDP4_jd0;
 
 void usage(void)
 {
   return;
 }
+double modulo(double x,double y);
 
 // Compute Julian Day from Date
 double date2mjd(int year,int month,double day)
@@ -151,6 +155,23 @@ void mjd2nfd(double mjd,char *nfd)
   return;
 }
 
+float orbital_longitude_at_midnight(orbit_t orb,double mjd0)
+{
+  int rv,imode;
+  double jd,tsince,mjd;
+  kep_t K;
+
+  imode=init_sgdp4(&orb);
+
+  mjd=floor(mjd0);
+  
+  jd=mjd+2400000.5;
+  tsince=1440.0*(jd-SGDP4_jd0);
+  rv=sgdp4(tsince,1,&K);
+
+  return modulo(K.theta*R2D,360.0);
+}
+
 int main(int argc,char *argv[])
 {
   int arg=0,satno=0,header=0,oneline=0,no,name=0,desig=0;
@@ -158,7 +179,7 @@ int main(int argc,char *argv[])
   char line0[LIM],line1[LIM],line2[LIM],nfd[32];
   FILE *file;
   orbit_t orb;
-  float aodp,perigee,apogee,period;
+  float aodp,perigee,apogee,period,lng;
   int info=0;
   double mjd;
   char *env;
@@ -167,7 +188,7 @@ int main(int argc,char *argv[])
   sprintf(tlefile,"%s/bulk.tle",env);
 
   // Decode options
-  while ((arg=getopt(argc,argv,"c:i:aH1ftnd"))!=-1) {
+  while ((arg=getopt(argc,argv,"c:i:aH1ftndb"))!=-1) {
     switch (arg) {
       
     case 'c':
@@ -196,6 +217,10 @@ int main(int argc,char *argv[])
 
     case 'a':
       info=1;
+      break;
+
+    case 'b':
+      info=2;
       break;
 
     case 'H':
@@ -281,6 +306,10 @@ int main(int argc,char *argv[])
       mjd2nfd(mjd,nfd);
       if (info==0) printf("%05d %10.4lf %8.4f %8.4f %8.4f %8.4f %8.6f %8.5f\n",orb.satno,mjd,DEG(orb.eqinc),DEG(orb.ascn),DEG(orb.argp),DEG(orb.mnan),orb.ecc,orb.rev);
       if (info==1) printf("%05d %6.0f x %6.0f x %6.2f %8.2f %8.6f %14.8lf\n",orb.satno,perigee,apogee,DEG(orb.eqinc),period,orb.ecc,mjd);
+      if (info==2) {
+	lng=orbital_longitude_at_midnight(orb,mjd);
+	printf("%05d %10.4lf %8.4f %8.4f %8.4f %8.4f %8.6f %8.5f %10.4lf %8.4f\n",orb.satno,mjd,DEG(orb.eqinc),DEG(orb.ascn),DEG(orb.argp),DEG(orb.mnan),orb.ecc,orb.rev,floor(mjd),lng);
+      }
     }
     fclose(file);
   } else if (oneline==2) {
@@ -301,4 +330,13 @@ int main(int argc,char *argv[])
   }
 
   return 0;
+}
+
+// Return x modulo y [0,y)
+double modulo(double x,double y)
+{
+  x=fmod(x,y);
+  if (x<0.0) x+=y;
+
+  return x;
 }

@@ -49,11 +49,14 @@
 8597 TB  -34.9638  138.6333    100    Tony Beresford 
 8730 EC   30.3086  -97.7279    150    Ed Cannon
 8739 DB   37.1133 -121.7028    282    Derek Breit
+9461 KO   47.9175   19.89365   938    Konkoly Obs
 9633 JN   33.0206  -96.9982    153    Jim Nix
 9730 MM   30.3150  -97.8660    280    Mike McCants
 6242 JM   42.9453   -2.8284    623    Jon Mikel
 6241 JM   42.9565   -2.8203    619    Jon Mikel
 4160 BD   51.2793    5.4768     35    Bram Dorreman
 9000 PP   40.0848   21.1581   1433    Pierros Papadeas
+9001 AF   44.5700    6.68     1850    Alain Figer
+9002 AO   62.2544   26.5962    150    Arto Oksanen
 9999 GR   47.348     5.5151    100    Graves
 
