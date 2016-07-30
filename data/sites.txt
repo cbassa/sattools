@@ -47,6 +47,7 @@
 8536 TL   36.8479  -76.5010      4    Tim Luton
 8539 SN   39.4707  -79.3388    839    Steve Newcomb
 8597 TB  -34.9638  138.6333    100    Tony Beresford 
+8600 PC  -32.9770  151.6477     18    Paul Camilleri
 8730 EC   30.3086  -97.7279    150    Ed Cannon
 8739 DB   37.1133 -121.7028    282    Derek Breit
 9461 KO   47.9175   19.89365   938    Konkoly Obs
