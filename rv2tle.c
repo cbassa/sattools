@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <ctype.h>
 #include "sgdp4h.h"
 #include "satutl.h"
 #include <getopt.h>
