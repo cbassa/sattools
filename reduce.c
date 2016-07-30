@@ -34,11 +34,12 @@ struct observation {
   int satno,cospar;
   char desig[16],conditions,behavior;
   double mjd,ra,de;
-  float terr,perr,tmid;
+  float terr,perr,tmid,tmin,tmax;
   char nfd[32],pos[32];
   int epoch,type;
   char iod_line[80];
   float x[3],y[3];
+  float ax[2],ay[2];
   int state;
 };
 struct track {
@@ -208,12 +209,13 @@ double mjd2doy(double mjd,int *yr)
 // Reduce point
 void reduce_point(struct observation *obs,struct image img,float tmid,float x,float y)
 {
-  int iframe,k;
+  int i,iframe,k;
   double ra,de,rx,ry;
   float dx,dy,dt;
   double mjd;
   char nfd[32],sra[15],sde[15];
-
+  float ax[2],ay[2];
+  
   // Transform position
   dx=x-img.x0;
   dy=y-img.y0;
@@ -223,7 +225,17 @@ void reduce_point(struct observation *obs,struct image img,float tmid,float x,fl
 
   dec2sex(ra/15.0,sra,0);
   dec2sex(de,sde,1);
-
+  obs->ra=ra;
+  obs->de=de;
+  
+  // Transform direction
+  for (i=0;i<2;i++) {
+    ax[i]=obs->ax[i];
+    ay[i]=obs->ay[i];
+  }
+  obs->ax[1]=(img.a[1]*ax[1]+img.a[2]*ay[1])/3600.0;
+  obs->ay[1]=(img.b[1]*ax[1]+img.b[2]*ay[1])/3600.0;
+  
   // Get time
   k=(int) x + img.naxis1*(int) y;
   iframe=(int) img.znum[k];
@@ -233,6 +245,7 @@ void reduce_point(struct observation *obs,struct image img,float tmid,float x,fl
     dt=tmid;
   mjd=nfd2mjd(img.nfd)+(double) dt/86400.0;
   mjd2date(mjd,nfd);
+  obs->mjd=mjd;
   
   // Copy
   strcpy(obs->nfd,nfd);
@@ -435,7 +448,13 @@ void fit(struct observation *obs,struct image img)
   obs->x[2]=ax[0]+ax[1]*(tmax-tmid);
   obs->y[2]=ay[0]+ay[1]*(tmax-tmid);
   obs->state=1;
-
+  obs->tmin=tmin;
+  obs->tmax=tmax;
+  for (i=0;i<2;i++) {
+    obs->ax[i]=ax[i];
+    obs->ay[i]=ay[i];
+  }
+  
   // Reduce point
   reduce_point(obs,img,tmid,ax[0],ay[0]);
 
@@ -514,13 +533,20 @@ void find_designation(int satno0,char *desig0)
 void write_observation(struct observation obs)
 {
   FILE *file;
-
+  float w,pa,dt;
+  
   file=fopen("observations.txt","a");
   fprintf(file,"%s\n",obs.iod_line);
   fclose(file);
 
   printf("Observation written\n");
 
+  dt=obs.tmax-obs.tmin;
+  w=sqrt(obs.ax[1]*obs.ax[1]+obs.ay[1]*obs.ay[1])/dt;
+  pa=atan2(obs.ay[1],obs.ax[1])*R2D;
+  
+  printf("%lf %f %f %f %f %f\n",obs.mjd,obs.ra,obs.de,w,pa,dt);
+  
   return;
 }
 

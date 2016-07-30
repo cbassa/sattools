@@ -111,7 +111,7 @@ int main(int argc,char *argv[])
     
     forward(ra1,de1,ra2,de2,&rx,&ry);
     
-    printf("dRA:%8.3f dDE:%8.3f d:%8.3f\n",rx,ry,sqrt(rx*rx+ry*ry));
+    printf("%8.3f %8.3f %8.3f\n",rx,ry,sqrt(rx*rx+ry*ry));
   }
 
   return 0;
