@@ -15,6 +15,7 @@
 0434 IR  -26.1030   27.9288   1646    Ian Roberts
 0710 LS   52.3261   10.6756     85    Lutz Schindler
 1056 MK   57.0122   23.9833      4    Martins Keruss
+1086 NK   46.4778   30.7556     56    Nikolay Koshkin
 1244 AM   44.3932   33.9701     69    Andriy Makeyev
 1747 DD   45.7275  -72.3526    191    Daniel Deak
 1775 KF   44.6062  -75.6910    200    Kevin Fetter
@@ -33,6 +34,7 @@
 4541 AR   41.9639   12.4531     80    Alberto Rango
 4542 AR   41.9683   12.4545     80    Alberto Rango 
 4641 AR   41.1060   16.9010     70    Alberto Rango
+5555 SG   56.1019   94.5533    154    Sergey Guryanov
 5918 BG   59.2985   18.1045     40    Bjorn Gimle
 5919 BG   59.2615   18.6206     30    Bjorn Gimle
 6226 SC   28.4861  -97.8194    110    Scott Campbell
@@ -45,14 +47,17 @@
 8536 TL   36.8479  -76.5010      4    Tim Luton
 8539 SN   39.4707  -79.3388    839    Steve Newcomb
 8597 TB  -34.9638  138.6333    100    Tony Beresford 
+8600 PC  -32.9770  151.6477     18    Paul Camilleri
 8730 EC   30.3086  -97.7279    150    Ed Cannon
 8739 DB   37.1133 -121.7028    282    Derek Breit
+9461 KO   47.9175   19.89365   938    Konkoly Obs
 9633 JN   33.0206  -96.9982    153    Jim Nix
 9730 MM   30.3150  -97.8660    280    Mike McCants
 6242 JM   42.9453   -2.8284    623    Jon Mikel
 6241 JM   42.9565   -2.8203    619    Jon Mikel
 4160 BD   51.2793    5.4768     35    Bram Dorreman
-9001 MS  -32.3793   20.810682 1760    Master K95
+9000 PP   40.0848   21.1581   1433    Pierros Papadeas
+9001 AF   44.5700    6.68     1850    Alain Figer
+9002 AO   62.2544   26.5962    150    Arto Oksanen
 9999 GR   47.348     5.5151    100    Graves
-9000 NJ   51.4198    5.4086     25    Nico Janssen
-9905 DR  -26.8724   26.6481   1200    Deon van Rooyen
+

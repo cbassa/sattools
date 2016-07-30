@@ -241,6 +241,12 @@ struct point decode_iod_observation(char *iod_line)
   sscanf(iod_line+16,"%4d",&site_id);
   s=get_site(site_id);
 
+  // Skip if site not found
+  if (s.id<0) {
+    fprintf(stderr,"Site %d not found!\n",site_id);
+    p.flag=0;
+  }
+  
   // Decode date/time
   sscanf(iod_line+23,"%4d%2d%2d%2d%2d%5s",&year,&month,&iday,&hour,&min,secbuf);
   sec=atof(secbuf);
@@ -298,7 +304,7 @@ struct point decode_iod_observation(char *iod_line)
       de=sign*(de+dd/100+ds/10000);
       break;
     default :
-      printf("IOD Format not implemented\n");
+      fprintf(stderr,"IOD Format not implemented\n");
       p.flag=0;
       break;
   }
@@ -315,7 +321,7 @@ struct point decode_iod_observation(char *iod_line)
   } else if (epoch==5) {
     mjd0=51544.5;
   } else {
-    printf("Observing epoch not implemented\n");
+    fprintf(stderr,"Observing epoch not implemented\n");
     p.flag=0;
   }
 
@@ -372,6 +378,9 @@ struct site get_site(int site_id)
 
   }
   fclose(file);
+
+  if (id!=site_id)
+    s.id==-1;
 
   return s;
 }

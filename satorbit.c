@@ -967,7 +967,7 @@ void plot_notam(char *filename)
   return;
 }
 
-void plot_map(void)
+void plot_map(int plotflag)
 {
   int redraw=1,status;
   char text[256];
@@ -1060,6 +1060,11 @@ void plot_map(void)
     // Reset redraw
     redraw=0;
 
+    if (plotflag==1) {
+      cpgend();
+      exit(0);
+    }
+    
     // Get cursor
     cpgcurs(&x,&y,&c);
 
@@ -1186,14 +1191,20 @@ void plot_map(void)
 
 int main(int argc,char *argv[])
 {
-  int arg=0;
+  int arg=0,plotflag=0;
+  char plottype[128]="/xs";
 
   // Initialize setup
   initialize_setup();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:l:hN:p:mL:B:R:Sq"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:l:hN:p:mL:B:R:Sqg:"))!=-1) {
     switch (arg) {
+
+    case 'g':
+      strcpy(plottype,optarg);
+      plotflag=1;
+      break;
       
     case 't':
       strcpy(m.nfd,optarg);
@@ -1263,9 +1274,9 @@ int main(int argc,char *argv[])
 
   read_globe();
 
-  cpgopen("/xs");
+  cpgopen(plottype);
 
-  plot_map();
+  plot_map(plotflag);
 
   cpgend();
 

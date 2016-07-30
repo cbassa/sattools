@@ -127,7 +127,7 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
   // Open TLE file
   fp=fopen(tlefile,"rb");
   if (fp==NULL)
-    fatal_error("File open failed for reading %s\n",tlefile);
+    return;
 
   cpgsci(color);
 
@@ -339,7 +339,7 @@ int main(int argc,char *argv[])
   plot_satellites(filename,img,0,img.mjd,img.exptime,3);
   sprintf(filename,"%s/catalog.tle",env);
   plot_satellites(filename,img,0,img.mjd,img.exptime,0);
-  sprintf(filename,"/home/bassa/jsc.txt");
+  sprintf(filename,"%s/jsc.txt",env);
   plot_satellites(filename,img,0,img.mjd,img.exptime,5);
 
   cpgend();

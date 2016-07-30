@@ -654,9 +654,12 @@ int main(int argc,char *argv[])
   // Adjust
   if (adjust==1) {
     // Count observations
-    for (i=0,nobs=0;i<d.n;i++)
-	if (d.p[i].flag==2)
-	  nobs++;
+    for (i=0,nobs=0;i<d.n;i++) {
+      if (d.p[i].flag==1) {
+	d.p[i].flag=2;
+	nobs++;
+      }
+    }
 
     // Not enough observations
     if (nobs<10)
@@ -679,7 +682,7 @@ int main(int argc,char *argv[])
     adjust_fit(16);
 
     // Print results
-    printf("%05d %8.3f %8.3f %8.3f %s %8.3f %d\n",satno,DEG(orb.mnan-orb0.mnan),DEG(orb.ascn-orb0.ascn),d.rms,ioddatafile,mjdmin-(SGDP4_jd0-2400000.5),d.nsel);
+    //    printf("%05d %8.3f %8.3f %8.3f %s %8.3f %d\n",satno,DEG(orb.mnan-orb0.mnan),DEG(orb.ascn-orb0.ascn),d.rms,ioddatafile,mjdmin-(SGDP4_jd0-2400000.5),d.nsel);
 
     // Dump tle
     if (tleout==1) 
@@ -1065,6 +1068,9 @@ struct site get_site(int site_id)
   }
   fclose(file);
 
+  if (id!=site_id)
+    s.id==-1;
+  
   return s;
 }
 
@@ -1220,6 +1226,12 @@ struct point decode_iod_observation(char *iod_line)
   sscanf(iod_line+16,"%4d",&site_id);
   s=get_site(site_id);
 
+  // Skip if site not found
+  if (s.id<0) {
+    fprintf(stderr,"Site %d not found!\n",site_id);
+    p.flag=0;
+  }
+  
   // Decode date/time
   sscanf(iod_line+23,"%4d%2d%2d%2d%2d%5s",&year,&month,&iday,&hour,&min,secbuf);
   sec=atof(secbuf);

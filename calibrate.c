@@ -86,63 +86,68 @@ int main(int argc,char *argv[])
   sprintf(starfile,"%s/data/tycho2.dat",env);
 
   // Decode options
-  while ((arg=getopt(argc,argv,"f:R:D:s:q:m:r:M:"))!=-1) {
-    switch(arg) {
-
-    case 'f':
-      fitsfile=optarg;
-      break;
-
-    case 'R':
-      strcpy(sra,optarg);
-      if (strchr(sra,':')!=NULL)
-	ra=15.0*sex2dec(sra);
-      else
-	ra=atof(sra);
-      break;
-
-    case 'D':
-      strcpy(sde,optarg);
-      if (strchr(sde,':')!=NULL)
-	de=sex2dec(sde);
-      else
-	de=atof(sde);
-      break;
-
-    case 's':
-      if (strchr(optarg,',')!=NULL) {
-	sscanf(optarg,"%f,%f",&sx,&sy);
-      } else {
-	sx=-atof(optarg);
-	sy=-sx;
+  if (argc>1) {
+    while ((arg=getopt(argc,argv,"f:R:D:s:q:m:r:M:"))!=-1) {
+      switch(arg) {
+	
+      case 'f':
+	fitsfile=optarg;
+	break;
+	
+      case 'R':
+	strcpy(sra,optarg);
+	if (strchr(sra,':')!=NULL)
+	  ra=15.0*sex2dec(sra);
+	else
+	  ra=atof(sra);
+	break;
+	
+      case 'D':
+	strcpy(sde,optarg);
+	if (strchr(sde,':')!=NULL)
+	  de=sex2dec(sde);
+	else
+	  de=atof(sde);
+	break;
+	
+      case 's':
+	if (strchr(optarg,',')!=NULL) {
+	  sscanf(optarg,"%f,%f",&sx,&sy);
+	} else {
+	  sx=-atof(optarg);
+	  sy=-sx;
+	}
+	break;
+	
+      case 'q':
+	q=atof(optarg);
+	break;
+	
+      case 'm':
+	mag=atof(optarg);
+	break;
+	
+      case 'M':
+	rmask=atof(optarg);
+	break;
+	
+      case 'r':
+	rmax=atof(optarg);
+	break;
+	
+      case 'h':
+	usage();
+	return 0;
+	break;
+	
+      default:
+	usage();
+	return 0;
       }
-      break;
-
-    case 'q':
-      q=atof(optarg);
-      break;
-
-    case 'm':
-      mag=atof(optarg);
-      break;
-
-    case 'M':
-      rmask=atof(optarg);
-      break;
-
-    case 'r':
-      rmax=atof(optarg);
-      break;
-
-    case 'h':
-      usage();
-      return 0;
-      break;
-
-    default:
-      usage();
-      return 0;
-    }
+    } 
+  } else {
+    usage();
+    return 0;
   }
 
   // Read image
@@ -224,6 +229,22 @@ int main(int argc,char *argv[])
     if (c=='q')
       break;
 
+    // Help
+    if (c=='h') {
+      printf("Calibrates astrometry. Initially requires manual matching of at least three stars. Use 'a' to select star on the image, then 'b' to select star from the catalog (blue circles). If at least three stars are matched, use 'f' and 'm' to converge the calibration.\n\n");
+      printf("q     Quit\n");
+      printf("a     Select star on image\n");
+      printf("b     Select star from catalog\n");
+      printf("c     Center image on pixel\n");
+      printf("f     Fit calibration\n");
+      printf("m     Match stars using current calibration\n");
+      printf("z/+   Zoom in on cursor\n");
+      printf("x/-   Zoom out on cursor\n");
+      printf("p     Plot sextractor catalog\n");
+      printf("r     Reset zoom\n");
+      
+    }
+
     // Select pixel catalog
     if (c=='a' && click==0) {
       i=select_nearest(cat,x,y);
@@ -259,7 +280,7 @@ int main(int argc,char *argv[])
     }
 
     // Zoom
-    if (c=='z' || c=='+') {
+    if (c=='z' || c=='+' || c=='=') {
       width/=1.25;
       xmin=x-0.5*width;
       xmax=x+0.5*width;
@@ -276,7 +297,7 @@ int main(int argc,char *argv[])
     }
 
     // Unzoom
-    if (c=='x' || c=='+' || c=='=') {
+    if (c=='x' || c=='-') {
       width*=1.25;
       xmin=x-0.5*width;
       xmax=x+0.5*width;

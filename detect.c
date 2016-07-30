@@ -684,13 +684,14 @@ int main(int argc,char *argv[])
   printf("%d points above %g sigma\n",n,sigma);
   
   // Exit if too many
+  /*
   if (n>2500) {
     file=fopen("skipped.dat","a");
     fprintf(file,"%s : %d points above %g sigma\n",fitsfile,n,sigma);
     fclose(file);
     return 0;
   }
-
+  */
   // Fill points
   p=(struct point *) malloc(sizeof(struct point)*n);
   for (i=0,l=0;i<ff.naxis1;i++) {
