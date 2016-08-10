@@ -12,7 +12,7 @@ struct image {
   float *z;
   double mjd;
   char nfd[32],observer[32];
-  int cospar;
+  int cospar,tracked;
   float exptime;
 };
 struct image read_jpg(char *filename);
@@ -130,12 +130,16 @@ int main(int argc,char *argv[])
   int cospar=0;
   char observer[32]="Cees Bassa";
   float exptime=10.06;
-  int flag=0,nbin=1,readfits=0;
+  int flag=0,nbin=1,readfits=0,tracked=0;
 
   // Decode options
   if (argc>1) {
-    while ((arg=getopt(argc,argv,"i:t:o:d:Z:c:T:O:b:hF"))!=-1) {
+    while ((arg=getopt(argc,argv,"i:t:o:d:Z:c:T:O:b:hFs"))!=-1) {
       switch(arg) {
+
+      case 's':
+	tracked=1;
+	break;
 	
       case 'i':
 	strcpy(infile,optarg);
@@ -207,6 +211,12 @@ int main(int argc,char *argv[])
     }
   }
 
+  // Set tracked flag
+  if (tracked==1)
+    img.tracked=1;
+  else
+    img.tracked=0;
+  
   if (nfd!=NULL) {
     // Compute time
     mjd=nfd2mjd(nfd);
@@ -377,6 +387,9 @@ void write_fits(struct image img,char *filename)
   qfits_header_add(qh,"EXPTIME",val," ",NULL);
   sprintf(val,"%s",img.observer);
   qfits_header_add(qh,"OBSERVER",val," ",NULL);
+  sprintf(val,"%d",img.tracked);
+  qfits_header_add(qh,"TRACKED",val," ",NULL);
+  
 
   // Dump fitsheader
   //  qfits_header_dump(qh,stdout);

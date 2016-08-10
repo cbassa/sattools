@@ -28,7 +28,7 @@ struct image {
   float exptime;
   double mjd;
   char nfd[32],filename[32];
-  int cospar;
+  int cospar,tracked;
 } ;
 struct catalog {
   int n;
@@ -46,6 +46,9 @@ struct observation {
   char iod_line[80];
   float x[3],y[3];
   int state;
+};
+struct aperture {
+  float x,y,r1,r2;
 };
 struct image read_fits(char *filename,int pnum);
 int fgetline(FILE *file,char *s,int lim);
@@ -358,6 +361,50 @@ void write_observation(struct observation obs)
   return;
 }
 
+void aperture_photometry(struct image img,struct aperture ap)
+{
+  int i,j,k,n1,n2;
+  float s1,ss1,s2,ss2;
+  float dx,dy,x,y,r;
+  float f1,f2;
+  double mjd;
+  
+  mjd=img.mjd+0.5*(double) img.exptime/86400.0;
+
+  s1=0.0;
+  ss1=0.0;
+  s2=0.0;
+  ss2=0.0;
+  n1=0;
+  n2=0;
+  
+  for (i=0;i<img.naxis1;i++) {
+    x=(float) i;
+    for (j=0;j<img.naxis2;j++) {
+      k=i+img.naxis1*j;
+      y=(float) j;
+      dx=x-ap.x;
+      dy=y-ap.y;
+      r=sqrt(dx*dx+dy*dy);
+      if (r<ap.r1) {
+	s1+=img.z[k];
+	ss1+=img.z[k]*img.z[k];
+	n1++;
+      } else if (r>=ap.r1 && r<ap.r2) {
+	s2+=img.z[k];
+	ss2+=img.z[k]*img.z[k];
+	n2++;
+      }
+    }
+  }
+  f1=s1/(float) n1;
+  f2=s2/(float) n2;
+
+  printf("%lf %8.3f %8.3f %.0f %d %.0f %d %f\n",mjd,ap.x,ap.y,s1,n1,s2,n2,f1-f2);
+
+  return;
+}
+
 // Reduce point
 void reduce_point(struct observation *obs,struct image img,float tmid,float x,float y)
 {
@@ -375,10 +422,12 @@ void reduce_point(struct observation *obs,struct image img,float tmid,float x,fl
   reverse(img.ra0,img.de0,rx,ry,&ra,&de);
 
   // Correct for stationary camera
-  mjd1=img.mjd+0.5*(double) img.exptime/86400.0;
-  mjd2=img.mjd+(double) tmid/86400.0;
-  ra+=gmst(mjd2)-gmst(mjd1);
-
+  if (img.tracked==0) {
+    mjd1=img.mjd+0.5*(double) img.exptime/86400.0;
+    mjd2=img.mjd+(double) tmid/86400.0;
+    ra+=gmst(mjd2)-gmst(mjd1);
+  }
+  
   dec2sex(ra/15.0,sra,0);
   dec2sex(de,sde,1);
 
@@ -492,7 +541,8 @@ int main(int argc,char *argv[])
   float fx=0.5,fy=0.333;
   int ix=0,iy=0,istar;
   struct image *img;
-
+  struct aperture ap;
+  
   // Environment variables
   env=getenv("ST_DATADIR");
 
@@ -545,6 +595,12 @@ int main(int argc,char *argv[])
   ymin=0.0;
   ymax=img[0].naxis2;
 
+  // Default aperture
+  ap.x=0.0;
+  ap.y=0.0;
+  ap.r1=5.0;
+  ap.r2=10.0;
+  
   // Forever loop
   for (;;) {
     if (redraw!=0) {
@@ -611,6 +667,14 @@ int main(int argc,char *argv[])
 	    cpgpt1(cat.x[i],cat.y[i],6);
 	  cpgsci(1);
 	}
+      }
+
+      // Plot aperture
+      if (ap.x>0.0 && ap.y>0.0) {
+	cpgsci(3);
+	cpgcirc(ap.x,ap.y,ap.r1);
+	cpgcirc(ap.x,ap.y,ap.r2);
+	cpgsci(1);
       }
 
       redraw=0;
@@ -824,6 +888,15 @@ int main(int argc,char *argv[])
       continue;
     }
 
+    // Aperture photometry
+    if (c=='g') {
+      ap.x=x;
+      ap.y=y;
+      aperture_photometry(img[iimg],ap);
+      redraw=1;
+      continue;
+    }
+    
     // Help
     if (c=='h') {
       printf("q         Quit\n");
@@ -888,6 +961,12 @@ struct image read_fits(char *filename,int pnum)
   // COSPAR ID
   img.cospar=atoi(qfits_query_hdr(filename,"COSPAR"));
 
+  // Tracked
+  if (qfits_query_hdr(filename,"TRACKED")!=NULL)
+    img.tracked=atoi(qfits_query_hdr(filename,"TRACKED"));
+  else
+    img.tracked=0;
+  
   // Transformation
   img.ra0=atof(qfits_query_hdr(filename,"CRVAL1"));
   img.de0=atof(qfits_query_hdr(filename,"CRVAL2"));
