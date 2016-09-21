@@ -38,6 +38,8 @@
 5918 BG   59.2985   18.1045     40    Bjorn Gimle
 5919 BG   59.2615   18.6206     30    Bjorn Gimle
 6226 SC   28.4861  -97.8194    110    Scott Campbell
+7777 BY   38.1656   -2.3267   1608    Brad Young remote
+7778 BY  -31.2733  149.0644   1122    Brad Young SSO 
 8048 ST   49.4175 -123.6420      1.   Scott Tilley
 8049 ST   49.4348 -123.6685     40.   Scott Tilley
 8305 PG   26.2431  -98.2163     30    Paul Gabriel
@@ -59,5 +61,5 @@
 9000 PP   40.0848   21.1581   1433    Pierros Papadeas
 9001 AF   44.5700    6.68     1850    Alain Figer
 9002 AO   62.2544   26.5962    150    Arto Oksanen
+9003 CP  -24.6272  -70.4047   2638    Cerro Paranal
 9999 GR   47.348     5.5151    100    Graves
-

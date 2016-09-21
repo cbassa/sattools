@@ -153,7 +153,7 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
       s=apparent_position(mjd);
 
       // Adjust for stationary camera
-      if (img.tracked==0)
+      if (img.tracked==0) 
 	s.ra+=gmst(img.mjd+0.5*img.exptime/86400.0)-gmst(mjd);
 
       // Convert to rx,ry
