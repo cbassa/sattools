@@ -217,6 +217,8 @@ int main(int argc,char *argv[])
 	  cnt=(float) k;
 	}
       }
+      s1-=max;
+      s2-=max*max;
       avg=s1/(float) ff.nt;
       std=sqrt((s2-s1*avg)/(float) (ff.nt-1));
       
