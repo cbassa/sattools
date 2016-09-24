@@ -4,6 +4,7 @@
 #include <math.h>
 #include <time.h>
 #include <getopt.h>
+#include <ctype.h>
 #include "cpgplot.h"
 #include "cel.h"
 #include "sgdp4h.h"
@@ -1881,7 +1882,7 @@ void planar_search(char *filename,int satno,float rmin,float rmax,int nr,int gra
   double tsince,radius,jd;
   double st,ct,sn,cn,si,ci,t;
   xyz_t satpos,obspos,obsvel,sunpos,grvpos,grvvel;
-  double r,ra,de,dx,dy,dz,rsun,rearth,psun,pearth,p,azi,alt,rx,ry,rx0,ry0,ra0,de0;
+  double r,ra,de,dx,dy,dz,rsun,rearth,psun,pearth,p,azi,alt,rx,ry,rx0,ry0,ra0,de0,rx1,ry1,altmax;
   double sra,sde;
   double rg,rag,deg,azig,altg;
   float phase,mag,mmin;
@@ -1925,7 +1926,7 @@ void planar_search(char *filename,int satno,float rmin,float rmax,int nr,int gra
       radius=rmin;
 
     // Loop over angles
-    for (i=0,mmin=15.0;i<MMAX;i++) {
+    for (i=0,mmin=15.0,altmax=0.0;i<MMAX;i++) {
       t=2.0*M_PI*(double) i/(double) (MMAX-1);
       st=sin(K.theta+t);
       ct=cos(K.theta+t);
@@ -2000,6 +2001,12 @@ void planar_search(char *filename,int satno,float rmin,float rmax,int nr,int gra
 	mmin=mag;
       }
 
+      if (alt>0.0 && alt>altmax && mag<15.0) {
+	rx1=rx;
+	ry1=ry;
+	altmax=alt;
+      }
+      
       // Compute position at Graves
       if (graves!=0) {
 	graves_xyz(m.mjd,&grvpos,&grvvel);  
@@ -2031,6 +2038,8 @@ void planar_search(char *filename,int satno,float rmin,float rmax,int nr,int gra
       cpgsch(1.0);
       cpgsci(7);
       cpgpt1((float) rx0,(float) ry0,4);
+      if (altmax>0.0)
+	cpgpt1((float) rx1,(float) ry1,17);
       cpgsci(1);
     }
   }
@@ -2204,7 +2213,7 @@ int read_camera(int no)
   file=fopen(filename,"r");
   if (file==NULL) {
     printf("File with camera information not found!\n");
-    return;
+    return -1;
   }
   while (fgets(line,LIM,file)!=NULL) {
     // Skip

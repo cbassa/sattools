@@ -11,6 +11,9 @@
 #define R2D 180.0/M_PI
 #define XKMPER 6378.135 // Earth radius in km
 #define XKMPAU 149597879.691 // AU in km
+#define XKE     0.743669161e-1
+#define CK2     5.413080e-4   /* (0.5 * XJ2 * AE * AE) */
+#define XMNPDA  1440.0              /* Minutes per day */
 #define FLAT (1.0/298.257)
 #define STDMAG 6.0
 #define MMAX 1024
@@ -39,6 +42,29 @@ void mjd2date(double mjd,char *date);
 int properties(kep_t K,xyz_t obspos,xyz_t sunpos,float radius,float t,double *ra,double *de,double *r,float *mag);
 void dec2sex(double x,char *s,int f,int len);
 
+float semimajoraxis(orbit_t orb)
+{
+  float xno,eo,xincl;
+  float a1,betao2,betao,temp0,del1,a0,del0,xnodp,aodp;
+
+  xno=orb.rev*2.0*M_PI/XMNPDA;
+  eo=orb.ecc;
+  xincl=orb.eqinc;
+
+  a1 = pow(XKE / xno, 2.0/3.0);
+  betao2 = 1.0 - eo * eo;
+  betao = sqrt(betao2);
+  temp0 = (1.5 * CK2) * cos(xincl)*cos(xincl) / (betao * betao2);
+  del1 = temp0 / (a1 * a1);
+  a0 = a1 * (1.0 - del1 * (1.0/3.0 + del1 * (1.0 + del1 * 134.0/81.0)));
+  del0 = temp0 / (a0 * a0);
+  xnodp = xno / (1.0 + del0);
+  aodp = (a0 / (1.0 - del0));
+  aodp=(aodp-1)*XKMPER;
+
+  return aodp;
+}
+
 void usage(void)
 {
   return;
@@ -55,13 +81,14 @@ int main(int argc,char *argv[])
   double mjd0,mjd,jd,tsince;
   int rv,withvel;
   kep_t K;
-  double radius=1080.0;
+  double radius=-1;
   xyz_t obspos,obsvel,sunpos;
-  double p,pmin,p0,p1,r,ra,de,azi,alt,sazi,salt,altmin=10.0,saltmin=-6.0;
+  double p,pmin,p0,p1,r,ra,de,azi,alt,sazi,salt,altmin=10.0,saltmin=-6.0,altmax,dp;
   float mag,mmin;
   int state,pstate,nstate;
   float t,length=86400.0,dt=60.0;
   char sra[16],sde[16],type[32];
+  int opttype=0; // 0 magnitude; 1 elevation
 
   // Initialize
   nfd_now(nfd);
@@ -69,7 +96,7 @@ int main(int argc,char *argv[])
   get_site(4171);
   
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:l:hS:A:r:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:l:hS:A:r:d:C"))!=-1) {
     switch (arg) {
       
     case 't':
@@ -83,6 +110,10 @@ int main(int argc,char *argv[])
 
     case 's':
       get_site(atoi(optarg));
+      break;
+
+    case 'C':
+      opttype=1;
       break;
       
     case 'i':
@@ -109,6 +140,10 @@ int main(int argc,char *argv[])
 
     case 'A':
       altmin=atof(optarg);
+      break;
+
+    case 'd':
+      dt=atof(optarg);
       break;
 
     case 'h':
@@ -158,10 +193,15 @@ int main(int argc,char *argv[])
     return -1;
   }
 
+  // Compute radius
+  if (radius<0.0)
+    radius=semimajoraxis(orb);
+  
   // Print header
   printf("Observer: %s (%04d) [%+.4f, %+.4f, %.0fm]\n",m.observer,m.site_id,m.lat,m.lng,m.alt*1000.0);
   printf("Elements: %s\n",tlefile);
   printf("Object: %d\n",satno);
+  printf("Radius: %g km\n",radius);
   printf("Start UT Date/Time: %s for %g h \n\n",nfd,length/3600.0);
   printf("UT Date/Time         R.A.      Decl.    Azi.    Alt.  Range    Mag  Sun Alt. Type\n");
   printf("                                        (deg)   (deg) (km)          (deg)\n");
@@ -182,29 +222,50 @@ int main(int argc,char *argv[])
     obspos_xyz(mjd,&obspos,&obsvel);
     sunpos_xyz(mjd,&sunpos,&ra,&de);
     equatorial2horizontal(mjd,ra,de,&sazi,&salt);
-    
+
+    // Rough search first
     p0=0.0;
     p1=2.0*M_PI;
-    for (i=0,pmin=0.0,mmin=15.0;i<MMAX;i++) {
+    for (i=0,pmin=0.0,mmin=15.0,altmax=0.0;i<MMAX;i++) {
       p=p0+(p1-p0)*(float) i/(float) (MMAX-1);
       state=properties(K,obspos,sunpos,radius,p,&ra,&de,&r,&mag);
-      if (mag<mmin) {
-	pmin=p;
-	mmin=mag;
+      equatorial2horizontal(mjd,ra,de,&azi,&alt);
+
+      if (opttype==0) {
+	if (mag<mmin) {
+	  pmin=p;
+	  mmin=mag;
+	}
+      } else if (opttype==1) {
+	if (alt>altmax && mag<15.0) {
+	  pmin=p;
+	  altmax=alt;
+	}
       }
     }
+
+    // Finer search
     p0=pmin-4.0*M_PI/(float) MMAX;
     p1=pmin+4.0*M_PI/(float) MMAX;
     for (i=0,pmin=0.0,mmin=15.0;i<MMAX;i++) {
       p=p0+(p1-p0)*(float) i/(float) (MMAX-1);
       state=properties(K,obspos,sunpos,radius,p,&ra,&de,&r,&mag);
-      if (mag<mmin) {
-	pmin=p;
-	mmin=mag;
+      equatorial2horizontal(mjd,ra,de,&azi,&alt);
+
+      if (opttype==0) {
+	if (mag<mmin) {
+	  pmin=p;
+	  mmin=mag;
+	}
+      } else if (opttype==1) {
+	if (alt>altmax && mag<15.0) {
+	  pmin=p;
+	  altmax=alt;
+	}
       }
     }
+
     // Get properties before and after maximum
-    
     pstate=properties(K,obspos,sunpos,radius,pmin-0.01,&ra,&de,&r,&mag);
     nstate=properties(K,obspos,sunpos,radius,pmin+0.01,&ra,&de,&r,&mag);
     state=properties(K,obspos,sunpos,radius,pmin,&ra,&de,&r,&mag);
@@ -212,8 +273,11 @@ int main(int argc,char *argv[])
       strcpy(type,"Egress");
     else if (pstate==state && state>nstate)
       strcpy(type,"Ingress");
-    else
+    else if (opttype==0)
       strcpy(type,"Maximum");
+    else if (opttype==1)
+      strcpy(type,"Culmination");
+
     ra=modulo(ra,360.0);
     equatorial2horizontal(mjd,ra,de,&azi,&alt);
     azi=modulo(azi+180.0,360.0);
@@ -526,7 +590,7 @@ int properties(kep_t K,xyz_t obspos,xyz_t sunpos,float radius,float t,double *ra
   *r=sqrt(dx*dx+dy*dy+dz*dz);
   *ra=atan2(dy,dx)*R2D;
   *de=asin(dz/ *r)*R2D;
-  
+
   // Visibility
   if (p<-psun) {
     //    strcpy(state,"eclipsed");

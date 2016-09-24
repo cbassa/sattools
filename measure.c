@@ -377,7 +377,7 @@ void reduce_point(struct observation *obs,struct image img,float tmid,float x,fl
   // Correct for stationary camera
   mjd1=img.mjd+0.5*(double) img.exptime/86400.0;
   mjd2=img.mjd+(double) tmid/86400.0;
-  ra+=gmst(mjd2)-gmst(mjd1);
+  //  ra+=gmst(mjd2)-gmst(mjd1);
 
   dec2sex(ra/15.0,sra,0);
   dec2sex(de,sde,1);
@@ -814,8 +814,8 @@ int main(int argc,char *argv[])
 
     // Measure
     if (c=='m' || c=='D') {
-      istar=select_nearest(cat,x,y);
-      printf("%f %f -> %f %f %f\n",x,y,cat.x[istar],cat.y[istar],cat.mag[istar]);
+      //      istar=select_nearest(cat,x,y);
+      //      printf("%f %f -> %f %f %f\n",x,y,cat.x[istar],cat.y[istar],cat.mag[istar]);
       reduce_point(&obs,img[iimg],frac*img[iimg].exptime,x,y);
       obs.x[0]=x;
       obs.y[0]=y;
