@@ -545,8 +545,6 @@ void write_observation(struct observation obs)
   w=sqrt(obs.ax[1]*obs.ax[1]+obs.ay[1]*obs.ay[1])/dt;
   pa=atan2(obs.ay[1],obs.ax[1])*R2D;
   
-  printf("%lf %f %f %f %f %f\n",obs.mjd,obs.ra,obs.de,w,pa,dt);
-  
   return;
 }
 
@@ -782,7 +780,7 @@ int main(int argc,char *argv[])
       if (layer==2) compute_cuts(img.zmax,img.mask,img.naxis1*img.naxis2,&zmin,&zmax,lcut,hcut);
       if (layer==4) compute_cuts(img.zd,img.mask,img.naxis1*img.naxis2,&zmin,&zmax,lcut,hcut);
       if (layer==5) {
-	zmin=3.0;
+	zmin=5.0;
 	zmax=10.0;
       }
 
