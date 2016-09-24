@@ -755,12 +755,12 @@ int main(int argc,char *argv[])
   float heat_r[] = {0.0, 0.5, 1.0, 1.0, 1.0};
   float heat_g[] = {0.0, 0.0, 0.5, 1.0, 1.0};
   float heat_b[] = {0.0, 0.0, 0.0, 0.3, 1.0};
-  char filename[LIM],text[128],catalog[128];
+  char filename[LIM],text[128],catalog[128],line[LIM];
   float sigma=5.0;
   struct point *p;
   struct observation obs;
   int arg=0,satno,plot=0;
-  FILE *file;
+  FILE *file,*outfile;
   float zmin,zmax;
   int *zsel;
   float theta,r;
@@ -768,6 +768,9 @@ int main(int argc,char *argv[])
   int mmin=50;
   double mjd,doy;
   int year;
+  float x[3],y[3],t[3];
+  float x0,y0;
+  char c;
   
   // Decode options
   if (argc>1) {
@@ -807,7 +810,13 @@ int main(int argc,char *argv[])
     return 0;
   }
 
-  printf("# Processing %s\n",fitsfile);
+  // Open measurements file
+  sprintf(filename,"%s.det",fitsfile);
+  file=fopen(filename,"r");
+  if (file==NULL)
+    return 0;
+  else
+    fclose(file);
   
   // Read
   ff=read_fits(fitsfile);
@@ -842,138 +851,73 @@ int main(int argc,char *argv[])
     if (zsel[i]==0)
       ff.zmax[i]=0.0;
   
-  // Plot
-  if (plot==1) {
-    cpgopen("/xs");
-    cpgpap(0.,1.0);
-    cpgsvp(0.1,0.95,0.1,0.8);
-    
-    cpgsch(0.8);
-    sprintf(text,"UT Date: %.23s  COSPAR ID: %04d",ff.nfd+1,ff.cospar);
-    cpgmtxt("T",6.0,0.0,0.0,text);
-    sprintf(text,"R.A.: %10.5f (%4.1f'') Decl.: %10.5f (%4.1f'')",ff.ra0,ff.xrms,ff.de0,ff.yrms);
-    cpgmtxt("T",4.8,0.0,0.0,text);
-    sprintf(text,"FoV: %.2f\\(2218)x%.2f\\(2218) Scale: %.2f''x%.2f'' pix\\u-1\\d",ff.naxis1*sqrt(ff.a[1]*ff.a[1]+ff.b[1]*ff.b[1])/3600.0,ff.naxis2*sqrt(ff.a[2]*ff.a[2]+ff.b[2]*ff.b[2])/3600.0,sqrt(ff.a[1]*ff.a[1]+ff.b[1]*ff.b[1]),sqrt(ff.a[2]*ff.a[2]+ff.b[2]*ff.b[2]));
-    cpgmtxt("T",3.6,0.0,0.0,text);
-    
-    cpgsch(1.0);
-    cpgctab(heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
-    cpgwnad(0.0,(float) ff.naxis1,0.0,(float) ff.naxis2);
+  cpgopen("/xs");
+  cpgpap(0.,1.0);
+  cpgsvp(0.1,0.95,0.1,0.8);
   
-    zmin=0.0;
-    zmax=150.0;
-    cpgimag(ff.zmax,ff.naxis1,ff.naxis2,1,ff.naxis1,1,ff.naxis2,zmin,zmax,tr);
-    cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
-    cpgstbg(1);
-    overlay_predictions(fitsfile,ff);
-  }
+  cpgsch(0.8);
+  sprintf(text,"UT Date: %.23s  COSPAR ID: %04d",ff.nfd+1,ff.cospar);
+  cpgmtxt("T",6.0,0.0,0.0,text);
+  sprintf(text,"R.A.: %10.5f (%4.1f'') Decl.: %10.5f (%4.1f'')",ff.ra0,ff.xrms,ff.de0,ff.yrms);
+  cpgmtxt("T",4.8,0.0,0.0,text);
+  sprintf(text,"FoV: %.2f\\(2218)x%.2f\\(2218) Scale: %.2f''x%.2f'' pix\\u-1\\d",ff.naxis1*sqrt(ff.a[1]*ff.a[1]+ff.b[1]*ff.b[1])/3600.0,ff.naxis2*sqrt(ff.a[2]*ff.a[2]+ff.b[2]*ff.b[2])/3600.0,sqrt(ff.a[1]*ff.a[1]+ff.b[1]*ff.b[1]),sqrt(ff.a[2]*ff.a[2]+ff.b[2]*ff.b[2]));
+  cpgmtxt("T",3.6,0.0,0.0,text);
+    
+  cpgsch(1.0);
+  cpgctab(heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
+  cpgwnad(0.0,(float) ff.naxis1,0.0,(float) ff.naxis2);
   
-  // Count
-  for (i=0,np=0;i<ff.naxis1*ff.naxis2;i++)
-    if (zsel[i]>0)
-      np++;
+  zmin=0.0;
+  zmax=150.0;
+  cpgimag(ff.zmax,ff.naxis1,ff.naxis2,1,ff.naxis1,1,ff.naxis2,zmin,zmax,tr);
+  cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
+  cpgstbg(1);
+  overlay_predictions(fitsfile,ff);
 
-  // Allocate points
-  p=(struct point *) malloc(sizeof(struct point)*np);
-
-  // Fill
-  for (i=0,l=0;i<ff.naxis1;i++) {
-    for (j=0;j<ff.naxis2;j++) {
-      k=i+ff.naxis1*j;
-      if (zsel[k]>0) {
-	p[l].x=(float) i;
-	p[l].y=(float) j;
-	p[l].t=ff.dt[(int) ff.znum[k]];
-	p[l].flag=0;
-	l++;
+  // Open measurements file
+  sprintf(filename,"%s.det",fitsfile);
+  file=fopen(filename,"r");
+  if (file!=NULL) {
+    i=0;
+    while (fgetline(file,line,LIM)>0) {
+      if (i%4==1) {
+	sscanf(line,"# %f %f %f %f %f %f %f %f %f",&x[0],&y[0],&t[0],&x[1],&y[1],&t[1],&x[2],&y[2],&t[2]);
+	cpgsci(5);
+	cpgpt1(x[0],y[0],4);
+	cpgmove(x[1],y[1]);
+	cpgdraw(x[2],y[2]);
       }
+      if (i%4==2) {
+	line[strlen(line)-1]='\0';
+	sprintf(catalog,"%s.dat",line+2);
+      }	
+      if (i%4==3) {
+	line[strlen(line)-1]=' ';
+	cpgstbg(0);
+	cpgsch(0.8);
+	cpgsci(1);
+	cpgmtxt("T",1.0,0.5,0.5,line);
+	cpgsch(1.0);
+
+	printf("Accept observation:\n%s\nto %s\n",line,catalog);
+	printf("\nPress a to accept, s to skip.\n");
+	cpgcurs(&x0,&y0,&c);
+
+	// Accept
+	if (c=='a') {
+	  outfile=fopen(catalog,"a");
+	  fprintf(outfile,"%s\n",line);
+	  fclose(outfile);
+	}
+      }
+
+      
+      i++;
     }
   }
+  cpgend();
 
-  // Random Sample Consensus line finding
-  ransac(p,np,drmin);
-
-  // Fit lines
-  for (l=1;l<=4;l++) {
-    // Default observation
-    env=getenv("ST_COSPAR");
-    obs.satno=99999;
-    strcpy(obs.catalog,"unidentified");
-    strcpy(obs.desig,"99999U");
-    obs.cospar=atoi(env);
-    obs.conditions='G';
-    strcpy(obs.nfd,"YYYYMMDDHHMMSSsss");
-    obs.terr=0.1;
-    strcpy(obs.pos,"HHMMmmm+DDMMmm");
-    strcpy(obs.iod_line,"");
-    obs.perr=0.3;
-    obs.epoch=5;
-    obs.type=2;
-    obs.behavior=' ';
-    obs.state=0;
-
-    // Count points
-    for (i=0,m=0;i<np;i++)
-      if (p[i].flag==l)
-	m++;
-    if (m==0)
-      continue;
-    if (m<=mmin)
-      continue;
-
-    // Fit observation
-    fit(&obs,ff,p,np,l);
-
-    // Identify observation
-    identify_observation(&obs,fitsfile,rmin,amin);
-
-    // Find designation
-    if (obs.satno!=99999) {
-      find_designation(obs.satno,obs.desig);
-    } else {
-      mjd=nfd2mjd(ff.nfd);
-      doy=mjd2doy(mjd,&year);
-      sprintf(obs.desig,"%02d%03.0lfA",year-2000,doy+500);
-    }
-
-    // Format observation
-    format_iod_line(&obs);
-
-        // Open file
-    if (flag==0) {
-      sprintf(filename,"%s.det",fitsfile);
-      file=fopen(filename,"w");
-      flag=1;
-    }
-    
-    // Comment
-    fprintf(file,"# %s : line %d, %d points\n",fitsfile,l,m);
-    fprintf(file,"# %7.2f %7.2f %5.2f %7.2f %7.2f %5.2f %7.2f %7.2f %5.2f\n",obs.x[0],obs.y[0],obs.t[0],obs.x[1],obs.y[1],obs.t[1],obs.x[2],obs.y[2],obs.t[2]);
-    fprintf(file,"# %s\n",obs.catalog);
-    fprintf(file,"%s\n",obs.iod_line);
-    printf("# %s : line %d, %d points\n",fitsfile,l,m);
-    printf("%s\n",obs.iod_line);
-
-    // Plot observation
-    if (plot==1) {
-      cpgsci(5);
-      sprintf(text," %d: %05d",l,obs.satno);
-      cpgsch(0.65);
-      cpgtext(obs.x[0],obs.y[0],text);
-      cpgsch(1.0);
-      cpgpt1(obs.x[0],obs.y[0],4);
-      cpgmove(obs.x[1],obs.y[1]);
-      cpgdraw(obs.x[2],obs.y[2]);
-      cpgsci(1);
-    }
-  }  
-  if (plot==1)
-    cpgend();
-
-  // Close file
-  if (flag==1)
-    fclose(file);
-  
+ 
   // Free
   free(ff.zavg);
   free(ff.zstd);
@@ -983,7 +927,6 @@ int main(int argc,char *argv[])
   free(ff.dt);
   free(ff.mask);
   free(zsel);
-  free(p);
 
   return 0;
 }

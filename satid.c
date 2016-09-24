@@ -37,7 +37,7 @@ struct image {
   double mjd;
   float *dt,exptime;
   char nfd[32];
-  int cospar;
+  int cospar,tracked;
 };
 struct sat {
   long Isat;
@@ -153,7 +153,8 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
       s=apparent_position(mjd);
 
       // Adjust for stationary camera
-      s.ra+=gmst(img.mjd+0.5*img.exptime/86400.0)-gmst(mjd);
+      if (img.tracked==0) 
+	s.ra+=gmst(img.mjd+0.5*img.exptime/86400.0)-gmst(mjd);
 
       // Convert to rx,ry
       r=acos(sin(img.de0*D2R)*sin(s.de*D2R)+cos(img.de0*D2R)*cos(s.de*D2R)*cos((img.ra0-s.ra)*D2R))*R2D;
@@ -372,6 +373,12 @@ struct image read_fits(char *filename)
 
   // COSPAR ID
   img.cospar=atoi(qfits_query_hdr(filename,"COSPAR"));
+
+  // Tracked
+  if (qfits_query_hdr(filename,"TRACKED")!=NULL)
+    img.tracked=atoi(qfits_query_hdr(filename,"TRACKED"));
+  else
+    img.tracked=0;
 
   // Transformation
   img.ra0=atof(qfits_query_hdr(filename,"CRVAL1"));
