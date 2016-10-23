@@ -67,6 +67,20 @@ float semimajoraxis(orbit_t orb)
 
 void usage(void)
 {
+  printf("planscan -t <UT Date/time> -c <catalog> -s <site> -l <length> -i <NORAD>\n");
+  printf("         -r <altitude> -A <elevation> -S <elevation>\n\n");
+  printf("-t <UT Date/time>  UT Start date/time in yyyy-mm-ddThh:mm:ss [default: now]\n");
+  printf("-c <catalog>       Input TLE catalog to use [default: classfd.tle]\n");
+   printf("-s <site>          Site number from sites.txt [default: 4171]\n");
+   printf("-l <length>        Search length from UT start in seconds [default: 86400 s]\n");
+   printf("-i <NORAD>         NORAD number of satellite to select [default: 41334]\n");
+   printf("-r <altitude>      Satellite altitude above surface in km [default: mean orbital altitude]\n");
+   printf("-A <elevation>     Minimum satellite elevation in degrees [default: 10 degrees]\n");
+   printf("-S <elevation>     Maximum solar elevation in degrees [default: -6 degrees\n");
+   printf("-d <timestep>      Time step in seconds [default: 60s]\n");
+   printf("-C                 Select on culmination instead of maximum brightness\n");
+   printf("-h                 Shows this help\n");
+
   return;
 }
 

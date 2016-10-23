@@ -219,8 +219,8 @@ int main(int argc,char *argv[])
       }
       s1-=max;
       s2-=max*max;
-      avg=s1/(float) ff.nt;
-      std=sqrt((s2-s1*avg)/(float) (ff.nt-1));
+      avg=s1/(float) (ff.nt-1);
+      std=sqrt((s2-s1*avg)/(float) (ff.nt-2));
       
       // Reset masked pixels
       if (maskin==1 && msk.c[n]==0.0) {
@@ -409,7 +409,7 @@ void write_fits(char *filename,struct fourframe ff)
   // MJD-OBS
   sprintf(val,"%lf",ff.mjd);
   qfits_header_add(qh,"MJD-OBS",val," ",NULL);
-  sprintf(val,"%f",ff.dt[ff.nt-1],ff.dt[0]);
+  sprintf(val,"%f",ff.dt[ff.nt-1]-ff.dt[0]);
   qfits_header_add(qh,"EXPTIME",val," ",NULL);
   sprintf(val,"%d",ff.nt);
   qfits_header_add(qh,"NFRAMES",val," ",NULL);

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 #include "cel.h"
 #include "cpgplot.h"
 #include "qfits.h"
@@ -653,7 +654,7 @@ int autotrack(char *fileroot,struct observation obs,struct image *img,int cflag)
   file=fopen(filename,"r");
   if (file==NULL) {
     fprintf(stderr,"ID file %s not found\n",filename);
-    return;
+    return -1;
   }
   while (fgetline(file,line,LIM)>0) {
     if (cflag==1 && strstr(line,"classfd")==NULL)
@@ -781,7 +782,7 @@ int main(int argc,char *argv[])
       if (layer==4) compute_cuts(img.zd,img.mask,img.naxis1*img.naxis2,&zmin,&zmax,lcut,hcut);
       if (layer==5) {
 	zmin=5.0;
-	zmax=10.0;
+	zmax=20.0;
       }
 
       if (layer==0) cpgimag(img.zavg,img.naxis1,img.naxis2,1,img.naxis1,1,img.naxis2,zmin,zmax,tr);

@@ -2376,9 +2376,14 @@ int plot_skymap(void)
       plot_apex(35786.0,0.0);
       plot_apex(39035,63.4);
       plot_apex(1100,63.4);
+      //      plot_apex(1100,63.4);
+      //      plot_apex(1100,123.0);
       plot_apex(800,98.7);
       plot_apex(1100,-63.4);
       plot_apex(800,-98.7);
+      //      plot_apex(480.0,141.7);
+      //      plot_apex(400.0,40.0);
+      //      plot_apex(320.0,38.0);
       
       if (Isatsel>=0 && m.leoflag>=0)
 	skymap_plotsatellite(m.tlefile,Isatsel,m.mjd,m.length);

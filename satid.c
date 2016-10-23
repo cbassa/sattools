@@ -108,13 +108,13 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
   int i;
   orbit_t orb;
   struct sat s;
-  int imode,flag,textflag;
+  int imode,flag,textflag,sflag;
   FILE *fp=NULL,*file;;
   xyz_t satpos,obspos,satvel,sunpos;
   double mjd,jd,dx,dy,dz;
   double rx,ry,ra,de,azi,alt,r,t,d;
   float x,y,x0,y0;
-  char norad[7],satname[30];
+  char norad[7],satname[30],state[16];
   float isch;
   float rsun,rearth,psun,pearth,p;
   char filename[128];
@@ -145,7 +145,7 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
     if (imode==SGDP4_ERROR)
       continue;
 
-    for (flag=0,textflag=0,i=0;i<MMAX;i++) {
+    for (flag=0,textflag=0,sflag=0,i=0;i<MMAX;i++) {
       t=img.exptime*(float) i/(float) (MMAX-1);
       mjd=mjd0+t/86400.0;
 
@@ -172,10 +172,15 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
       // Visibility
       if (s.p-s.pearth<-s.psun) {
 	cpgsls(4);
+	strcpy(state,"eclipsed");
       } else if (s.p-s.pearth>-s.psun && s.p-s.pearth<s.psun) {
 	cpgsls(2);
+	strcpy(state,"penumbra");
+	sflag=1;
       } else if (s.p-s.pearth>s.psun) {
 	cpgsls(1);
+	strcpy(state,"sunlit");
+	sflag=1;
       }
 
       // Print name if in viewport
@@ -203,8 +208,12 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
 	cpgdraw(x,y);
       }
     }
-    if (textflag==1)
-      fprintf(file,"%.23s %8.3f %8.3f %8.3f %8.3f %8.5f %s %s\n",img.nfd+1,x0,y0,x,y,img.exptime,norad,tlefile);
+    if (textflag==1) {
+      if (sflag==0)
+	fprintf(file,"%.23s %8.3f %8.3f %8.3f %8.3f %8.5f %s %s eclipsed\n",img.nfd+1,x0,y0,x,y,img.exptime,norad,tlefile);
+      else
+	fprintf(file,"%.23s %8.3f %8.3f %8.3f %8.3f %8.5f %s %s sunlit\n",img.nfd+1,x0,y0,x,y,img.exptime,norad,tlefile);
+    }
 
   }
   fclose(fp);
@@ -274,6 +283,7 @@ int main(int argc,char *argv[])
   float heat_b[] = {0.0, 0.0, 0.0, 0.3, 1.0};
   char text[128];
   char *env,filename[128];
+  float sx,sy,wx,wy;
 
   img=read_fits(argv[1]);
 
@@ -301,6 +311,13 @@ int main(int argc,char *argv[])
     zmax=zavg+6*zstd;
   }
 
+  // Sizes
+  sx=sqrt(img.a[1]*img.a[1]+img.b[1]*img.b[1]);
+  sy=sqrt(img.a[2]*img.a[2]+img.b[2]*img.b[2]);
+  wx=img.naxis1*sx/3600.0;
+  wy=img.naxis2*sy/3600.0;
+
+  
   if (argc==3)
     cpgopen(argv[2]);
   else
@@ -312,8 +329,15 @@ int main(int argc,char *argv[])
   sprintf(text,"UT Date: %.23s  COSPAR ID: %04d",img.nfd+1,img.cospar);
   cpgmtxt("T",6.0,0.0,0.0,text);
   sprintf(text,"R.A.: %10.5f (%4.1f'') Decl.: %10.5f (%4.1f'')",img.ra0,img.xrms,img.de0,img.yrms);
+  if (img.xrms<1e-3 || img.yrms<1e-3 || img.xrms/sx>2.0 || img.yrms/sy>2.0)
+    cpgsci(2);
+  else
+    cpgsci(1);
   cpgmtxt("T",4.8,0.0,0.0,text);
-  sprintf(text,"FoV: %.2f\\(2218)x%.2f\\(2218) Scale: %.2f''x%.2f'' pix\\u-1\\d",img.naxis1*sqrt(img.a[1]*img.a[1]+img.b[1]*img.b[1])/3600.0,img.naxis2*sqrt(img.a[2]*img.a[2]+img.b[2]*img.b[2])/3600.0,sqrt(img.a[1]*img.a[1]+img.b[1]*img.b[1]),sqrt(img.a[2]*img.a[2]+img.b[2]*img.b[2]));
+  cpgsci(1);
+
+  
+  sprintf(text,"FoV: %.2f\\(2218)x%.2f\\(2218) Scale: %.2f''x%.2f'' pix\\u-1\\d",wx,wy,sx,sy);
   cpgmtxt("T",3.6,0.0,0.0,text);
   sprintf(text,"Stat: %5.1f+-%.1f (%.1f-%.1f)",zavg,zstd,zmin,zmax);
   cpgmtxt("T",2.4,0.0,0.0,text);
