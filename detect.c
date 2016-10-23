@@ -765,7 +765,7 @@ int main(int argc,char *argv[])
   int *zsel;
   float theta,r;
   float drmin=10,rmin=20,amin=5.0;
-  int mmin=50;
+  int mmin=100;
   double mjd,doy;
   int year;
   
@@ -811,13 +811,13 @@ int main(int argc,char *argv[])
   
   // Read
   ff=read_fits(fitsfile);
-
+  
   // Fill mask
   if (ff.naxis1==720 && ff.naxis2==576) {
     for (i=0;i<ff.naxis1;i++) {
       for (j=0;j<ff.naxis2;j++) {
 	k=i+ff.naxis1*j;
-	if (i<10 || i>ff.naxis1-10 || j>ff.naxis2-10)
+	if (i<10 || i>ff.naxis1-12 || j>ff.naxis2-1 || j<1)
 	  ff.mask[k]=0;
       }
     }
@@ -861,7 +861,7 @@ int main(int argc,char *argv[])
     cpgwnad(0.0,(float) ff.naxis1,0.0,(float) ff.naxis2);
   
     zmin=0.0;
-    zmax=150.0;
+    zmax=100.0;
     cpgimag(ff.zmax,ff.naxis1,ff.naxis2,1,ff.naxis1,1,ff.naxis2,zmin,zmax,tr);
     cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
     cpgstbg(1);
@@ -873,6 +873,10 @@ int main(int argc,char *argv[])
     if (zsel[i]>0)
       np++;
 
+  // Skip if no points
+  if (np==0)
+    return 0;
+  
   // Allocate points
   p=(struct point *) malloc(sizeof(struct point)*np);
 

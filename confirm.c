@@ -847,9 +847,9 @@ int main(int argc,char *argv[])
   }
 
   // Apply mask
-  for (i=0;i<ff.naxis1*ff.naxis2;i++)
-    if (zsel[i]==0)
-      ff.zmax[i]=0.0;
+  //  for (i=0;i<ff.naxis1*ff.naxis2;i++)
+  //    if (zsel[i]==0)
+  //      ff.zmax[i]=0.0;
   
   cpgopen("/xs");
   cpgpap(0.,1.0);
