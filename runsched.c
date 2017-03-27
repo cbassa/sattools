@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 
 #define PORT 7264
+#define MAXPORT 7274
 #define IP "127.0.0.1"
 #define LIM 2048
 #define NMAX 128
@@ -57,11 +58,18 @@ int main(int argc, char *argv[])
 
     // Get local time
     time(&rawtime);
-    rawtime-=3600;
+    //rawtime-=3600;
+    
 
     // Print UTC time
     ptm=gmtime(&rawtime);
     strftime(buf,20,"%Y-%m-%dT%H:%M:%S",ptm);
+
+    // Make raw time UTC
+    rawtime=mktime(ptm);
+
+    // Show current raw time, just to check
+    // printf("%s\n",ctime(&rawtime));
 
     // Compute time differences
     for (i=0;i<nobs;i++) 
@@ -101,7 +109,7 @@ int fgetline(FILE *file,char *s,int lim)
 // Send new position to telescope
 void send_position(char *sra,char *sde)
 {
-  int skt;
+  int skt, port;
   struct hostent *he;
   struct sockaddr_in addr;
   char packet[LIM];
@@ -118,25 +126,42 @@ void send_position(char *sra,char *sde)
   // Send TCP packet
   skt=socket(AF_INET,SOCK_STREAM,0);
   addr.sin_family=AF_INET;
-  addr.sin_port=htons(PORT);
+  port=PORT;
+  addr.sin_port=htons(port);
   he=gethostbyname(IP);
   bcopy(he->h_addr,(struct in_addr *) &addr.sin_addr,he->h_length);
-  if(connect(skt,(struct sockaddr *) &addr,sizeof(addr))<0) {
-    fprintf(stderr,"Connection refused by remote host.\n");
-    return;
+  //if(connect(skt,(struct sockaddr *) &addr,sizeof(addr))<0) {
+  //  fprintf(stderr,"Connection refused by remote host.\n");
+  //  return;
+  //}
+  while((connect(skt,(struct sockaddr *) &addr,sizeof(addr))<0) && (port < MAXPORT)) {
+    fprintf(stderr,"Connection refused by remote host on port %04d.\n",port);
+    port++;
+    if(port==7265) port++;
+    fprintf(stderr,"Trying port %04d.\n",port);
+
+    addr.sin_port=htons(port);
+    he=gethostbyname(IP);
+    bcopy(he->h_addr,(struct in_addr *) &addr.sin_addr,he->h_length);
+
+    //return;
   }
+  if(port>=MAXPORT) return;
+
+  fprintf(stderr,"Connected on port %04d.\n",port);
+
   write(skt,packet,strlen(packet));
   close(skt); 
  
   // Set restart
-  file=fopen("/data2/satobs/control/state.txt","w");
+  file=fopen("/data1/satobs/control/state.txt","w");
   if (file!=NULL) {
     fprintf(file,"restart");
     fclose(file);
   }
 
   // Set position
-  file=fopen("/data2/satobs/control/position.txt","w");
+  file=fopen("/data1/satobs/control/position.txt","w");
   if (file!=NULL) {
     fprintf(file,"%s %s\n",sra,sde);
     fclose(file);
