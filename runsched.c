@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
     ptm=gmtime(&rawtime);
     strftime(buf,20,"%Y-%m-%dT%H:%M:%S",ptm);
 
-    // Make raw time UTC
+    // Make raw time UTC to compare with scheduled time
     rawtime=mktime(ptm);
 
     // Show current raw time, just to check
@@ -130,13 +130,10 @@ void send_position(char *sra,char *sde)
   addr.sin_port=htons(port);
   he=gethostbyname(IP);
   bcopy(he->h_addr,(struct in_addr *) &addr.sin_addr,he->h_length);
-  //if(connect(skt,(struct sockaddr *) &addr,sizeof(addr))<0) {
-  //  fprintf(stderr,"Connection refused by remote host.\n");
-  //  return;
-  //}
   while((connect(skt,(struct sockaddr *) &addr,sizeof(addr))<0) && (port < MAXPORT)) {
     fprintf(stderr,"Connection refused by remote host on port %04d.\n",port);
     port++;
+    // Skip port 7265... used by some other service?
     if(port==7265) port++;
     fprintf(stderr,"Trying port %04d.\n",port);
 
@@ -144,7 +141,6 @@ void send_position(char *sra,char *sde)
     he=gethostbyname(IP);
     bcopy(he->h_addr,(struct in_addr *) &addr.sin_addr,he->h_length);
 
-    //return;
   }
   if(port>=MAXPORT) return;
 
