@@ -862,7 +862,7 @@ void schedule(char *nfd,double ra,double de)
     printf("Failed to create schedule.txt\n");
     return;
   }
-  fprintf(file,"%s %s %s\n",nfd,sra,sde);
+  fprintf(file,"%s %s %s %s\n",nfd,sra,sde, m.camera);
   fclose(file);
 
   return;
@@ -2209,7 +2209,7 @@ int read_camera(int no)
   FILE *file;
   char line[LIM],filename[LIM];
 
-  sprintf(filename,"%s/data/camera.txt",m.datadir);
+  sprintf(filename,"%s/data/cameras.txt",m.datadir);
   file=fopen(filename,"r");
   if (file==NULL) {
     printf("File with camera information not found!\n");
@@ -2220,7 +2220,7 @@ int read_camera(int no)
     if (strstr(line,"#")!=NULL)
       continue;
     if (i==no) {
-      sscanf(line,"%s %f %f",m.camera,&m.fw,&m.fh);
+      sscanf(line,"%s %f %f", m.camera, &m.fw, &m.fh);
       m.fw*=0.5;
       m.fh*=0.5;
       return 0;
@@ -2447,7 +2447,7 @@ int plot_skymap(void)
       printf("R   Read catalog\n");
       printf("L   Toggle satellite selection (All, LEO, HEO/GEO, none)\n");
       printf("v   Toggle visibility contours\n");
-      printf("F   Toggle camera configuration (data/camera.txt)\n");
+      printf("F   Toggle camera configuration (data/cameras.txt)\n");
       printf("TAB Cycle IOD observations\n");
       printf("S   Save position/time to schedule\n");
       printf("a   Select on age\n");

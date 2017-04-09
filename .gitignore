@@ -45,3 +45,6 @@ tle2ole
 
 # TLE dir
 tle/
+
+data/tycho2.dat
+data/sites.dat
