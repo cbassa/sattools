@@ -283,6 +283,7 @@ void get_site(int site_id)
 int main(int argc,char *argv[])
 {
   int i;
+  float xmin,xmax,ymin,ymax,zmin,zmax,width;
   float tr[]={-0.5,1.0,0.0,-0.5,0.0,1.0};
   float heat_l[] = {0.0, 0.2, 0.4, 0.6, 1.0};
   float heat_r[] = {0.0, 0.5, 1.0, 1.0, 1.0};
@@ -333,7 +334,7 @@ int main(int argc,char *argv[])
     img.ra0=15.0*sex2dec(sra);
     img.de0=sex2dec(sde);
 
-    // Hour angle
+    // Hour angle and parallactic angle
     h=gmst(img.mjd)+m.lng-img.ra0;
     q=atan2(sin(h*D2R),(tan(m.lat*D2R)*cos(img.de0*D2R)-sin(img.de0*D2R)*cos(h*D2R)))*R2D;
     printf("Hour angle: %.3f deg, parallactic angle: %.3f deg\n",h,q);
@@ -365,15 +366,33 @@ int main(int argc,char *argv[])
   cat=read_pixel_catalog(filename);
   ast=read_astrometric_catalog(starfile,mag,sx,sy,-q);
 
-  // Plot image
+  // Open PGPlot server
   cpgopen("/xs");
-  cpgwnad(0.0,img.naxis1,0.0,img.naxis2);
-  cpgsfs(2);
-  cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
+//  cpgwnad(0.0,img.naxis1,0.0,img.naxis2);
+//  cpgsfs(2);
+//  cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
+  cpgask(0);
+  cpgsch(0.8);
+
+  // Default limits
+  width=(img.naxis1>img.naxis2) ? img.naxis1 : img.naxis2;
+  xmin=0.5*(img.naxis1-width);
+  xmax=0.5*(img.naxis1+width);
+  ymin=0.5*(img.naxis2-width);
+  ymax=0.5*(img.naxis2+width);
+  zmin=img.zmin;
+  zmax=img.zmax;
 
   // For ever loop
   for (;;) {      
     if (redraw==1) {
+      cpgeras();
+
+      cpgsvp(0.1,0.95,0.1,0.95);
+      cpgwnad(xmin,xmax,ymin,ymax);
+      cpglab("x (pix)","y (pix)"," ");
+      cpgsfs(2);
+      cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
       cpgimag(img.z,img.naxis1,img.naxis2,1,img.naxis1,1,img.naxis2,img.zmin,img.zmax,tr);
       cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
     
@@ -415,7 +434,7 @@ int main(int argc,char *argv[])
     }
 
     // Reread
-    if (c=='r') {
+    if (c=='R') {
       ast=reread_astrometric_catalog(starfile,mag+1);
       redraw=1;
     }
@@ -437,7 +456,7 @@ int main(int argc,char *argv[])
       nselect++;
     }
     
-    // 
+    // Plot identified stars
     if (c=='p') {
       if (plotstars==1)
 	plotstars=0;
@@ -450,6 +469,49 @@ int main(int argc,char *argv[])
     if (c=='m') {
       nselect=match_catalogs(&cat,&ast,10.0);
       redraw=1;
+    }
+
+    // Center
+    if (c=='c') {
+      xmin=x-0.5*width;
+      xmax=x+0.5*width;
+      ymin=y-0.5*width;
+      ymax=y+0.5*width;
+      redraw=1;
+      continue;
+    }
+
+    // Reset
+    if (c=='r') {
+      width=(img.naxis1>img.naxis2) ? img.naxis1 : img.naxis2;
+      xmin=0.5*(img.naxis1-width);
+      xmax=0.5*(img.naxis1+width);
+      ymin=0.5*(img.naxis2-width);
+      ymax=0.5*(img.naxis2+width);
+      redraw=1;
+      continue;
+    }
+
+    // Zoom
+    if (c=='z' || c=='+' || c=='=') {
+      width/=1.25;
+      xmin=x-0.5*width;
+      xmax=x+0.5*width;
+      ymin=y-0.5*width;
+      ymax=y+0.5*width;
+      redraw=1;
+      continue;
+    }
+
+    // Unzoom
+    if (c=='x' || c=='-') {
+      width*=1.25;
+      xmin=x-0.5*width;
+      xmax=x+0.5*width;
+      ymin=y-0.5*width;
+      ymax=y+0.5*width;
+      redraw=1;
+      continue;
     }
 
     // Help
