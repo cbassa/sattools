@@ -1,4 +1,5 @@
 # No ID   Latitude Longitude   Elev   Observer
+9998 BK   53.5000   -2.2400      0    Bill Keel
 1111 RL   38.9478 -104.5614   2073    Ron Lee
 4171 CB   52.8344    6.3785     10    Cees Bassa
 4172 LB   52.3713    5.2580     -3    Leo Barhorst
@@ -58,8 +59,10 @@
 6242 JM   42.9453   -2.8284    623    Jon Mikel
 6241 JM   42.9565   -2.8203    619    Jon Mikel
 4160 BD   51.2793    5.4768     35    Bram Dorreman
+9004 WW   51.3521   -1.8017    133    Wilcot Wiltshire
 9000 PP   40.0848   21.1581   1433    Pierros Papadeas
 9001 AF   44.5700    6.68     1850    Alain Figer
 9002 AO   62.2544   26.5962    150    Arto Oksanen
 9003 CP  -24.6272  -70.4047   2638    Cerro Paranal
+9004 LP   28.7622  -17.8775   2396    Isaac Newton
 9999 GR   47.348     5.5151    100    Graves

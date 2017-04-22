@@ -5,6 +5,7 @@
 #include <qfits.h>
 #include <getopt.h>
 
+
 struct image {
   int nx,ny;
   char timestamp[64];
@@ -15,7 +16,7 @@ struct fourframe {
   char timestamp[64],observer[64];
   double mjd;
   float *z,*dt;
-  int cospar;
+  int cospar,type;
 };
 int fgetline(FILE *file,char *s,int lim);
 void write_fits(char *filename,struct fourframe ff);
@@ -27,7 +28,7 @@ void mjd2date(double mjd,char *date);
 
 void usage(void)
 {
-  printf("pgm2fits p:w:h:s:n:Dd:x:y:c:o:gm:t:r:\n\n");
+  printf("pgm2fits p:w:h:s:n:Dd:x:y:c:o:gm:t:r:I\n\n");
   printf("-p   image prefix\n");
   printf("-w   image width in pixels\n");
   printf("-h   image height in pixels\n");
@@ -44,6 +45,7 @@ void usage(void)
   printf("-g   toggle for guiding??\n");
   printf("-t   time stamp of first image [YYYY-MM-DDTHH:MM:SS.SSS]\n");
   printf("-r   frame rate (frames/s)\n");
+  printf("-I   integer output\n");
   exit(0);
 }
 
@@ -69,10 +71,11 @@ int main(int argc,char *argv[])
   env=getenv("ST_COSPAR");
   ff.cospar=atoi(env);
   strcpy(ff.observer,"Cees Bassa");
-
+  ff.type=0;
+  
   // Decode options
   if (argc>1) {
-    while ((arg=getopt(argc,argv,"p:w:h:s:n:Dd:x:y:c:o:gm:t:r:"))!=-1) {
+    while ((arg=getopt(argc,argv,"p:w:h:s:n:Dd:x:y:c:o:gm:t:r:I"))!=-1) {
       switch(arg) {
       case 'p':
 	path=optarg;
@@ -90,6 +93,10 @@ int main(int argc,char *argv[])
 	ff.ny=atoi(optarg);
 	break;
 
+      case 'I':
+	ff.type=1;
+	break;
+	
       case 'c':
 	ff.cospar=atoi(optarg);
 	break;
@@ -391,8 +398,10 @@ void write_fits(char *filename,struct fourframe ff)
   qh=qfits_header_default();
 
   // Add stuff
-  qfits_header_add(qh,"BITPIX","-32"," ",NULL);
-  //  qfits_header_add(qh,"BITPIX","16"," ",NULL);
+  if (ff.type==1)
+    qfits_header_add(qh,"BITPIX","8"," ",NULL);
+  else
+    qfits_header_add(qh,"BITPIX","-32"," ",NULL);
   qfits_header_add(qh,"NAXIS","3"," ",NULL);
   sprintf(val,"%i",ff.nx);
   qfits_header_add(qh,"NAXIS1",val," ",NULL);
@@ -406,6 +415,7 @@ void write_fits(char *filename,struct fourframe ff)
   qfits_header_add(qh,"DATAMIN","0.0"," ",NULL);
   sprintf(val,"%s",ff.timestamp);
   qfits_header_add(qh,"DATE-OBS",val," ",NULL);
+
   // MJD-OBS
   sprintf(val,"%lf",ff.mjd);
   qfits_header_add(qh,"MJD-OBS",val," ",NULL);
@@ -462,12 +472,12 @@ void write_fits(char *filename,struct fourframe ff)
 
   // Fill buffer
   fbuf=malloc(ff.nlayer*ff.nx*ff.ny*sizeof(float));
-  //  ibuf=malloc(4*ff.nx*ff.ny*sizeof(int));
+  ibuf=malloc(ff.nlayer*ff.nx*ff.ny*sizeof(int));
   for (i=0,l=0;i<ff.nx;i++) {
     for (j=ff.ny-1;j>=0;j--) {
       for (k=0;k<ff.nlayer;k++) {
 	fbuf[l]=ff.z[l];
-	//	ibuf[l]=(int) ff.z[l];
+	ibuf[l]=(int) ff.z[l];
    
 	l++;
       }
@@ -477,18 +487,21 @@ void write_fits(char *filename,struct fourframe ff)
   // Set parameters
   qd.filename=filename;
   qd.npix=ff.nlayer*ff.nx*ff.ny;
-  qd.ptype=PTYPE_FLOAT;
-  //  qd.ptype=PTYPE_INT;
-  qd.fbuf=fbuf;
-  //  qd.ibuf=ibuf;
-  qd.out_ptype=-32;
-  //  qd.out_ptype=BPP_16_SIGNED;
+  if (ff.type==1) {
+    qd.ptype=PTYPE_INT;
+    qd.ibuf=ibuf;
+    qd.out_ptype=BPP_8_UNSIGNED;
+  } else {
+    qd.ptype=PTYPE_FLOAT;
+    qd.fbuf=fbuf;
+    qd.out_ptype=-32;
+  }
 
   // Dump
   qfits_pixdump(&qd);
 
   free(fbuf);
-  //  free(ibuf);
+  free(ibuf);
 
   return;
 }

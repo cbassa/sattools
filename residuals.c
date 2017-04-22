@@ -111,7 +111,7 @@ void compute_residual(char *filename,struct point p,int satno)
   dr=sqrt(pow(dry*rx[0]-drx*ry[0],2)/(drx*drx+dry*dry));
   if ((-rx[0]*drx-ry[0]*dry)<0.0)
     dr*=-1;
-  printf("%s | %8.5f deg %8.3f sec %7.3f day, %.1f km\n",p.iod_line,dr,dt,age,r[0]);
+  printf("%s | %8.5f deg %9.4f sec %7.3f day, %.1f km\n",p.iod_line,dr,dt,age,r[0]);
   //printf("%12.8lf %8.3f %8.3f\n",p.mjd,3600*rx[0],3600*ry[0]);
 
   return;
