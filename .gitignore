@@ -51,6 +51,7 @@ planscan
 posmatch
 posvel
 xyz2tle
+allnight
 
 # TLE dir
 tle/
