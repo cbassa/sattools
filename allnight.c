@@ -276,7 +276,7 @@ void mjd2date(double mjd,char *date)
   hour=x;
   sec=floor(1000.0*sec)/1000.0;
 
-  sprintf(date,"%04d-%02d-%02dT%02d:%02d:%06.3f",year,month,day,hour,min,sec);
+  sprintf(date,"%04d-%02d-%02dT%02d:%02d:%02.0f",year,month,day,hour,min,sec);
 
   return;
 }
