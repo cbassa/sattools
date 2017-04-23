@@ -283,6 +283,7 @@ void get_site(int site_id)
 int main(int argc,char *argv[])
 {
   int i;
+  float xmin,xmax,ymin,ymax,zmin,zmax,width;
   float tr[]={-0.5,1.0,0.0,-0.5,0.0,1.0};
   float heat_l[] = {0.0, 0.2, 0.4, 0.6, 1.0};
   float heat_r[] = {0.0, 0.5, 1.0, 1.0, 1.0};
@@ -292,8 +293,9 @@ int main(int argc,char *argv[])
   struct catalog cat,ast;
   char c;
   int redraw=1,click=0,nselect=0,plotstars=1;
-  char filename[128],sra[20],sde[20];
-  float h,q,s=0.0,mag=9;
+  char filename[128],sra[20],sde[20],cam[15],mount[15];
+  float h,q,sx,sy,mag=9,fw,fh;
+  int nx,ny;
   FILE *file;
   char *env,starfile[128];
 
@@ -305,7 +307,6 @@ int main(int argc,char *argv[])
   env=getenv("ST_COSPAR");
   get_site(atoi(env));
 
-
   // Read image
   img=read_fits(argv[1],0);
   sprintf(filename,"%s.cat",argv[1]);
@@ -314,7 +315,8 @@ int main(int argc,char *argv[])
 
   // Initial transformation
   if (argc==7) {
-    s=atof(argv[2]);
+    sx=-atof(argv[2]);
+    sy=-sx;
     img.ra0=atof(argv[3]);
     img.de0=atof(argv[4]);
     q=atof(argv[5]);
@@ -332,30 +334,65 @@ int main(int argc,char *argv[])
     img.ra0=15.0*sex2dec(sra);
     img.de0=sex2dec(sde);
 
-    // Hour angle
+    // Hour angle and parallactic angle
     h=gmst(img.mjd)+m.lng-img.ra0;
     q=atan2(sin(h*D2R),(tan(m.lat*D2R)*cos(img.de0*D2R)-sin(img.de0*D2R)*cos(h*D2R)))*R2D;
     printf("Hour angle: %.3f deg, parallactic angle: %.3f deg\n",h,q);
+
+    // Get pixel scale params from camera file
+    file=fopen("camera.txt","r");
+    if (file==NULL) {
+      sx=-36.15;
+      sy=33.22;
+      fprintf(stderr,"No camera file found, using default pixel scale values %3.2f %3.2f\n",sx,sy);
+    }
+    else{
+      // Obtain FOV and image resolution from camera file
+      fscanf(file,"%s %f %f %d %d %s",cam,&fw,&fh,&nx,&ny,mount);
+      fclose(file);
+      sx=fw/nx*3600;
+      sy=fh/ny*3600;
+      // Check scheduled camera resolution against FITS image file resolution
+      if((abs(nx)!=img.naxis1) || (abs(ny)!=img.naxis2)){
+        fprintf(stderr,"Warning: scheduled camera resolution %dx%d does not match image resolution %dx%d",nx,ny,img.naxis1,img.naxis2);
+      }
+    }
+
   }
   img.x0=0.5*(float) img.naxis1;
   img.y0=0.5*(float) img.naxis2;
 
   // Read catalogs
   cat=read_pixel_catalog(filename);
-  if (s==0.0)
-    ast=read_astrometric_catalog(starfile,mag,-36.15,33.22,-q);
-  else
-    ast=read_astrometric_catalog(starfile,mag,-s,s,-q);
+  ast=read_astrometric_catalog(starfile,mag,sx,sy,-q);
 
-  // Plot image
+  // Open PGPlot server
   cpgopen("/xs");
-  cpgwnad(0.0,img.naxis1,0.0,img.naxis2);
-  cpgsfs(2);
-  cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
+//  cpgwnad(0.0,img.naxis1,0.0,img.naxis2);
+//  cpgsfs(2);
+//  cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
+  cpgask(0);
+  cpgsch(0.8);
+
+  // Default limits
+  width=(img.naxis1>img.naxis2) ? img.naxis1 : img.naxis2;
+  xmin=0.5*(img.naxis1-width);
+  xmax=0.5*(img.naxis1+width);
+  ymin=0.5*(img.naxis2-width);
+  ymax=0.5*(img.naxis2+width);
+  zmin=img.zmin;
+  zmax=img.zmax;
 
   // For ever loop
   for (;;) {      
     if (redraw==1) {
+      cpgeras();
+
+      cpgsvp(0.1,0.95,0.1,0.95);
+      cpgwnad(xmin,xmax,ymin,ymax);
+      cpglab("x (pix)","y (pix)"," ");
+      cpgsfs(2);
+      cpgctab (heat_l,heat_r,heat_g,heat_b,5,1.0,0.5);
       cpgimag(img.z,img.naxis1,img.naxis2,1,img.naxis1,1,img.naxis2,img.zmin,img.zmax,tr);
       cpgbox("BCTSNI",0.,0,"BCTSNI",0.,0);
     
@@ -397,7 +434,7 @@ int main(int argc,char *argv[])
     }
 
     // Reread
-    if (c=='r') {
+    if (c=='R') {
       ast=reread_astrometric_catalog(starfile,mag+1);
       redraw=1;
     }
@@ -419,7 +456,7 @@ int main(int argc,char *argv[])
       nselect++;
     }
     
-    // 
+    // Plot identified stars
     if (c=='p') {
       if (plotstars==1)
 	plotstars=0;
@@ -432,6 +469,65 @@ int main(int argc,char *argv[])
     if (c=='m') {
       nselect=match_catalogs(&cat,&ast,10.0);
       redraw=1;
+    }
+
+    // Center
+    if (c=='c') {
+      xmin=x-0.5*width;
+      xmax=x+0.5*width;
+      ymin=y-0.5*width;
+      ymax=y+0.5*width;
+      redraw=1;
+      continue;
+    }
+
+    // Reset
+    if (c=='r') {
+      width=(img.naxis1>img.naxis2) ? img.naxis1 : img.naxis2;
+      xmin=0.5*(img.naxis1-width);
+      xmax=0.5*(img.naxis1+width);
+      ymin=0.5*(img.naxis2-width);
+      ymax=0.5*(img.naxis2+width);
+      redraw=1;
+      continue;
+    }
+
+    // Zoom
+    if (c=='z' || c=='+' || c=='=') {
+      width/=1.25;
+      xmin=x-0.5*width;
+      xmax=x+0.5*width;
+      ymin=y-0.5*width;
+      ymax=y+0.5*width;
+      redraw=1;
+      continue;
+    }
+
+    // Unzoom
+    if (c=='x' || c=='-') {
+      width*=1.25;
+      xmin=x-0.5*width;
+      xmax=x+0.5*width;
+      ymin=y-0.5*width;
+      ymax=y+0.5*width;
+      redraw=1;
+      continue;
+    }
+
+    // Help
+    if (c=='h') {
+      printf("Calibrates astrometry. Initially requires manual matching of at least three stars. Use 'a' to select star on the image, then 'b' to select star from the catalog, then 'f' to fit");
+      printf("q     Quit\n");
+      printf("a     Select star on image\n");
+      printf("b     Select star from catalog\n");
+      printf("c     Center image on pixel\n");
+      printf("f     Fit calibration\n");
+      printf("m     Match stars using current calibration\n");
+      printf("z/+   Zoom in on cursor\n");
+      printf("x/-   Zoom out on cursor\n");
+      printf("p     Plot sextractor catalog\n");
+      printf("r     Reset zoom\n");
+      
     }
   }
   cpgend();

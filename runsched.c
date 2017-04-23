@@ -22,16 +22,17 @@
 #define STARTED 1
 #define FINISHED 2
 
+// Observation struct contains observation time, celestial coords and camera name
 struct observation {
-  char stime[20],sra[15],sde[15];
+  char stime[20],sra[15],sde[15],camname[15];
   time_t ptime;
   float dt;
 };
 
 int fgetline(FILE *file,char *s,int lim);
-void send_position(char *sra,char *sde);
+void send_position(char *sra,char *sde,char *camname);
 time_t decode_time(char *stm);
-
+char datadir[127];
 
 int main(int argc, char *argv[]) 
 {
@@ -41,6 +42,15 @@ int main(int argc, char *argv[])
   char buf[20],line[LIM],stm[20],sra[15],sde[15],pra[15],pde[15];
   FILE *file;
   struct observation obs[NMAX];
+  char *env;
+
+  // Get environment variables
+  env=getenv("ST_DATADIR");
+  if (env!=NULL) {
+    strcpy(datadir,env);
+  } else {
+    printf("ST_DATADIR environment variable not found.\n");
+  }
 
   // For ever loop
   for (;;) {
@@ -48,7 +58,7 @@ int main(int argc, char *argv[])
     i=0;
     file=fopen("schedule.txt","r");
     while (fgetline(file,line,LIM)>0) {
-      sscanf(line,"%s %s %s",obs[i].stime,obs[i].sra,obs[i].sde);
+      sscanf(line,"%s %s %s %s",obs[i].stime,obs[i].sra,obs[i].sde,obs[i].camname);
       obs[i].ptime=decode_time(obs[i].stime);
       
       i++;
@@ -82,7 +92,7 @@ int main(int argc, char *argv[])
 	break;
       } else if (obs[i].dt==0) {
 	printf("Slewing to %s %s\n",obs[i].sra,obs[i].sde);
-	send_position(obs[i].sra,obs[i].sde);
+	send_position(obs[i].sra,obs[i].sde, obs[i].camname);
       }
     }
 
@@ -106,8 +116,34 @@ int fgetline(FILE *file,char *s,int lim)
   return i;
 }
 
+// Read data/cameras.txt in search of specified camera name and return complete camera details line
+int read_cameras(char *camname, char *camera)
+{
+  FILE *file;
+  char line[127],filename[127];
+
+  sprintf(filename,"%s/data/cameras.txt",datadir);
+  file=fopen(filename,"r");
+  if (file==NULL) {
+    printf("File with camera information not found!\n");
+    return -1;
+  }
+  while (fgets(line,LIM,file)!=NULL) {
+    // Skip commented lines
+    if (strstr(line,"#")!=NULL)
+      continue;
+    if(strstr(line, camname)!=NULL){
+      strcpy(camera, line);
+      return 0;
+    }
+  }
+  fclose(file);
+  return -1;
+}
+
+
 // Send new position to telescope
-void send_position(char *sra,char *sde)
+void send_position(char *sra,char *sde,char *camname)
 {
   int skt, port;
   struct hostent *he;
@@ -115,6 +151,7 @@ void send_position(char *sra,char *sde)
   char packet[LIM];
   FILE *file;
   float ra,de;
+  char camera[127];
 
 
   // Old packet style
@@ -144,7 +181,7 @@ void send_position(char *sra,char *sde)
   }
   if(port>=MAXPORT) return;
 
-  fprintf(stderr,"Connected on port %04d.\n",port);
+  printf("Connected to Indi server on port %04d.\n",port);
 
   write(skt,packet,strlen(packet));
   close(skt); 
@@ -160,6 +197,15 @@ void send_position(char *sra,char *sde)
   file=fopen("/data1/satobs/control/position.txt","w");
   if (file!=NULL) {
     fprintf(file,"%s %s\n",sra,sde);
+    fclose(file);
+  }
+
+  // Set camera
+  // camera.txt control file with complete line from data/cameras.txt describing the scheduled camera
+  read_cameras(camname, camera);  // search for camera name
+  file=fopen("/data1/satobs/control/camera.txt","w");
+  if (file!=NULL) {
+    fprintf(file,"%s\n",camera);
     fclose(file);
   }
 
