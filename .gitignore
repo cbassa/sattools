@@ -42,6 +42,15 @@ tle2old
 waitfor
 pass
 tle2ole
+confirm
+csv2tle
+fakeiod
+mvtle
+normal
+planscan
+posmatch
+posvel
+xyz2tle
 
 # TLE dir
 tle/
