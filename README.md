@@ -26,3 +26,4 @@ You will need to set the following environment variables to run sattools:
 * `ST_COSPAR` COSPAR number 
 * `ST_DATADIR` path to sattools directory 
 * `ST_TLEDIR` path to TLE directory
+* `ST_OBSDIR` path to observations directory
