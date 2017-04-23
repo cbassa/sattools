@@ -457,25 +457,43 @@ void allnight(void)
   double mjd,mjdrise=-1.0,mjdset=-1.0;
   char nfd[32];
 
-  // Find first event
-  for (flag=0,mjd=m.mjd;mjd<m.mjd+1.0;mjd+=1.0/86400) {
-    sunpos_xyz(mjd,&sunpos,&ra,&de);
-    equatorial2horizontal(mjd,ra,de,&azi,&alt);
-    
-    if (flag!=0) {
-      if (alt>m.saltmin && alt0<=m.saltmin)
-	mjdrise=mjd;
-      if (alt<m.saltmin && alt0>=m.saltmin)
-	mjdset=mjd;
-    }
-    
-    if (flag==0)
-      flag=1;
+  // Find solar altitude at reference time
+  sunpos_xyz(m.mjd,&sunpos,&ra,&de);
+  equatorial2horizontal(m.mjd,ra,de,&azi,&alt);
 
-    alt0=alt;
-  }
-  if (mjdrise<mjdset) {
-    for (flag=0,mjd=mjdrise-1.0;mjd<mjdrise;mjd+=1.0/86400) {
+  // Sun below limit, find rise, then set
+  if (alt<m.saltmin) {
+    for (flag=0,mjd=m.mjd;mjd<m.mjd+0.5;mjd+=1.0/86400) {
+      sunpos_xyz(mjd,&sunpos,&ra,&de);
+      equatorial2horizontal(mjd,ra,de,&azi,&alt);
+      
+      if (flag!=0) {
+	if (alt>m.saltmin && alt0<=m.saltmin)
+	  mjdrise=mjd;
+      }
+    
+      if (flag==0)
+	flag=1;
+      
+      alt0=alt;
+    }
+    for (flag=0,mjd=m.mjd-0.5;mjd<m.mjd;mjd+=1.0/86400) {
+      sunpos_xyz(mjd,&sunpos,&ra,&de);
+      equatorial2horizontal(mjd,ra,de,&azi,&alt);
+      
+      if (flag!=0) {
+	if (alt<m.saltmin && alt0>=m.saltmin)
+	  mjdset=mjd;
+      }
+    
+      if (flag==0)
+	flag=1;
+      
+      alt0=alt;
+    }
+    // Sun above limit, find set, and rise
+  } else {
+    for (flag=0,mjd=m.mjd;mjd<m.mjd+1.0;mjd+=1.0/86400) {
       sunpos_xyz(mjd,&sunpos,&ra,&de);
       equatorial2horizontal(mjd,ra,de,&azi,&alt);
       
@@ -485,10 +503,10 @@ void allnight(void)
 	if (alt<m.saltmin && alt0>=m.saltmin)
 	  mjdset=mjd;
       }
-      
+    
       if (flag==0)
 	flag=1;
-
+      
       alt0=alt;
     }
   }
@@ -496,9 +514,8 @@ void allnight(void)
   m.mjd=mjdset;
   mjd2date(m.mjd,m.nfd);
   mjd2date(mjdrise,nfd);
-  m.length=(mjdrise-mjdset)*86400;
-  printf("Set: %s; Rise: %s; length: %.0fs\n",m.nfd,nfd,m.length);
-
+  printf("%s %s\n",m.nfd,nfd);
+  
   return;
 }
 
