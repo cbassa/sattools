@@ -400,10 +400,14 @@ int main(int argc,char *argv[])
       if (plotstars==1) {
 	cpgsci(3);
 	for (i=0;i<cat.n;i++) {
+   	  r=rmax-(rmax-rmin)*(cat.mag[i]-mmin)/(mmax-mmin);
+	  r*=img.naxis1/752.0;
+	  //r*=0.1;
 	  if (cat.select[i]!=0) 
-	    cpgpt1(cat.x[i],cat.y[i],6);
-	  else
-	    cpgpt1(cat.x[i],cat.y[i],4);
+	    cpgpt1(cat.x[i],cat.y[i],0);
+	  //else
+	    //cpgpt1(cat.x[i],cat.y[i],4);
+	  cpgcirc(cat.x[i],cat.y[i],r);
 	}
       }
       cpgsci(4);
@@ -413,7 +417,7 @@ int main(int argc,char *argv[])
 	// Upscale for image size
 	r*=img.naxis1/752.0;
 	if (ast.select[i]!=0)
-	  cpgpt1(ast.x[i],ast.y[i],6);
+	  cpgpt1(ast.x[i],ast.y[i],0);
 	cpgcirc(ast.x[i],ast.y[i],r);
       }
       cpgsci(1);
