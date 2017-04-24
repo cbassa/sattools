@@ -876,6 +876,10 @@ int main(int argc,char *argv[])
   // Skip if no points
   if (np==0)
     return 0;
+
+  // Skip if too many points
+  if (np>0.1*ff.naxis1*ff.naxis2)
+    return 0;
   
   // Allocate points
   p=(struct point *) malloc(sizeof(struct point)*np);

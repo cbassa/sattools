@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <ctype.h>
 #include <getopt.h>
 #include "sgdp4h.h"
 #include "satutl.h"
@@ -71,7 +72,7 @@ double doy2mjd(int year,double doy)
 
   month=floor(9.0*(k+doy)/275.0+0.98);
   
-  if (doy<32)
+  if (doy<32.0)
     month=1;
 
   day=doy-floor(275.0*month/9.0)+k*floor((month+9.0)/12.0)+30.0;
@@ -200,7 +201,7 @@ int main(int argc,char *argv[])
   double mjd0,mjd1,h0,h1,dmjd,dh;
   char *env;
   char desig[]="14900A";
-
+  
   env=getenv("ST_TLEDIR");
   sprintf(tlefile,"%s/classfd.tle",env);
 
@@ -256,7 +257,7 @@ int main(int argc,char *argv[])
 
   // Difference between epoch and launch time
   dmjd=doy2mjd(orb.ep_year,orb.ep_day)-mjd0;
-
+  
   // Difference in RAAN
   orb.ascn=RAD(modulo(gmst(mjd1)-gmst(mjd0)+DEG(orb.ascn),360.0));
 

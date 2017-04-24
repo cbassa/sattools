@@ -30,9 +30,8 @@ struct observation {
 };
 
 int fgetline(FILE *file,char *s,int lim);
-void send_position(char *sra,char *sde,char *camname);
+void send_position(char *sra,char *sde,char *datadir,char *obsdir,char *camname);
 time_t decode_time(char *stm);
-char datadir[127];
 
 int main(int argc, char *argv[]) 
 {
@@ -43,6 +42,7 @@ int main(int argc, char *argv[])
   FILE *file;
   struct observation obs[NMAX];
   char *env;
+  char datadir[128],obsdir[128];
 
   // Get environment variables
   env=getenv("ST_DATADIR");
@@ -50,6 +50,14 @@ int main(int argc, char *argv[])
     strcpy(datadir,env);
   } else {
     printf("ST_DATADIR environment variable not found.\n");
+  }
+
+  // Get environment variables
+  env=getenv("ST_OBSDIR");
+  if (env!=NULL) {
+    strcpy(obsdir,env);
+  } else {
+    printf("ST_OBSDIR environment variable not found.\n");
   }
 
   // For ever loop
@@ -92,7 +100,7 @@ int main(int argc, char *argv[])
 	break;
       } else if (obs[i].dt==0) {
 	printf("Slewing to %s %s\n",obs[i].sra,obs[i].sde);
-	send_position(obs[i].sra,obs[i].sde, obs[i].camname);
+	send_position(obs[i].sra,obs[i].sde,datadir,obsdir,obs[i].camname);
       }
     }
 
@@ -117,7 +125,7 @@ int fgetline(FILE *file,char *s,int lim)
 }
 
 // Read data/cameras.txt in search of specified camera name and return complete camera details line
-int read_cameras(char *camname, char *camera)
+int read_cameras(char *camname,char *datadir,char *camera)
 {
   FILE *file;
   char line[127],filename[127];
@@ -143,7 +151,7 @@ int read_cameras(char *camname, char *camera)
 
 
 // Send new position to telescope
-void send_position(char *sra,char *sde,char *camname)
+void send_position(char *sra,char *sde,char *datadir,char *obsdir,char *camname)
 {
   int skt, port;
   struct hostent *he;
@@ -151,7 +159,7 @@ void send_position(char *sra,char *sde,char *camname)
   char packet[LIM];
   FILE *file;
   float ra,de;
-  char camera[127];
+  char camera[128],fname[128];
 
 
   // Old packet style
@@ -187,14 +195,16 @@ void send_position(char *sra,char *sde,char *camname)
   close(skt); 
  
   // Set restart
-  file=fopen("/data1/satobs/control/state.txt","w");
+  sprintf(fname,"%s/control/state.txt",obsdir);
+  file=fopen(fname,"w");
   if (file!=NULL) {
     fprintf(file,"restart");
     fclose(file);
   }
 
   // Set position
-  file=fopen("/data1/satobs/control/position.txt","w");
+  sprintf(fname,"%s/control/position.txt",obsdir);
+  file=fopen(fname,"w");
   if (file!=NULL) {
     fprintf(file,"%s %s\n",sra,sde);
     fclose(file);
@@ -202,10 +212,11 @@ void send_position(char *sra,char *sde,char *camname)
 
   // Set camera
   // camera.txt control file with complete line from data/cameras.txt describing the scheduled camera
-  read_cameras(camname, camera);  // search for camera name
-  file=fopen("/data1/satobs/control/camera.txt","w");
+  read_cameras(camname,datadir,camera);  // search for camera name
+  sprintf(fname,"%s/control/camera.txt",obsdir);
+  file=fopen(fname,"w");
   if (file!=NULL) {
-    fprintf(file,"%s\n",camera);
+    fprintf(file,"%s",camera);
     fclose(file);
   }
 
