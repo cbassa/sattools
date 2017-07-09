@@ -17,11 +17,12 @@
                                // fall outside astrometric field. This should change to arcseconds in the future and be used to widen
                                // the astrometric catalog so that it's scale is grater than that of the imaged catalog just enough
                                // to be sure it includes all imaged stars even at the worst pointing error.
-#define MAXROT  10*D2R        // Maximum expected rotation error (radians)
+#define MAXROT  20*D2R        // Maximum expected rotation error (radians)
 #define DISTMATCHTOL 4
-#define MAGMATCHTOL 1
+#define MAGMATCHTOL 0.5
 #define MAXSCALERR 1.05
-#define MAXMAGERR 4
+#define MAXMAGERR 2
+#define DEBUG 2
 
 struct star {
   double ra,de;
@@ -293,7 +294,7 @@ void get_site(int site_id)
 // Identify matching triangles in imaged and astrometric catalogs 
 void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, int tricat[3], int triast[3])
 {
-  float r,d;
+  float r,d,d2;
   float mmax,mmin,matchscale;
   float error=MAXPOINTERR;   // maximum expected pointing error in pixels
   int i,s1,s2,s3,m1,m2,m3;
@@ -328,11 +329,12 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
     mave/=cat->n;
   }
 
+#if DEBUG>0
   if(size<0)
     fprintf(stdout,"Error: Pointing inaccuracy too high\n");
-  
   fprintf(stdout,"Stars in imaged catalog: %d, stars in astrometric catalog: %d.\n", cat->n, ast->n);
   fprintf(stdout,"MMin:%.1f,MMax:%.1f,MAve.:%.1f \n",mmin,mmax,mave);
+#endif
 
   // if last time a suitable reference triangle was found
   if(*nselect==3){
@@ -340,7 +342,9 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
     if(nmatch==3){
       // this time search for another match beginning with the following 3rd star
       triast[2]++;
-      fprintf(stdout,"Try different match.\n");      
+#if DEBUG>2
+      fprintf(stdout,"Try different match.\n");
+#endif
     }
     else{
       // no match was found for last suitable triangle
@@ -350,7 +354,9 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
       triast[0]=0;
       triast[1]=0;
       triast[2]=0;
+#if DEBUG>2
       fprintf(stdout,"Try different triangle.\n");      
+#endif
     }
   }
   
@@ -359,118 +365,130 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
   // is found
   while((*nselect<3) && (size > 10)){
   
+#if DEBUG>1
     fprintf(stdout,"Looking for triangles with min size %4.0f\n",size);
-    
+#endif    
     // Search candidate for 1st star
     
     for(s1=tricat[0];(*nselect<3) && (s1 < cat->n);s1++){
       // discard if outside high magnitude range
       r=cat->mag[s1];
       if(r > mave){
+#if DEBUG>2
         fprintf(stdout,"Star %d discarded for high magnitude.\n",s1);
+#endif
         continue;
       }
       // discard if too close to any edge
       if((cat->x[s1] < error) || (cat->x[s1] > (img.naxis1-error))){
+#if DEBUG>2
         fprintf(stdout,"Star %d discarded for close to edge.\n",s1);
+#endif
         continue;
       }
       if((cat->y[s1] < error) || (cat->y[s1] > (img.naxis2-error))){
+#if DEBUG>2
         fprintf(stdout,"Star %d discarded for close to edge.\n",s1);
+#endif
         continue;
       }
       // s1 is viable candidate for 1st star
+#if DEBUG>1
       fprintf(stdout,"Candidate star 1: %d, magnitude: %.1f \n",s1,r);
+#endif
       tricat[0]=s1;
       *nselect=1;
       
+#if DEBUG>1
       fprintf(stdout,"Looking for 2nd star of triangle.\n");
+#endif
       // Search candidate for 2nd star
       for(s2=tricat[1];(*nselect<3) && (s2 < cat->n);s2++){
         // discard candidate if outside magnitude range
         r=cat->mag[s2];
         if(r > mave){
+#if DEBUG>2
           fprintf(stdout,"Star %d discarded for high magnitude.\n",s2);
+#endif
           continue;
         }
         // discard if too close to any edge
         if((cat->x[s2] < error) || (cat->x[s2] > (img.naxis1-error))){
+#if DEBUG>2
           fprintf(stdout,"Star %d discarded for close to edge.\n",s2);
+#endif
           continue;
         }
         if((cat->y[s2] < error) || (cat->y[s2] > (img.naxis2-error))){
+#if DEBUG>2
           fprintf(stdout,"Star %d discarded for close to edge.\n",s2);
+#endif
           continue;
         }
         // discard if too close to star 1
         r=sqrt(pow(cat->x[s2]-cat->x[s1],2)+pow(cat->y[s2]-cat->y[s1],2));
         if(r < size){
+#if DEBUG>2
           fprintf(stdout,"Star %d discarded for close to 1st star.\n",s2);
+#endif
           continue;
         }
         // s2 is viable candidate for 2nd star
+#if DEBUG>1
         fprintf(stdout,"Candidate star 2: %d, magnitude: %.1f, distance to star 1: %.1f \n",s2,cat->mag[s2],r);
+#endif
         tricat[1]=s2;
         *nselect=2;
         
+#if DEBUG>1
         fprintf(stdout,"Looking for 3rd star of triangle.\n");        
+#endif
         // Search candidate for 3rd star beginning from the last candidate found
         for(s3=tricat[2];(*nselect<3) && (s3 < cat->n);s3++){
           // discard candidate if outside magnitude range
           r=cat->mag[s3];
           if(r > mave){
+#if DEBUG>2
             fprintf(stdout,"Star %d discarded for high magnitude.\n",s3);
+#endif
             continue;
           }
           // discard if too close to any edge
           if((cat->x[s3] < error) || (cat->x[s3] > (img.naxis1-error))){
+#if DEBUG>2
             fprintf(stdout,"Star %d discarded for close to edge.\n",s3);
+#endif
             continue;
           }
           if((cat->y[s3] < error) || (cat->y[s3] > (img.naxis2-error))){
+#if DEBUG>2
             fprintf(stdout,"Star %d discarded for close to edge.\n",s3);
+#endif
             continue;
           }
           // discard if too close to star 1
           r=sqrt(pow(cat->x[s3]-cat->x[s1],2)+pow(cat->y[s3]-cat->y[s1],2));
           if(r < size){
+#if DEBUG>2
             fprintf(stdout,"Star %d discarded for close to 1st star.\n",s3);
+#endif
             continue;
           }
           // discard if too close to star 2
           r=sqrt(pow(cat->x[s3]-cat->x[s2],2)+pow(cat->y[s3]-cat->y[s2],2));
           if(r < size){
+#if DEBUG>2
             fprintf(stdout,"Star %d discarded for close to 2nd star.\n",s3);
+#endif
             continue;
           }
           // s3 is viable candidate for 3rd star
+#if DEBUG>1
           fprintf(stdout,"Candidate star 3: %d, magnitude: %.1f, distance to star 2: %.1f \n",s3,cat->mag[s3],r);
+#endif
           tricat[2]=s3;
           *nselect=3;
-          
-          
-          // ****************************
-          // ****************************
-          // ****************************
-          // ****************************
-          //Ref.triangle: 8, 86, 91, 
-          //Match triangle: 125, 64, 115,                    
-          //Ref.triangle: 8, 94, 161,
-          //Match triangle: 125, 1, 90,
-//Ref.triangle: 8, 159, 161,
-//Match triangle: 125, 55, 90,
-//Ref.triangle: 8, 152, 129,
-//Match triangle: 151, 54, 120,
-//Ref.triangle: 8, 77, 129,
-//Match triangle: 125, 24, 120,
-
-//Está matcheando!!!
-//ahora habría que descartar mirrors verticales y/o horizontales y limitar la rotación para llegar más directo
-
-          if(s1==8 && s2==86 && s3==91){
-            fprintf(stdout,"Special reference triangle found!!!\n");
-          }
-          
+                    
           // ************************************************************
           // Calibration triangle candidate found!
           // time to look for matching triangle in astrometric catalog...
@@ -494,12 +512,16 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
             // this tolerance includes magnitude extraction tolerance on sextractor tool 
             r=fabs(cat->mag[s1] - ast->mag[m1]);
             if(r > MAXMAGERR){
+#if DEBUG>2
               fprintf(stdout,"Match 1st star %d discarded for mag. difference.\n",m1);
+#endif
               continue;
             }
             r=ast->mag[m1];
             // m1 is viable candidate for match to 1st star
+#if DEBUG>1
             fprintf(stdout,"Candidate match star 1: %d, magnitude: %.1f \n",m1,r);
+#endif
             triast[0]=m1;
             nmatch=1;
             // Search candidate for 2nd star
@@ -508,7 +530,9 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
               // discard if difference is outside match tolerance
               r=fabs(cat->mag[s2] - cat->mag[s1]);
               if((r - fabs(ast->mag[m2] - ast->mag[m1])) > MAGMATCHTOL){
+#if DEBUG>2
                 fprintf(stdout,"Match 2nd star %d discarded for mag. match tolerance.\n",m2);
+#endif
                 continue;
               }
               // distance from star 1 to star 2 should resemble distance from matching star 1 to matching star 2 allowing for
@@ -516,32 +540,51 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
               r=sqrt(pow(cat->x[s2]-cat->x[s1],2)+pow(cat->y[s2]-cat->y[s1],2));
               // discard if distance between m2 and m1 is too far from distance between s2 and s1
               if(sqrt(pow(ast->x[m2]-ast->x[m1],2)+pow(ast->y[m2]-ast->y[m1],2)) / r > MAXSCALERR){
+#if DEBUG>2
                 fprintf(stdout,"Match 2nd star %d discarded for distance to 1st match star error.\n",m2);
+#endif
                 continue;
               }
               if(r / sqrt(pow(ast->x[m2]-ast->x[m1],2)+pow(ast->y[m2]-ast->y[m1],2)) > MAXSCALERR){
+#if DEBUG>2
                 fprintf(stdout,"Match 2nd star %d discarded for distance to 1st match star error.\n",m2);
+#endif
                 continue;
               }
               // check angle
               d=atan((cat->y[s2]-cat->y[s1]) / (cat->x[s2]-cat->x[s1]));
-              if(fabs(d - atan((ast->y[m2]-ast->y[m1]) / (ast->x[m2]-ast->x[m1]))) > MAXROT){
+              if((cat->x[s2]-cat->x[s1]) < 0){
+                if(d >= 0) d -= M_PI;
+                else d += M_PI;
+              }
+              d2=atan((ast->y[m2]-ast->y[m1]) / (ast->x[m2]-ast->x[m1]));
+              if((ast->x[m2]-ast->x[m1]) < 0){
+                if(d2 >= 0) d2 -= M_PI;
+                else d2 += M_PI;
+              }
+              if(fabs(d - d2) > MAXROT){
+#if DEBUG>2
                 fprintf(stdout,"Match 2nd star %d discarded for rotation error.\n",m2);
+#endif
                 continue;
-              }                                          
+              }
               // keep scale to check for coherence with third matching star
               matchscale=sqrt(pow(ast->x[m2]-ast->x[m1],2)+pow(ast->y[m2]-ast->y[m1],2)) / r;
+#if DEBUG>1
               fprintf(stdout,"Triangle size match scale: %f.2.\n",matchscale);
+#endif
               // m2 is viable candidate for match to 2nd star
               r=ast->mag[m2];
+#if DEBUG>1
               fprintf(stdout,"Candidate match star 2: %d, magnitude: %.1f \n",m2,r);
-
+#endif
+#if DEBUG>2
               fprintf(stdout,"Angle star 1 to star 2: %f \n",d);
               d=atan((ast->y[m2]-ast->y[m1]) / (ast->x[m2]-ast->x[m1]));
               fprintf(stdout,"Angle match 1 to match 2: %f \n",d);
               d=fabs(d - atan((ast->y[m2]-ast->y[m1]) / (ast->x[m2]-ast->x[m1])));
               fprintf(stdout,"Angle error %f \n",d);
-              
+#endif              
               triast[1]=m2;
               nmatch=2;
               // Search candidate for 2nd star
@@ -551,7 +594,9 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
                 // discard if magn difference is outside match tolerance
                 r=fabs(cat->mag[s3] - cat->mag[s1]);
                 if((r - fabs(ast->mag[m3] - ast->mag[m1])) > MAGMATCHTOL){
+#if DEBUG>2
                   fprintf(stdout,"Match 3rdd star %d discarded for mag. match tolerance.\n",m3);
+#endif
                   continue;
                 }
                 // scale was fixed when found 2nd match candidate, no different scale error is allowed for 3rd matching star 
@@ -560,24 +605,41 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
                 r=matchscale * sqrt(pow(cat->x[s3]-cat->x[s1],2)+pow(cat->y[s3]-cat->y[s1],2));
                 d=sqrt(pow(ast->x[m3]-ast->x[m1],2)+pow(ast->y[m3]-ast->y[m1],2));                
                 if(fabs(d - r) > DISTMATCHTOL){
+#if DEBUG>2
                   fprintf(stdout,"Match 3rd star %d discarded for distance to 1st match star error: %f against %f.\n",m3,r,d);
+#endif
                   continue;
                 }
                 // discard if distance between m3 and m2 is not very similar to distance between s3 and s2
                 r=matchscale * sqrt(pow(cat->x[s3]-cat->x[s2],2)+pow(cat->y[s3]-cat->y[s2],2));
                 if(fabs(sqrt(pow(ast->x[m3]-ast->x[m2],2)+pow(ast->y[m3]-ast->y[m2],2)) - r) > DISTMATCHTOL){
+#if DEBUG>2
                   fprintf(stdout,"Match 3rd star %d discarded for distance to 2nd match star error.\n",m3);
+#endif
                   continue;
                 }
                 // check angle
                 d=atan((cat->y[s3]-cat->y[s1]) / (cat->x[s3]-cat->x[s1]));
-                if(fabs(d - atan((ast->y[m3]-ast->y[m1]) / (ast->x[m3]-ast->x[m1]))) > MAXROT){
+                if((cat->x[s3]-cat->x[s1]) < 0){
+                  if(d >= 0) d -= M_PI;
+                  else d += M_PI;
+                }
+                d2=atan((ast->y[m3]-ast->y[m1]) / (ast->x[m3]-ast->x[m1]));
+                if((ast->x[m3]-ast->x[m1]) < 0){
+                  if(d2 >= 0) d2 -= M_PI;
+                  else d2 += M_PI;
+                }
+                if(fabs(d - d2) > MAXROT){
+#if DEBUG>2
                   fprintf(stdout,"Match 3rd star %d discarded for rotation error.\n",m3);
+#endif
                   continue;
                 }
                 // m3 is viable candidate for match to 3rd star
                 r=ast->mag[m3];
-                fprintf(stdout,"Candidate match star 3: %d, magnitude: %.1f \n",m3,r);
+#if DEBUG>1
+                fprintf(stdout,"Match found with 3rd match star: %d, magnitude: %.1f \n",m3,r);
+#endif
                 triast[2]=m3;
                 nmatch=3;
               }
@@ -593,31 +655,41 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
             triast[2]=0;
             // try new 3rd star
             *nselect=2;
+#if DEBUG>1
             fprintf(stdout,"No match found for this triangle\n");
+#endif
           }
         }
         // if no triangle selected we will try next 2nd star and try again all possible 3rd stars
         if(*nselect<3) tricat[2]=0;
+#if DEBUG>2
         fprintf(stdout,"Try next 2nd star.\n");
+#endif
       }
       // if no triangle selected we will try next 1st star and try again all possible 2nd stars
       if(*nselect<3) tricat[1]=0;
+#if DEBUG>2
       fprintf(stdout,"Try next 1st star.\n");
+#endif
     }
     // at this point either found 3 candidate stars or already tried all candidate stars without success
     // if loop continues will look for smaller triangles and accept higher magnitudes next iteration
     if(*nselect<3){
       size/=1.25;
       mave+=0.25;    
+#if DEBUG>1
+    fprintf(stdout,"Decrased minimum size and increase max magnitude for next search.\n");
+#endif
     }
-    fprintf(stdout,"Decrase minimum size and increase max magnitude for next search.\n");
   }
-  // if we could not find suitable triplet erase tricat[] 
+  // if we could not find suitable triplet erase triange in catalog tricat[] 
   if(*nselect<3){
     tricat[0]=0;
     tricat[1]=0;
     tricat[2]=0;
+#if DEBUG>1
     fprintf(stdout,"Did not find any suitable reference triangle.\n");
+#endif
   }
   return;
 }
@@ -746,21 +818,29 @@ int main(int argc,char *argv[])
       if(nselect>=2){
         // imaged catalog
         cpgmove(cat.x[tricat[0]],cat.y[tricat[0]]);
+#if DEBUG>1
         fprintf(stdout,"\nRef.triangle: ");
         fprintf(stdout,"%d, ",tricat[0]);
+#endif
         for(i=1;(i<3 && i<nselect);i++){
           cpgdraw(cat.x[tricat[i]],cat.y[tricat[i]]);
+#if DEBUG>1
           fprintf(stdout,"%d, ",tricat[i]);
+#endif
         }
         cpgdraw(cat.x[tricat[0]],cat.y[tricat[0]]);
         // astrometric catalog
         if(triast[2]>0){
           cpgmove(ast.x[triast[0]],ast.y[triast[0]]);
+#if DEBUG>1
           fprintf(stdout,"\nMatch triangle: ");
           fprintf(stdout,"%d, ",triast[0]);
+#endif
           for(i=1;(i<3 && i<nselect);i++){
             cpgdraw(ast.x[triast[i]],ast.y[triast[i]]);
+#if DEBUG>1
             fprintf(stdout,"%d, ",triast[i]);
+#endif
           }
           cpgdraw(ast.x[triast[0]],ast.y[triast[0]]);
         }
@@ -875,6 +955,15 @@ int main(int argc,char *argv[])
     // Autoidentify triangles in imaged and astrometric catalogs
     if (c=='i') {
       identify_triangles(&cat,&ast,&nselect,tricat,triast);
+      // if match was found mark stars into selected fields of catalogs
+      if((nselect >=3) && (triast[2] > 0)){
+        cat.select[tricat[0]]=1;
+        cat.select[tricat[1]]=2;
+        cat.select[tricat[2]]=3;
+        ast.select[triast[0]]=1;
+        ast.select[triast[1]]=2;
+        ast.select[triast[2]]=3;
+      }
       redraw=1;
       click=1;
     }
