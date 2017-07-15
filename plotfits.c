@@ -337,7 +337,7 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
 #endif
 
   // if last time a suitable reference triangle was found
-  if(*nselect==3){
+  if(*nselect>=3){
     // and also a match was found
     if(nmatch==3){
       // this time search for another match beginning with the following 3rd star
@@ -370,7 +370,7 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
 #endif    
     // Search candidate for 1st star
     
-    for(s1=tricat[0];(*nselect<3) && (s1 < cat->n);s1++){
+    for(s1=tricat[0];(*nselect<3) && (s1 <= cat->n);s1++){
       // discard if outside high magnitude range
       r=cat->mag[s1];
       if(r > mave){
@@ -403,7 +403,7 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
       fprintf(stdout,"Looking for 2nd star of triangle.\n");
 #endif
       // Search candidate for 2nd star
-      for(s2=tricat[1];(*nselect<3) && (s2 < cat->n);s2++){
+      for(s2=tricat[1];(*nselect<3) && (s2 <= cat->n);s2++){
         // discard candidate if outside magnitude range
         r=cat->mag[s2];
         if(r > mave){
@@ -444,7 +444,7 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
         fprintf(stdout,"Looking for 3rd star of triangle.\n");        
 #endif
         // Search candidate for 3rd star beginning from the last candidate found
-        for(s3=tricat[2];(*nselect<3) && (s3 < cat->n);s3++){
+        for(s3=tricat[2];(*nselect<3) && (s3 <= cat->n);s3++){
           // discard candidate if outside magnitude range
           r=cat->mag[s3];
           if(r > mave){
@@ -504,10 +504,14 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
           // a tolerance for this match is given also as a ratio and should be low
           // also magnitude difference between stars of astrometric cat should closely match magn diff between stars of img cat.
           // a tolerance for this magnitude match is given and should not be high (0.5 magn)
-          
+
+//persiste un problema con la identificacion de triangulos y el fit
+//el fit da mal con el segundo triangulo pero da bien con el cuarto que es el mismo triangulo con el orden de 2da y 3er estrellas intercambiadas
+
+
           nmatch=0;
           // Search for candidate 1st match star
-          for(m1=triast[0];((nmatch<3) && (m1<ast->n));m1++){
+          for(m1=triast[0];((nmatch<3) && (m1<=ast->n));m1++){
             // discard if outside magnitude tolerance
             // this tolerance includes magnitude extraction tolerance on sextractor tool 
             r=fabs(cat->mag[s1] - ast->mag[m1]);
@@ -525,7 +529,7 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
             triast[0]=m1;
             nmatch=1;
             // Search candidate for 2nd star
-            for(m2=triast[1];(nmatch<3) && (m2<ast->n);m2++){
+            for(m2=triast[1];(nmatch<3) && (m2<=ast->n);m2++){
               // magn difference between star 1 and star 2 should be very close to magn diff between matching star 1 and matching star 2
               // discard if difference is outside match tolerance
               r=fabs(cat->mag[s2] - cat->mag[s1]);
@@ -590,7 +594,7 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
               // Search candidate for 2nd star
               // start from the following star that was found as viable candidate last time
               // this allows for selecting a new match each time operator launches auto-calibrate
-              for(m3=triast[2];(nmatch<3) && (m3<ast->n);m3++){
+              for(m3=triast[2];(nmatch<3) && (m3<=ast->n);m3++){
                 // discard if magn difference is outside match tolerance
                 r=fabs(cat->mag[s3] - cat->mag[s1]);
                 if((r - fabs(ast->mag[m3] - ast->mag[m1])) > MAGMATCHTOL){
@@ -661,16 +665,20 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
           }
         }
         // if no triangle selected we will try next 2nd star and try again all possible 3rd stars
-        if(*nselect<3) tricat[2]=0;
+        if(*nselect<3){
+          tricat[2]=0;
 #if DEBUG>2
-        fprintf(stdout,"Try next 2nd star.\n");
+          fprintf(stdout,"Try next 2nd star.\n");
 #endif
+        }
       }
       // if no triangle selected we will try next 1st star and try again all possible 2nd stars
-      if(*nselect<3) tricat[1]=0;
+      if(*nselect<3){
+        tricat[1]=0;
 #if DEBUG>2
-      fprintf(stdout,"Try next 1st star.\n");
+        fprintf(stdout,"Try next 1st star.\n");
 #endif
+      }
     }
     // at this point either found 3 candidate stars or already tried all candidate stars without success
     // if loop continues will look for smaller triangles and accept higher magnitudes next iteration
@@ -678,7 +686,7 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
       size/=1.25;
       mave+=0.25;    
 #if DEBUG>1
-    fprintf(stdout,"Decrased minimum size and increase max magnitude for next search.\n");
+      fprintf(stdout,"Decrased minimum size and increase max magnitude for next search.\n");
 #endif
     }
   }
@@ -798,7 +806,6 @@ int main(int argc,char *argv[])
   ymax=0.5*(img.naxis2+width);
   zmin=img.zmin;
   zmax=img.zmax;
-
 
   // For ever loop
   for (;;) {      
@@ -957,18 +964,24 @@ int main(int argc,char *argv[])
       identify_triangles(&cat,&ast,&nselect,tricat,triast);
       // if match was found mark stars into selected fields of catalogs
       if((nselect >=3) && (triast[2] > 0)){
-        cat.select[tricat[0]]=1;
+        // erase prior selection first
+        for (i=0;i<cat.n;i++) {
+          cat.select[i]=0;
+        }
+        for (i=0;i<ast.n;i++) {
+          ast.select[i]=0;
+        }
+        cat.select[tricat[0]]=1;        
         cat.select[tricat[1]]=2;
         cat.select[tricat[2]]=3;
         ast.select[triast[0]]=1;
         ast.select[triast[1]]=2;
         ast.select[triast[2]]=3;
+        nselect=3;
       }
       redraw=1;
-      click=1;
     }
 
-    
     // Plot identified stars
     if (c=='p') {
       if (plotstars==1)
