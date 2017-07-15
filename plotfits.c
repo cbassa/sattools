@@ -22,7 +22,7 @@
 #define MAGMATCHTOL 0.5
 #define MAXSCALERR 1.05
 #define MAXMAGERR 2
-#define DEBUG 2
+#define DEBUG 0
 
 struct star {
   double ra,de;
@@ -329,11 +329,13 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
     mave/=cat->n;
   }
 
-#if DEBUG>0
-  if(size<0)
-    fprintf(stdout,"Error: Pointing inaccuracy too high\n");
+  if(size<0){
+    fprintf(stdout,"Warning: Pointing inaccuracy too high\n");
+    size=10;
+  }
+#if DEBUG>1
   fprintf(stdout,"Stars in imaged catalog: %d, stars in astrometric catalog: %d.\n", cat->n, ast->n);
-  fprintf(stdout,"MMin:%.1f,MMax:%.1f,MAve.:%.1f \n",mmin,mmax,mave);
+  fprintf(stdout,"MMin:%2.1f,MMax:%2.1f,MAve.:%2.1f \n",mmin,mmax,mave);
 #endif
 
   // if last time a suitable reference triangle was found
