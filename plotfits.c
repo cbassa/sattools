@@ -13,16 +13,17 @@
 #define R2D 180.0/M_PI
 #define NMAX 4096
 #define MAXPOINTERR 40        // Maximum pointing error (pixels)
-                              // Do not auto-choose reference stars closer than this to any edge (in pixels) because matching star may
-                               // fall outside astrometric field. This should change to arcseconds in the future and be used to widen
+                              // Algorithm will not choose reference stars closer than this amount to any edge (in pixels)
+                              // because matching star may fall outside astrometric field.
+                              // This should change to arcseconds in the future and be used to widen
                                // the astrometric catalog so that it's scale is grater than that of the imaged catalog just enough
                                // to be sure it includes all imaged stars even at the worst pointing error.
-#define MAXROT  20*D2R        // Maximum expected rotation error (radians)
-#define DISTMATCHTOL 4
-#define MAGMATCHTOL 0.5
-#define MAXSCALERR 1.05
-#define MAXMAGERR 2
-#define DEBUG 0
+#define MAXROT  10*D2R        // Maximum expected rotation error (radians)
+#define MAXSCALERR 1.05       // Expected scaling error
+#define DISTMATCHTOL 4        // Distance tolerance between matching stars after aplying scale error
+#define MAXMAGERR 2.5         // Expected magnitude error between imaged stars and corresponding astometric catalog star
+#define MAGMATCHTOL 0.5       // Relative magnitude between mathing stars tolerance
+#define DEBUG 3
 
 struct star {
   double ra,de;
@@ -487,6 +488,9 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
           // s3 is viable candidate for 3rd star
 #if DEBUG>1
           fprintf(stdout,"Candidate star 3: %d, magnitude: %.1f, distance to star 2: %.1f \n",s3,cat->mag[s3],r);
+          fprintf(stdout,"\n");
+          fprintf(stdout,"Reference triangle: %d, %d, %d\n",s1,s2,s3);
+          fprintf(stdout,"Magnitudes: %f, %f, %f\n",cat->mag[s1],cat->mag[s2],cat->mag[s3]);          
 #endif
           tricat[2]=s3;
           *nselect=3;
@@ -586,28 +590,48 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
 #endif
 #if DEBUG>2
               fprintf(stdout,"Angle star 1 to star 2: %f \n",d);
-              d=atan((ast->y[m2]-ast->y[m1]) / (ast->x[m2]-ast->x[m1]));
-              fprintf(stdout,"Angle match 1 to match 2: %f \n",d);
-              d=fabs(d - atan((ast->y[m2]-ast->y[m1]) / (ast->x[m2]-ast->x[m1])));
+              d2=atan((ast->y[m2]-ast->y[m1]) / (ast->x[m2]-ast->x[m1]));
+              fprintf(stdout,"Angle match 1 to match 2: %f \n",d2);
+              d=fabs(d - d2);
               fprintf(stdout,"Angle error %f \n",d);
 #endif              
               triast[1]=m2;
               nmatch=2;
-              // Search candidate for 2nd star
-              // start from the following star that was found as viable candidate last time
+              // Search candidate for 3rd star
+              // start from the following star that was found as viable candidate last time this routine was run
               // this allows for selecting a new match each time operator launches auto-calibrate
               for(m3=triast[2];(nmatch<3) && (m3<=ast->n);m3++){
                 // discard if magn difference is outside match tolerance
                 r=fabs(cat->mag[s3] - cat->mag[s1]);
                 if((r - fabs(ast->mag[m3] - ast->mag[m1])) > MAGMATCHTOL){
 #if DEBUG>2
-                  fprintf(stdout,"Match 3rdd star %d discarded for mag. match tolerance.\n",m3);
+                  fprintf(stdout,"Match 3rd star %d discarded for mag. match tolerance.\n",m3);
 #endif
                   continue;
                 }
+                
+                // discard this star if matching triangle center is too far from reference triangle center
+                // check pointing error along X axis
+                r=(cat->x[s1] + cat->x[s2] + cat->x[s3]) / 3;
+                d=(ast->x[m1] + ast->x[m2] + ast->x[m3]) / 3;
+                if((d2=fabs(d - r)) > error){
+#if DEBUG>2
+                  fprintf(stdout,"Match 3rd star %d discarded for excesive X pointing error: %f.\n",m3,d2);
+#endif
+                  continue;
+                }
+                // check pointing error along Y axis
+                r=(cat->y[s1] + cat->y[s2] + cat->y[s3]) / 3;
+                d=(ast->y[m1] + ast->y[m2] + ast->y[m3]) / 3;
+                if((d2=fabs(d - r)) > error){
+#if DEBUG>2
+                  fprintf(stdout,"Match 3rd star %d discarded for excesive Y pointing error: %f.\n",m3,d2);
+#endif
+                  continue;
+                }
+                
                 // scale was fixed when found 2nd match candidate, no different scale error is allowed for 3rd matching star 
                 // discard if distance between m3 and m1 is not very similar to distance between s3 and s1
-                //**************se esta descartando el triangulo que corresponde por distancia, aumentar tolerancia y revisar...
                 r=matchscale * sqrt(pow(cat->x[s3]-cat->x[s1],2)+pow(cat->y[s3]-cat->y[s1],2));
                 d=sqrt(pow(ast->x[m3]-ast->x[m1],2)+pow(ast->y[m3]-ast->y[m1],2));                
                 if(fabs(d - r) > DISTMATCHTOL){
@@ -952,13 +976,13 @@ int main(int argc,char *argv[])
     // Select pixel catalog
     if (c=='1') {
       i=select_nearest(cat,x,y);
-      fprintf(stdout,"%d",i);      
+      fprintf(stdout,"Imaged star %d, Mag. %f\n",i,cat.mag[i]);      
     }
 
     // Select catalog
     if (c=='2') {
       i=select_nearest(ast,x,y);
-      fprintf(stdout,"%d",i);            
+      fprintf(stdout,"Asto.Catalog star %d, Mag. %f\n",i,ast.mag[i]);            
     }
 
     // Autoidentify triangles in imaged and astrometric catalogs
