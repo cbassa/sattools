@@ -2223,6 +2223,8 @@ void skymap_plotsun(void)
 int read_camera(int no)
 {
   int i=0;
+  float f,f2;
+  char s[31];
   FILE *file;
   char line[LIM],filename[LIM];
 
@@ -2237,7 +2239,15 @@ int read_camera(int no)
     if (strstr(line,"#")!=NULL)
       continue;
     if (i==no) {
-      sscanf(line,"%s %f %f", m.camera, &m.fw, &m.fh);
+      f2=-90;
+      // Retrieve complete line of selected camera parameters
+      sscanf(line,"%s %f %f %f %f %s %s %f %f", m.camera, &m.fw, &m.fh, &f, &f, s, s, &f, &f2);
+      if(f2>=0){
+        // if Elevation is set, center map on cameras aim
+        m.azi0=(double)f;
+        m.alt0=(double)f2;
+        horizontal2equatorial(m.mjd,m.azi0,m.alt0,&m.ra0,&m.de0);
+      }
       m.fw*=0.5;
       m.fh*=0.5;
       return 0;

@@ -160,40 +160,49 @@ void send_position(char *sra,char *sde,char *datadir,char *obsdir,char *camname)
   FILE *file;
   float ra,de;
   char camera[128],fname[128];
+  float f;
+  char s[31];
 
+  // Check if camera is fixed
+  // read complete line from data/cameras.txt describing the scheduled camera
+  read_cameras(camname,datadir,camera);  // search for camera name
+  sscanf(camera,"%s %f %f %f %f %s", s, &f, &f, &f, &f, s);
+  // Look for "fix" string...
+  if(strstr(s,"ix")==NULL){
+  
+    // Old packet style
+    //  sprintf(packet,"<newNumberVector device='Celestron GPS' name='EQUATORIAL_EOD_COORD_REQUEST'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
 
-  // Old packet style
-  //  sprintf(packet,"<newNumberVector device='Celestron GPS' name='EQUATORIAL_EOD_COORD_REQUEST'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
+    // New packet style (as of 2013-08-20)
+    sprintf(packet,"<newNumberVector device='Celestron GPS' name='EQUATORIAL_EOD_COORD'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
 
-  // New packet style (as of 2013-08-20)
-  sprintf(packet,"<newNumberVector device='Celestron GPS' name='EQUATORIAL_EOD_COORD'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
-
-  // Send TCP packet
-  skt=socket(AF_INET,SOCK_STREAM,0);
-  addr.sin_family=AF_INET;
-  port=PORT;
-  addr.sin_port=htons(port);
-  he=gethostbyname(IP);
-  bcopy(he->h_addr,(struct in_addr *) &addr.sin_addr,he->h_length);
-  while((connect(skt,(struct sockaddr *) &addr,sizeof(addr))<0) && (port < MAXPORT)) {
-    fprintf(stderr,"Connection refused by remote host on port %04d.\n",port);
-    port++;
-    // Skip port 7265... used by some other service?
-    if(port==7265) port++;
-    fprintf(stderr,"Trying port %04d.\n",port);
-
+    // Send TCP packet
+    skt=socket(AF_INET,SOCK_STREAM,0);
+    addr.sin_family=AF_INET;
+    port=PORT;
     addr.sin_port=htons(port);
     he=gethostbyname(IP);
     bcopy(he->h_addr,(struct in_addr *) &addr.sin_addr,he->h_length);
+    while((connect(skt,(struct sockaddr *) &addr,sizeof(addr))<0) && (port < MAXPORT)) {
+      fprintf(stderr,"Connection refused by remote host on port %04d.\n",port);
+      port++;
+      // Skip port 7265... used by some other service?
+      if(port==7265) port++;
+      fprintf(stderr,"Trying port %04d.\n",port);
 
+      addr.sin_port=htons(port);
+      he=gethostbyname(IP);
+      bcopy(he->h_addr,(struct in_addr *) &addr.sin_addr,he->h_length);
+
+    }
+    if(port>=MAXPORT) return;
+
+    printf("Connected to Indi server on port %04d.\n",port);
+
+    write(skt,packet,strlen(packet));
+    close(skt); 
   }
-  if(port>=MAXPORT) return;
-
-  printf("Connected to Indi server on port %04d.\n",port);
-
-  write(skt,packet,strlen(packet));
-  close(skt); 
- 
+   
   // Set restart
   sprintf(fname,"%s/control/state.txt",obsdir);
   file=fopen(fname,"w");
@@ -211,8 +220,6 @@ void send_position(char *sra,char *sde,char *datadir,char *obsdir,char *camname)
   }
 
   // Set camera
-  // camera.txt control file with complete line from data/cameras.txt describing the scheduled camera
-  read_cameras(camname,datadir,camera);  // search for camera name
   sprintf(fname,"%s/control/camera.txt",obsdir);
   file=fopen(fname,"w");
   if (file!=NULL) {
