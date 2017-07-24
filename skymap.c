@@ -2243,7 +2243,7 @@ int read_camera(int no)
       // Retrieve complete line of selected camera parameters
       sscanf(line,"%s %f %f %f %f %s %s %f %f", m.camera, &m.fw, &m.fh, &f, &f, s, s, &f, &f2);
       if(f2>=0){
-        // if Elevation is set, center map on cameras aim
+        // if Elevation is set, center map to camera position
         m.azi0=(double)f;
         m.alt0=(double)f2;
         horizontal2equatorial(m.mjd,m.azi0,m.alt0,&m.ra0,&m.de0);
@@ -2268,6 +2268,12 @@ int plot_skymap(void)
   char c,text[256],sra[16],sde[16],filename[LIM];
   double ra,de,azi,alt,rx,ry;
   xyz_t sunpos;
+
+	status=read_camera(fov);
+	if (status==-1) {
+	  fov=0;
+	  status=read_camera(fov);
+	}
 
   for (;;) {
     if (redraw>0) {
@@ -2318,12 +2324,6 @@ int plot_skymap(void)
       // Plot field-of-view
       if (fov>=0) {
 	cpgsfs(2);
-
-	status=read_camera(fov);
-	if (status==-1) {
-	  fov=0;
-	  status=read_camera(fov);
-	}
 
 	cpgrect(-m.fw,m.fw,-m.fh,m.fh);
 	cpgsfs(1);
@@ -2589,6 +2589,11 @@ int plot_skymap(void)
     // Toggle focal length
     if (c=='F') {
       fov++;
+	    status=read_camera(fov);
+	    if (status==-1) {
+	      fov=0;
+	      status=read_camera(fov);
+	    }      
       redraw=1;
     }
 
