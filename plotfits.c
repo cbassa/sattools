@@ -1115,6 +1115,13 @@ int main(int argc,char *argv[])
     if (c=='f' && nselect>=3) {
       fit_transformation(cat,ast,nselect);
       ast=reread_astrometric_catalog(starfile,mag+1);
+      for (i=0;i<cat.n;i++) {
+        cat.select[i]=0;
+      }
+      for (i=0;i<ast.n;i++) {
+        ast.select[i]=0;
+      }
+      nselect=0;
       redraw=1;
     }
 
