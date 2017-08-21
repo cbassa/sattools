@@ -31,7 +31,8 @@ Run notes
 * If you have different video capture devices you may add a /etc/udev/rules.d/99-server.rules file to
   add symlinks and use them to address a particular camera. Otherwise video devices can get mixed.
   You may use a command such as 'udevadm info -a -n /dev/video1' to get your capture device attributes.
-  A sample rules file is available as guide.
+  A sample rules file is available as guide in data/. Note symlinks do not work, the file must be}
+  modified and copied to /etc/udev/rules.d/.
 * You should install NTP support on the system and configure time/date to automatically
 sinchronize to time servers.
 * If you re-run install_sattools.sh you should previously rmdir sattools directory or otherwise souces

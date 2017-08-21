@@ -25,6 +25,7 @@ while true; do
 	    echo "Moving to $ST_OBSDIR/$DIR"
 	    echo "observing" >$ST_OBSDIR/control/state.txt
 	    cp $ST_OBSDIR/control/position.txt .
+	    cp $ST_OBSDIR/control/scale.txt .
 	    cp $ST_OBSDIR/control/camera.txt .
 	fi
 
