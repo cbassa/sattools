@@ -62,6 +62,7 @@ while true; do
 			cp avg.pgm $ST_OBSDIR
 		else
 			kill -9 $CAPTUREPID
+			CAPTUREPID=0
 		fi
 
 		# Remove files
@@ -72,37 +73,28 @@ while true; do
 		echo "Finished"
 	else
 	  # There are not enough images available
-		# Launch capture process or Wait to re-launch capture process
+		# Launch capture process
+		# if time passes with still no images re-launch capture process
     if [ $STATE != "stop" ]; then
     	echo "Waiting for images. Status: "$STATE
 			COUNT=$(($COUNT+1))
 			if [ $COUNT -ge $WAIT ];	then
 				COUNT=0
 				echo "No images found, restarting capture script"
-				sh $ST_DATADIR/scripts/st_capture.sh /dev/video-$CAMERA > /dev/null&
-#				echo $! >$ST_OBSDIR/control/capture_pid.txt
-#				CAPTUREPID=`echo $!`
+				sh $ST_DATADIR/scripts/st_capture.sh /dev/video-$CAMERA &
 				sleep 1
 				CAPTUREPID=`pgrep -o -x ffmpeg`
-	#		else
-	#			echo $COUNT
-
 			fi
 			if [ $STATE == "restart" ]; then
 				if [ $(($CAPTUREPID)) == 0 ]; then
-					sh $ST_DATADIR/scripts/st_capture.sh /dev/video-$CAMERA > /dev/null&
-	#				echo $! >$ST_OBSDIR/control/capture_pid.txt
-	#				CAPTUREPID=`echo $!`
+					sh $ST_DATADIR/scripts/st_capture.sh /dev/video-$CAMERA &
 					sleep 1
 					CAPTUREPID=`pgrep -o -x ffmpeg`
 				fi
 			fi
     else
     	echo "Status: "$STATE
-#			CAPTUREPID=`pgrep -o -x ffmpeg`
-#			echo "Capture PID: "$CAPTUREPID
 			if [ $(($CAPTUREPID)) != 0 ]; then
-	#			kill -9 `cat $ST_OBSDIR/control/capture_pid.txt`
 				kill -9 $CAPTUREPID
 				CAPTUREPID=0
 			fi
