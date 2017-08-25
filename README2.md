@@ -3,8 +3,8 @@ Satellite Tracking Toolkit
 
 Sattools is a collection of tools to facilitate Photographic and Video satellite tracking.
 
-Build
-------
+Install notes
+-------------
 * Clone locally the code repository
 * Install common dependencies
   * gfortran
@@ -20,6 +20,12 @@ Build
   * wcslib-2.9: http://www.epta.eu.org/~bassa/wcslib-2.9.tar
 * Run `make` on the sattools folder
 
+* Helper scripts install_dependencies.sh and install_sattools.sh are available at scripts directory.
+  You can try run these scripts to install or use them as install guide. 
+
+* If you re-run install_sattools.sh you should previously rmdir sattools directory or otherwise souces
+  will not be fetched even if they are not present at that dir
+
 Run notes
 ---------
 * You will need to set the following environment variables to run sattools.
@@ -28,13 +34,14 @@ Run notes
 	`ST_DATADIR` path to sattools directory 
 	`ST_TLEDIR` path to TLE directory
 	`ST_OBSDIR` path to observations directory
-* If you have different video capture devices you may add a /etc/udev/rules.d/99-server.rules file to
-  add symlinks and use them to address a particular camera. Otherwise video devices can get mixed.
-  You may use a command such as 'udevadm info -a -n /dev/video1' to get your capture device attributes.
-  A sample rules file is available as guide in data/. Note symlinks do not work, the file must be}
-  modified and copied to /etc/udev/rules.d/.
+* You  will need to add a /etc/udev/rules.d/99-server.rules file to add symlinks and use them to
+  address a particular camera.
+  You may use a command such as 'udevadm info -a -n /dev/video0' to get your capture device attributes and
+  use that to create the rules file.
+  A sample rules file is available as guide in data/
+  Note that symlinks to the rules file do not work, the rules file must be modified to suit your needs
+  and copied to /etc/udev/rules.d/
 * You should install NTP support on the system and configure time/date to automatically
-sinchronize to time servers.
-* If you re-run install_sattools.sh you should previously rmdir sattools directory or otherwise souces
-will not be fetched even if they are not present at that dir
+  sinchronize to time servers.
 * Modify stget.sh for your space-track.org login and password (--post-data='identity=login&password=password')
+
