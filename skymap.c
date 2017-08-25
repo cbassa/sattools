@@ -862,7 +862,7 @@ void init_plot(char *psfile,float width,float aspect)
 }
 
 // Add to schedule
-void schedule(char *nfd,double ra,double de)
+void schedule(char *nfd,double ra,double de,char *startstop)
 {
   FILE *file;
   char sra[16],sde[16];
@@ -879,7 +879,7 @@ void schedule(char *nfd,double ra,double de)
     printf("Failed to create schedule.txt\n");
     return;
   }
-  fprintf(file,"%s %s %s %s\n",nfd,sra,sde, m.camera);
+  fprintf(file,"%s %s %s %s %s\n",nfd,sra,sde, m.camera,startstop);
   fclose(file);
 
   return;
@@ -2476,7 +2476,8 @@ int plot_skymap(void)
       printf("v   Toggle visibility contours\n");
       printf("F   Toggle camera configuration (data/cameras.txt)\n");
       printf("TAB Cycle IOD observations\n");
-      printf("S   Save position/time to schedule\n");
+      printf("S   Save observation position/time to schedule\n");
+      printf("E   Save observation end-time to schedule\n");
       printf("a   Select on age\n");
       printf("Q   Toggle plotting stars\n");
     }
@@ -2670,7 +2671,11 @@ int plot_skymap(void)
     
     // Add to schedule
     if (c=='S') 
-      schedule(m.nfd,m.ra0,m.de0);
+      schedule(m.nfd,m.ra0,m.de0,"start");
+
+    // Add to schedule
+    if (c=='E') 
+      schedule(m.nfd,m.ra0,m.de0,"stop");
 
     // Polar
     if (c=='z') {
