@@ -3,22 +3,35 @@
 # Settings
 PGMDIR=/dev/shm
 N=250
-WAIT=10
+# If no images are found during thisperiod, relaunch capture process
+WAIT=20
 COUNT=0
+# Start automatically capture process or not
+AUTOSTART=0
 
-# Force a restart
-echo "restart" >$ST_OBSDIR/control/state.txt
-STATE="restart"
+# Default camera to start imaging if no schedule is available
+CAMERA="S25H"
+
+# if autostart force a restart
+if [ $AUTOSTART == 1 ]; then
+	echo "restart" >$ST_OBSDIR/control/state.txt
+	STATE="restart"
+else
+	echo "stop" >$ST_OBSDIR/control/state.txt
+	STATE="stop"
+fi
+
+export CAMERA=`cat $ST_OBSDIR/control/camera.txt | awk '{print $((1))}'`
 
 # For ever loop
 while true; do
 	# Get number of files
 	NFILES=`ls -1 $PGMDIR/img*.pgm 2>/dev/null | wc -l`
-
+	
+	# Get state
+	export STATE=`cat $ST_OBSDIR/control/state.txt`
 	# If enough, process
 	if [ $NFILES -ge $N ]; then
-		# Get state
-		export STATE=`cat $ST_OBSDIR/control/state.txt`
 		 
 		# Create new directory
 		if [ $STATE == "restart" ]; then
@@ -28,39 +41,70 @@ while true; do
 			 echo "Moving to $ST_OBSDIR/$DIR"
 			 echo "observing" >$ST_OBSDIR/control/state.txt
 			 cp $ST_OBSDIR/control/position.txt .
-			 cp $ST_OBSDIR/control/scale.txt .
+#			 cp $ST_OBSDIR/control/scale.txt .
 			 cp $ST_OBSDIR/control/camera.txt .
-       export CAMERA=`cat $ST_OBSDIR/control/camera.txt`
+       export CAMERA=`cat $ST_OBSDIR/control/camera.txt | awk '{print $((1))}'`
 		fi
 
 		# Process only if not stopped
 		if [ $STATE != "stop" ]; then
+			echo "Compressing captured frames"
+
 			# Start point
 			M=`ls -1 $PGMDIR/img*.pgm | head -n1 | sed -e "s/[^0-9]*//g"` 
 
 			# Run pgm2fits
-			pgm2fits -p $PGMDIR/img -w 720 -h 576 -s $M -n $N 
+#			pgm2fits -p $PGMDIR/img -w 720 -h 576 -s $M -n $N 
+			pgm2fits -p $PGMDIR/img -w 720 -h 576 -s $M -n $N >/dev/null
 
 			# Run viewer
 			viewer `ls -1 2*.fits | tail -n1`
 			cp avg.pgm $ST_OBSDIR
+		else
+			kill -9 $CAPTUREPID
 		fi
 
 		# Remove files
-		ls -1 $PGMDIR/img*.pgm | head -n$N | awk '{printf("sudo rm -rf %s\n",$1)}' | sh
+		echo "Removing captured frames"
+#		ls -1 $PGMDIR/img*.pgm | head -n$N | awk '{printf("sudo rm -rf %s\n",$1)}' | sh
+		ls -1 $PGMDIR/img*.pgm | head -n$N | awk '{printf("rm -rf %s\n",$1)}' | sh
 
 		echo "Finished"
-  # if not enough images are still available wait to re-launch capture process
 	else
-	echo "Waiting for images"
-    if [ $STATE == "observing" ]; then
+	  # There are not enough images available
+		# Launch capture process or Wait to re-launch capture process
+    if [ $STATE != "stop" ]; then
+    	echo "Waiting for images. Status: "$STATE
 			COUNT=$(($COUNT+1))
 			if [ $COUNT -ge $WAIT ];	then
 				COUNT=0
 				echo "No images found, restarting capture script"
-				sh $ST_DATADIR/scripts/st_capture.sh /dev/video-$CAMERA&
+				sh $ST_DATADIR/scripts/st_capture.sh /dev/video-$CAMERA > /dev/null&
+#				echo $! >$ST_OBSDIR/control/capture_pid.txt
+#				CAPTUREPID=`echo $!`
+				sleep 1
+				CAPTUREPID=`pgrep -o -x ffmpeg`
 	#		else
 	#			echo $COUNT
+
+			fi
+			if [ $STATE == "restart" ]; then
+				if [ $(($CAPTUREPID)) == 0 ]; then
+					sh $ST_DATADIR/scripts/st_capture.sh /dev/video-$CAMERA > /dev/null&
+	#				echo $! >$ST_OBSDIR/control/capture_pid.txt
+	#				CAPTUREPID=`echo $!`
+					sleep 1
+					CAPTUREPID=`pgrep -o -x ffmpeg`
+				fi
+			fi
+    else
+    	echo "Status: "$STATE
+#			CAPTUREPID=`pgrep -o -x ffmpeg`
+#			echo "Capture PID: "$CAPTUREPID
+			if [ $(($CAPTUREPID)) != 0 ]; then
+	#			kill -9 `cat $ST_OBSDIR/control/capture_pid.txt`
+				kill -9 $CAPTUREPID
+				CAPTUREPID=0
 			fi
     fi
 	fi
