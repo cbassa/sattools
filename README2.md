@@ -34,8 +34,8 @@ Run notes
 	`ST_DATADIR` path to sattools directory 
 	`ST_TLEDIR` path to TLE directory
 	`ST_OBSDIR` path to observations directory
-* You  will need to add a /etc/udev/rules.d/99-server.rules file to add symlinks and use them to
-  address a particular camera.
+* If you have multiple capture devices you will need to add a /etc/udev/rules.d/99-server.rules file to add symlinks and use them to
+  address a particular camera. Sattools will automatically select the camera that is scheduled for each observation.
   You may use a command such as 'udevadm info -a -n /dev/video0' to get your capture device attributes and
   use that to create the rules file.
   A sample rules file is available as guide in data/

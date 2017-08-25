@@ -3,14 +3,15 @@
 # Settings
 PGMDIR=/dev/shm
 N=250
-# If no images are found during thisperiod, relaunch capture process
+# If no images are found during this period (seconds), relaunch capture process
 WAIT=20
 COUNT=0
 # Start automatically capture process or not
 AUTOSTART=0
 
 # Default camera to start imaging if no schedule is available
-CAMERA="S25H"
+CAMERADEV="/dev/video0"
+CAPTUREPID=0
 
 # if autostart force a restart
 if [ $AUTOSTART == 1 ]; then
@@ -21,7 +22,7 @@ else
 	STATE="stop"
 fi
 
-export CAMERA=`cat $ST_OBSDIR/control/camera.txt | awk '{print $((1))}'`
+export CAMERADEV=`cat $ST_OBSDIR/control/camera.txt | awk '{print $((7))}'`
 
 # For ever loop
 while true; do
@@ -43,7 +44,7 @@ while true; do
 			 cp $ST_OBSDIR/control/position.txt .
 #			 cp $ST_OBSDIR/control/scale.txt .
 			 cp $ST_OBSDIR/control/camera.txt .
-       export CAMERA=`cat $ST_OBSDIR/control/camera.txt | awk '{print $((1))}'`
+       export CAMERADEV=`cat $ST_OBSDIR/control/camera.txt | awk '{print $((7))}'`
 		fi
 
 		# Process only if not stopped
@@ -61,8 +62,10 @@ while true; do
 			viewer `ls -1 2*.fits | tail -n1`
 			cp avg.pgm $ST_OBSDIR
 		else
-			kill -9 $CAPTUREPID
-			CAPTUREPID=0
+			if [ $(($CAPTUREPID)) != 0 ]; then
+				kill -9 $CAPTUREPID
+				CAPTUREPID=0
+			fi
 		fi
 
 		# Remove files
@@ -81,13 +84,15 @@ while true; do
 			if [ $COUNT -ge $WAIT ];	then
 				COUNT=0
 				echo "No images found, restarting capture script"
-				sh $ST_DATADIR/scripts/st_capture.sh /dev/video-$CAMERA &
+#				sh $ST_DATADIR/scripts/st_capture.sh /dev/video-$CAMERA &
+				sh $ST_DATADIR/scripts/st_capture.sh $CAMERADEV &
 				sleep 1
 				CAPTUREPID=`pgrep -o -x ffmpeg`
 			fi
 			if [ $STATE == "restart" ]; then
 				if [ $(($CAPTUREPID)) == 0 ]; then
-					sh $ST_DATADIR/scripts/st_capture.sh /dev/video-$CAMERA &
+#					sh $ST_DATADIR/scripts/st_capture.sh /dev/video-$CAMERA &
+					sh $ST_DATADIR/scripts/st_capture.sh $CAMERADEV &
 					sleep 1
 					CAPTUREPID=`pgrep -o -x ffmpeg`
 				fi

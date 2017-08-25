@@ -128,7 +128,7 @@ void usage()
   printf("R    R.A.\n");
   printf("D    Decl.\n");
   printf("A    Azimuth\n");
-  printf("E    Elecation\n");
+  printf("E    Elevation\n");
   printf("S    All night\n");
   printf("h    this help\n");
   printf("s    site (COSPAR)\n");
