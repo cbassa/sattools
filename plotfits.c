@@ -1297,7 +1297,7 @@ int main(int argc,char *argv[])
 
     // Help
     if (c=='h') {
-      printf("Calibrates astrometry. Initially requires manual matching of at least three stars. Use 'a' to select star on the image, then 'b' to select star from the catalog, then 'f' to fit");
+      printf("Calibrates astrometry.\nRequires matching of at least three stars. Use 'i' repeatedly for automatic selection of matching sets or 'a' to manually select a star from the image and 'b' to select the corresponding star from the catalog (tree sets needed). Then use 'f' to check fit, 'R' to start again.\nFinish with 'm' to match stars and 'q' writes calibration output\n");
       printf("q     Quit\n");
       printf("a     Select star on image\n");
       printf("b     Select star from catalog\n");

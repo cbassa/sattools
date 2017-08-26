@@ -47,8 +47,8 @@ while true; do
        export CAMERADEV=`cat $ST_OBSDIR/control/camera.txt | awk '{print $((7))}'`
 		fi
 
-		# Process only if not stopped
-		if [ $STATE != "stop" ]; then
+		# Process only if not restarting
+		if [ $STATE != "restart" ]; then
 			echo "Compressing captured frames"
 
 			# Start point
@@ -61,7 +61,10 @@ while true; do
 			# Run viewer
 			viewer `ls -1 2*.fits | tail -n1`
 			cp avg.pgm $ST_OBSDIR
-		else
+		fi
+
+		# kill capture process just when scheduler sends stop signal
+		if [ $STATE == "stop" ]; then
 			if [ $(($CAPTUREPID)) != 0 ]; then
 				kill -9 $CAPTUREPID
 				CAPTUREPID=0
@@ -75,8 +78,8 @@ while true; do
 
 		echo "Finished"
 	else
-	  # There are not enough images available
-		# Launch capture process
+	  # There are not enough captured frames
+		# Launch capture process if state is not stop
 		# if time passes with still no images re-launch capture process
     if [ $STATE != "stop" ]; then
     	echo "Waiting for images. Status: "$STATE
