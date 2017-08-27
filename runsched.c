@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
   struct observation obs[NMAX];
   char *env;
   char datadir[128],obsdir[128];
+	int nextobs, dtnext;
 
   // Get environment variables
   env=getenv("ST_DATADIR");
@@ -91,14 +92,21 @@ int main(int argc, char *argv[])
     // printf("%s\n",ctime(&rawtime));
 
     // Compute time differences
-    for (i=0;i<nobs;i++) 
+    for (i=0;i<nobs;i++) {
       obs[i].dt=difftime(obs[i].ptime,rawtime);
+			if(obs[i].dt > dtnext) dtnext=obs[i].dt;
+		}
 
+		nextobs=-1;
     // Loop over observations
     for (i=0;i<nobs;i++) {
       if (obs[i].dt>0.0) {
-				printf("%4.0f %s %s %s %s\n",obs[i].dt,obs[i].stime,obs[i].sra,obs[i].sde,obs[i].startstop);
-				break;
+				if(obs[i].dt < dtnext){
+					nextobs=i;
+					dtnext=obs[i].dt;
+				}
+//				printf("%4.0f %s %s %s %s\n",obs[i].dt,obs[i].stime,obs[i].sra,obs[i].sde,obs[i].startstop);
+//				break;
       } else if (obs[i].dt==0) {
 			  if(strstr(obs[i].startstop,"tart")!=NULL){
 					//printf("Slewing to %s %s\n",obs[i].sra,obs[i].sde);
@@ -109,6 +117,10 @@ int main(int argc, char *argv[])
       }
     }
 
+		if(nextobs>0){
+			// print next observation data if any found
+			printf("%4.0f %s %s %s %s\n",obs[nextobs].dt,obs[nextobs].stime,obs[nextobs].sra,obs[nextobs].sde,obs[nextobs].startstop);
+		}
     // Sleep
     sleep(1);
   }
