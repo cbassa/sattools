@@ -92,6 +92,7 @@ int main(int argc, char *argv[])
     // printf("%s\n",ctime(&rawtime));
 
     // Compute time differences
+		dtnext=0;
     for (i=0;i<nobs;i++) {
       obs[i].dt=difftime(obs[i].ptime,rawtime);
 			if(obs[i].dt > dtnext) dtnext=obs[i].dt;
@@ -117,7 +118,7 @@ int main(int argc, char *argv[])
       }
     }
 
-		if(nextobs>0){
+		if(nextobs>=0){
 			// print next observation data if any found
 			printf("%4.0f %s %s %s %s\n",obs[nextobs].dt,obs[nextobs].stime,obs[nextobs].sra,obs[nextobs].sde,obs[nextobs].startstop);
 		}
