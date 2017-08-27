@@ -52,6 +52,7 @@ while true; do
 	# kill capture process just when scheduler sends stop signal
 	if [ $STATE == "stop" ]; then
 		if [ $(($CAPTUREPID)) != 0 ]; then
+			echo ""
 			echo "Stopping capture process"
 			kill -9 $CAPTUREPID
 			CAPTUREPID=0
@@ -63,6 +64,7 @@ while true; do
 	# If enough, process
 	if [ $NFILES -ge $N ]; then
 
+		echo ""
 		echo "Compressing $N captured frames"
 
 		# Start point
@@ -77,6 +79,7 @@ while true; do
 		cp avg.pgm $ST_OBSDIR
 
 		# Remove files
+		echo ""
 		echo "Removing $N captured frames"
 #		ls -1 $PGMDIR/img*.pgm | head -n$N | awk '{printf("sudo rm -rf %s\n",$1)}' | sh
 		ls -1 $PGMDIR/img*.pgm | head -n$N | awk '{printf("rm -rf %s\n",$1)}' | sh
@@ -87,10 +90,12 @@ while true; do
 		# Launch capture process if state is not stop
 		# if time passes with still no images re-launch capture process
     if [ $STATE != "stop" ]; then
+			echo ""
     	echo "Waiting for frames. Status: "$STATE
 			COUNT=$(($COUNT+1))
 			if [ $COUNT -ge $WAIT ];	then
 				COUNT=0
+				echo ""
 				echo "No frames found, restarting capture script"
 #				sh $ST_DATADIR/scripts/st_capture.sh /dev/video-$CAMERA &
 				sh $ST_DATADIR/scripts/st_capture.sh $CAMERADEV &
