@@ -92,13 +92,12 @@ int main(int argc, char *argv[])
     // printf("%s\n",ctime(&rawtime));
 
     // Compute time differences
-		dtnext=0;
     for (i=0;i<nobs;i++) {
       obs[i].dt=difftime(obs[i].ptime,rawtime);
-			if(obs[i].dt > dtnext) dtnext=obs[i].dt;
 		}
 
 		nextobs=-1;
+		dtnext=9999999;
     // Loop over observations
     for (i=0;i<nobs;i++) {
       if (obs[i].dt>0.0) {

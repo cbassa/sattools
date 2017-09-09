@@ -110,6 +110,7 @@ while true; do
 					sh $ST_DATADIR/scripts/st_capture.sh $CAMERADEV &
 					sleep 1
 					CAPTUREPID=`pgrep -o -x ffmpeg`
+					COUNT=0
 				fi
 			fi
     else
