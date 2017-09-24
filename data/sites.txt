@@ -65,4 +65,4 @@
 9003 CP  -24.6272  -70.4047   2638    Cerro Paranal
 9004 LP   28.7622  -17.8775   2396    Isaac Newton
 9999 GR   47.348     5.5151    100    Graves
-0531 FM  -34.8961  -56.1227     30    Fernando Mederos
+0899 FM  -34.8961  -56.1227     30    Fernando Mederos
