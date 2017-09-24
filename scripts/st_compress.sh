@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source ~/.bashrc
+
 # Settings
 PGMDIR=/dev/shm
 N=250
@@ -12,6 +14,15 @@ AUTOSTART=0
 # Default camera to start imaging if no schedule is available
 CAMERADEV="/dev/video0"
 CAPTUREPID=0
+
+# Check obsdir exists
+if [ ! -d $ST_OBSDIR ]; then
+	mkdir $ST_OBSDIR
+fi
+if [ ! -d $ST_OBSDIR/control ]; then
+	mkdir $ST_OBSDIR/control
+fi
+
 
 # if autostart force a restart
 if [ $AUTOSTART == 1 ]; then
@@ -46,7 +57,8 @@ while true; do
 		# Remove old captured frames
 		echo "Removing all captured frames"
 		#		ls -1 $PGMDIR/img*.pgm | awk '{printf("sudo rm -rf %s\n",$1)}' | sh
-		ls -1 $PGMDIR/img*.pgm | awk '{printf("rm -rf %s\n",$1)}' | sh
+		#ls -1 $PGMDIR/img*.pgm | awk '{printf("rm -rf %s\n",$1)}' | sh
+		find $PGMDIR -type f -name './img*.pgm' | awk '{printf("rm -rf %s\n",$1)}' | sh
 	fi
 
 	# kill capture process just when scheduler sends stop signal
@@ -61,9 +73,10 @@ while true; do
 
 	# Get number of captured frames
 	NFILES=`ls -1 $PGMDIR/img*.pgm 2>/dev/null | wc -l`
+	#NFILES=`find $PGMDIR -type f -name 'img*.pgm' |wc -l`
 	# If enough, process
 	if [ $NFILES -ge $N ]; then
-
+		COUNT=0
 		echo ""
 		echo "Compressing $N captured frames"
 
@@ -83,6 +96,7 @@ while true; do
 		echo "Removing $N captured frames"
 #		ls -1 $PGMDIR/img*.pgm | head -n$N | awk '{printf("sudo rm -rf %s\n",$1)}' | sh
 		ls -1 $PGMDIR/img*.pgm | head -n$N | awk '{printf("rm -rf %s\n",$1)}' | sh
+		#find $PGMDIR -type f -name 'img*.pgm' | head -n$N | awk '{printf("rm -rf %s\n",$1)}' | sh
 
 #		echo "Finished"
 	else
