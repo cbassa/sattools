@@ -21,7 +21,8 @@ Install notes
 * Run `make` on the sattools folder
 
 * Helper scripts install_dependencies.sh and install_sattools.sh are available at scripts directory.
-  You can try run these scripts to install or use them as install guide. 
+  You can try run these scripts to install or use them as install guide.
+  Note that install_dependencies.sh needs to be run with admin privileges (sudo ./install_dependencies.sh).
 
 * If you re-run install_sattools.sh you should previously rmdir sattools directory or otherwise souces
   will not be fetched even if they are not present at that dir

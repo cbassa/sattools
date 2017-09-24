@@ -3,7 +3,7 @@
 echo "Step 1.1: install dependencies"
 sleep 1
 apg-get update
-apt-get install  emacs gfortran libpng-dev libx11-dev libjpeg-dev libexif-dev git dos2unix sextractor
+apt-get install  ntp eog emacs gfortran libpng-dev libx11-dev libjpeg-dev libexif-dev git dos2unix sextractor
 
 echo "Step 1.2: goto /usr/local/src"
 sleep 1
@@ -82,7 +82,8 @@ rm /usr/local/src/qfits-5.2.0.tar.gz
 echo "Step 4.1: download wcslib-2.9"
 sleep 1
 cd /usr/local/src
-wget -c http://www.epta.eu.org/~bassa/wcslib-2.9.tar
+wget -c "https://drive.google.com/uc?export=download&id=0B-15JZVdjJi4QW0zZmZUM1ZXblU" -O wcslib-2.9.tar
+#wget -c http://www.epta.eu.org/~bassa/wcslib-2.9.tar
 
 echo "Step 4.2: unpack wcslib"
 sleep 1
@@ -164,7 +165,8 @@ bzip2 -cd ffmpeg-snapshot.tar.bz2 | tar xvf -
 echo "Step 7.3: patch pgmenc.c"
 sleep 1
 cd /usr/local/src/ffmpeg/libavcodec
-wget https://dl.dropboxusercontent.com/u/52579487/pnmenc.c -O pnmenc.c
+wget -c -O pnmenc.c "https://drive.google.com/uc?export=download&id=0B-15JZVdjJi4YnVEdXEzVmExVEU"
+#wget https://dl.dropboxusercontent.com/u/52579487/pnmenc.c -O pnmenc.c
 
 echo "Step 7.4: configure, make,make install"
 sleep 1
