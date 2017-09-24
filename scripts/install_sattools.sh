@@ -37,12 +37,11 @@ rm classfd.zip
 echo "Step 2.1: set environment variables"
 sleep 1
 cd
-echo "export PGPLOT_DIR=/usr/local/src/pgplot-5.2.2" >>$HOME/.bashrc
-#echo "export ST_COSPAR=4171" >>$HOME/.bashrc
-echo "export ST_COSPAR=0531" >>$HOME/.bashrc
-echo "export ST_DATADIR=$HOME/code/c/satellite/sattools" >>$HOME/.bashrc
-echo "export ST_TLEDIR=$HOME/code/c/satellite/sattools/tle" >>$HOME/.bashrc
-echo "export ST_OBSDIR=$HOME/satobs" >>$HOME/.bashrc
+echo "export PGPLOT_DIR=/usr/local/src/pgplot-5.2.2" >>$HOME/.xsessionrc
+echo "export ST_COSPAR=4171" >>$HOME/.xsessionrc
+echo "export ST_DATADIR=$HOME/code/c/satellite/sattools" >>$HOME/.xsessionrc
+echo "export ST_TLEDIR=$HOME/code/c/satellite/sattools/tle" >>$HOME/.xsessionrc
+echo "export ST_OBSDIR=$HOME/satobs" >>$HOME/.xsessionrc
 mkdir $ST_OBSDIR
 mkdir $ST_OBSDIR/control
 
