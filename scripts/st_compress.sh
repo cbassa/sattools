@@ -53,6 +53,8 @@ while true; do
 		cp $ST_OBSDIR/control/position.txt .
 		#			 cp $ST_OBSDIR/control/scale.txt .
 		cp $ST_OBSDIR/control/camera.txt .
+		# Register time offset against NTP server
+		ntpdate -q uy.pool.ntp.org > ntpresult.txt &
 		export CAMERADEV=`cat $ST_OBSDIR/control/camera.txt | awk '{print $((7))}'`
 		# Remove old captured frames
 		echo "Removing all captured frames"
