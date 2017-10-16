@@ -22,11 +22,11 @@
 #define MAXROT  10*D2R        // Maximum expected rotation error (radians)
 #define MAXSCALERR 1.05       // Expected image to astrometric map scaling error
 #define DISTMATCHTOL 6        // Distance tolerance in pixels between matching stars after aplying scale and rotation
-#define MAXMAGERR 3         // Expected magnitude error between imaged stars and corresponding astometric catalog stars
-#define MAGMATCHTOL 1       // Relative magnitude between matching stars tolerance
-#define DEFMATCHVALRATIO 0.3     // Default ratio of imaged stars that must fit into astrometric catalog after applying matching transformation (can be adjusted at runtime)
+#define MAXMAGERR 2.5         // Expected magnitude error between imaged stars and corresponding astometric catalog stars
+#define MAGMATCHTOL 0.75       // Relative magnitude between matching stars tolerance
+#define DEFMATCHVALRATIO 0.35     // Default ratio of imaged stars that must fit into astrometric catalog after applying matching transformation (can be adjusted at runtime)
 #define	AUTOMAGLIM 1				// Automatically set astrometric catalog magnitude limit
-#define DEBUG 1
+#define DEBUG 0
 
 struct star {
   double ra,de;
