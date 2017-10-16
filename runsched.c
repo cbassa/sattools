@@ -16,7 +16,7 @@
 #define MAXPORT 7274
 #define IP "127.0.0.1"
 #define LIM 2048
-#define NMAX 128
+#define NMAX 256
 
 #define SCHEDULED 0
 #define STARTED 1
