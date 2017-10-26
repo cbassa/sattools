@@ -872,8 +872,8 @@ void schedule(char *nfd,double ra,double de,char *startstop)
   dec2sex(ra/15.0,sra,0,5);
   dec2sex(de,sde,0,4);
 
-  printf("%s %s %s\n",nfd,sra,sde);
-
+  printf("%s %s %s %s\n",nfd,sra,sde,startstop);
+  
   // Open file
   file=fopen("schedule.txt","a");
   if (file==NULL) {
