@@ -19,10 +19,10 @@
                               // This should change to arcseconds in the future and be used to widen
                                // the astrometric catalog so that it's scale is grater than that of the imaged catalog just enough
                                // to be sure it includes all imaged stars even at the worst pointing error.
-#define MAXROT  10*D2R        // Maximum expected rotation error (radians)
+#define MAXROT  15*D2R        // Maximum expected rotation error (radians)
 #define MAXSCALERR 1.05       // Expected image to astrometric map scaling error
 #define DISTMATCHTOL 6        // Distance tolerance in pixels between matching stars after aplying scale and rotation
-#define MAXMAGERR 2.5         // Expected magnitude error between imaged stars and corresponding astometric catalog stars
+#define MAXMAGERR 3         // Expected magnitude error between imaged stars and corresponding astometric catalog stars
 #define MAGMATCHTOL 0.75       // Relative magnitude between matching stars tolerance
 #define DEFMATCHVALRATIO 0.35     // Default ratio of imaged stars that must fit into astrometric catalog after applying matching transformation (can be adjusted at runtime)
 #define	AUTOMAGLIM 1				// Automatically set astrometric catalog magnitude limit
@@ -697,7 +697,7 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
                 // ************************************************************************************************************
                 // At this point a viable candidate triangle is found to match the selected reference triangle
                 // will try to validate this candidate by calculating the tranformation between the ref triangle and this candidate
-                // We will need to calculate scale, rotation and translation
+                // We will need to calculate scale, rotation and traslation
                 
                 end_t=clock();
 #if DEBUG>1
@@ -758,7 +758,7 @@ void identify_triangles(struct catalog *cat, struct catalog *ast, int *nselect, 
                 
                 // traslation calculation
                 // we apply averaged matchscale and matchrotation to reference stars and then
-                // average reference 1 to match 1 vector, ref2 to match2 vector and ref3 to match3 vector
+                // average reference1 to match1 vector, ref2 to match2 vector and ref3 to match3 vector
                 r=sqrt(pow(cat->x[s1],2)+pow(cat->y[s1],2));
                 d=atan(cat->y[s1] / cat->x[s1]);
                 r *= matchscale;
@@ -958,7 +958,7 @@ int main(int argc,char *argv[])
     }
     else{
       // Obtain FOV and image resolution from camera file
-      fscanf(file,"%s %f %f %d %d %s",cam,&fw,&fh,&nx,&ny,mount);
+      fscanf(file,"%s %f %f %d %d %s",cam,&fh,&fw,&nx,&ny,mount);
       fclose(file);
       sx=fw/nx*3600;
       sy=fh/ny*3600;
@@ -1289,6 +1289,7 @@ int main(int argc,char *argv[])
       printf("b     Select star from catalog\n");
       printf("i     Autoselect calibration stars from catalog\n");
       printf("I     Reset calibration stars selection\n");
+      printf("S			Save calibration params. to cal.dat\n");
       printf("c     Center image on pixel\n");
       printf("f     Fit calibration\n");
       printf("m     Match stars using current calibration\n");
