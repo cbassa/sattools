@@ -731,7 +731,8 @@ int main(int argc,char *argv[])
   sprintf(obs.desig,"%02d%03.0lfA",year-2000,doy+500);
 
   cpgopen("/xs");
-  cpgpap(0.,1.0);
+//  cpgpap(0.,1.0);
+  cpgpap(7,0.75);
   cpgask(0);
   cpgsch(0.8);
 
@@ -1101,6 +1102,38 @@ int main(int argc,char *argv[])
       redraw=1;
       continue;
     }
+
+		if (c=='h'){
+      printf("Reduce Satellite tracks. ");
+      printf("q   Quit\n");
+			printf("TAB track and stack objects automatically (only classfd sats)\n");
+			printf("w		write IOD observation to observations.txt\n");
+			printf("M/D measure stack and track position (also middle mouse button)\n");
+			printf("e   change fraction (0.0 to start, 0.5 for medium, 1.0 for the end)\n"); 
+			printf("d   provide NORAD satellite number\n");
+			printf("C   toggle IOD observing conditions G-Good F-Fair P-Poor B-Bad T-Terrible E-Excellent\n");
+			printf("B   toggle behavior of sat.: F-Flash I-Irregular R-Regular S-Steady X-Uspecified E-Extremely weak\n");
+			printf("s   select start of satellite track\n");
+			printf("f   select end of satellite track\n");
+			printf("F   fit satellite track\n");
+			printf("+/= Increase level of masking pixels\n");
+			printf("-   Lower level for masking pixels (This does not seem to work)\n");
+			printf("1   go to the mean pixel value FITS layer\n");
+			printf("2   go to the FITS standard deviation layer\n");
+			printf("3   go to the maximum pixel value FITS layer\n");
+			printf("4   go to the frame number of the maximum pixel value FITS layer\n");
+			printf("5   go to the stack and track layer (only after 't' or 'TAB')\n");
+			printf("v   lower dynamic range\n");
+			printf("b   increase dynamic range\n");
+			printf("c   center on cursor\n");
+			printf("z   zoom in at cursor\n");
+			printf("x   zoom out at cursor\n");
+			printf("R/r reset to start\n");
+			printf("m   measure position of pixel\n");
+			printf("t   track & stack, give NORAD satellite number\n");
+			printf("E   change fraction in tenths\n");
+			printf("X   pixel mask (also with mouse scroll wheel)\n");
+		}
   }
 
   cpgend();

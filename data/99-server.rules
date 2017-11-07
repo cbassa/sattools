@@ -1,0 +1,2 @@
+KERNEL=="video[0-9]*", ATTR{name}=="Laptop_Integrated_Webcam_1.3M", SYMLINK+="video-Webcam"
+KERNEL=="video[0-9]*", ATTR{name}=="AV TO USB2.0", SYMLINK+="video-S25H"

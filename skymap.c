@@ -128,7 +128,7 @@ void usage()
   printf("R    R.A.\n");
   printf("D    Decl.\n");
   printf("A    Azimuth\n");
-  printf("E    Elecation\n");
+  printf("E    Elevation\n");
   printf("S    All night\n");
   printf("h    this help\n");
   printf("s    site (COSPAR)\n");
@@ -637,7 +637,8 @@ int main(int argc,char *argv[])
     }
   }
 
-  init_plot("/xs",10,0.75);
+//  init_plot("/xs",10,0.75);
+  init_plot("/xs",8,0.75);
 
   plot_skymap();
 
@@ -862,7 +863,7 @@ void init_plot(char *psfile,float width,float aspect)
 }
 
 // Add to schedule
-void schedule(char *nfd,double ra,double de)
+void schedule(char *nfd,double ra,double de,char *startstop)
 {
   FILE *file;
   char sra[16],sde[16];
@@ -871,15 +872,15 @@ void schedule(char *nfd,double ra,double de)
   dec2sex(ra/15.0,sra,0,5);
   dec2sex(de,sde,0,4);
 
-  printf("%s %s %s\n",nfd,sra,sde);
-
+  printf("%s %s %s %s\n",nfd,sra,sde,startstop);
+  
   // Open file
   file=fopen("schedule.txt","a");
   if (file==NULL) {
     printf("Failed to create schedule.txt\n");
     return;
   }
-  fprintf(file,"%s %s %s %s\n",nfd,sra,sde, m.camera);
+  fprintf(file,"%s %s %s %s %s\n",nfd,sra,sde, m.camera,startstop);
   fclose(file);
 
   return;
@@ -2223,6 +2224,8 @@ void skymap_plotsun(void)
 int read_camera(int no)
 {
   int i=0;
+  float f,f2;
+  char s[31];
   FILE *file;
   char line[LIM],filename[LIM];
 
@@ -2237,7 +2240,15 @@ int read_camera(int no)
     if (strstr(line,"#")!=NULL)
       continue;
     if (i==no) {
-      sscanf(line,"%s %f %f", m.camera, &m.fw, &m.fh);
+      f2=-90;
+      // Retrieve complete line of selected camera parameters
+      sscanf(line,"%s %f %f %f %f %s %s %f %f", m.camera, &m.fw, &m.fh, &f, &f, s, s, &f, &f2);
+      if(f2>=0){
+        // if Elevation is set, center map to camera position
+        m.azi0=(double)f;
+        m.alt0=(double)f2;
+        horizontal2equatorial(m.mjd,m.azi0,m.alt0,&m.ra0,&m.de0);
+      }
       m.fw*=0.5;
       m.fh*=0.5;
       return 0;
@@ -2258,6 +2269,12 @@ int plot_skymap(void)
   char c,text[256],sra[16],sde[16],filename[LIM];
   double ra,de,azi,alt,rx,ry;
   xyz_t sunpos;
+
+	status=read_camera(fov);
+	if (status==-1) {
+	  fov=0;
+	  status=read_camera(fov);
+	}
 
   for (;;) {
     if (redraw>0) {
@@ -2308,12 +2325,6 @@ int plot_skymap(void)
       // Plot field-of-view
       if (fov>=0) {
 	cpgsfs(2);
-
-	status=read_camera(fov);
-	if (status==-1) {
-	  fov=0;
-	  status=read_camera(fov);
-	}
 
 	cpgrect(-m.fw,m.fw,-m.fh,m.fh);
 	cpgsfs(1);
@@ -2466,7 +2477,8 @@ int plot_skymap(void)
       printf("v   Toggle visibility contours\n");
       printf("F   Toggle camera configuration (data/cameras.txt)\n");
       printf("TAB Cycle IOD observations\n");
-      printf("S   Save position/time to schedule\n");
+      printf("S   Save observation position/time to schedule\n");
+      printf("E   Save observation end-time to schedule\n");
       printf("a   Select on age\n");
       printf("Q   Toggle plotting stars\n");
     }
@@ -2579,6 +2591,11 @@ int plot_skymap(void)
     // Toggle focal length
     if (c=='F') {
       fov++;
+	    status=read_camera(fov);
+	    if (status==-1) {
+	      fov=0;
+	      status=read_camera(fov);
+	    }      
       redraw=1;
     }
 
@@ -2655,7 +2672,11 @@ int plot_skymap(void)
     
     // Add to schedule
     if (c=='S') 
-      schedule(m.nfd,m.ra0,m.de0);
+      schedule(m.nfd,m.ra0,m.de0,"start");
+
+    // Add to schedule
+    if (c=='E') 
+      schedule(m.nfd,m.ra0,m.de0,"stop");
 
     // Polar
     if (c=='z') {

@@ -1,5 +1,6 @@
 # List of available cameras
-# Camera mnemonic (Camera/Optics), field width, field height, horiz resolution (neg.to mirror), vert resolution (neg.to mirror), mount type (AltAz/Eq/XY/Fixed), video device 
+# Camera mnemonic (Camera/Optics), field width, field height, horiz resolution (neg.to mirror), vert resolution (neg.to mirror), mount type (AltAz/Eq/XY/Fixed), video device , Azimuth (for fixed, south is zero), Altitude (for fixed)
+S25H  16.3 20.4 -720 576 Fix /dev/video-S25H 37 43
 W50H   7.21 5.31 -720 576 AltAz /dev/video1
 W28H  13.10 7.97
 D85V   9.97 14.96
