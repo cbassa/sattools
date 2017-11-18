@@ -1,0 +1,34 @@
+--- pnmenc.c	2015-10-23 19:20:02.000000000 +0200
++++ good_pnmenc.c	2017-11-17 21:26:31.638503445 +0100
+@@ -23,6 +23,8 @@
+ #include "libavutil/pixdesc.h"
+ #include "avcodec.h"
+ #include "internal.h"
++#include <time.h>
++#include <sys/time.h>
+ 
+ static int pnm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
+                             const AVFrame *p, int *got_packet)
+@@ -32,7 +34,13 @@
+     uint8_t *ptr, *ptr1, *ptr2;
+     int size = av_image_get_buffer_size(avctx->pix_fmt,
+                                         avctx->width, avctx->height, 1);
++    struct timeval tv;
++    char tbuf[30];
+ 
++    // Get time
++    gettimeofday(&tv,NULL);
++    strftime(tbuf,30,"%Y-%m-%dT%T",gmtime(&tv.tv_sec));
++    
+     if ((ret = ff_alloc_packet2(avctx, pkt, size + 200, 0)) < 0)
+         return ret;
+ 
+@@ -81,7 +89,7 @@
+         return -1;
+     }
+     snprintf(bytestream, bytestream_end - bytestream,
+-             "P%c\n%d %d\n", c, avctx->width, h1);
++             "P%c\n# %s.%03ld\n%d %d\n", c, tbuf, tv.tv_usec/1000, avctx->width, h1);
+     bytestream += strlen(bytestream);
+     if (avctx->pix_fmt != AV_PIX_FMT_MONOWHITE) {
+         int maxdepth = (1 << av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth) - 1;

@@ -16,3 +16,4 @@ rm img*.pgm
 
 # Start capture
 ffmpeg -f video4linux2 -i $device -s 720x576 -r 25 img%06d.pgm
+

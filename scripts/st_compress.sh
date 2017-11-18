@@ -35,7 +35,7 @@ while true; do
 	pgm2fits -p $PGMDIR/img -w 720 -h 576 -s $M -n $N 
 
 	# Remove files
-	ls -1 $PGMDIR/img*.pgm | head -n$N | awk '{printf("sudo rm -rf %s\n",$1)}' | sh
+	ls -1 $PGMDIR/img*.pgm | head -n$N | awk '{printf("rm -rf %s\n",$1)}' | sh
 
 	# Run viewer
 	viewer `ls -1 2*.fits | tail -n1`

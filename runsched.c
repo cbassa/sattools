@@ -16,7 +16,7 @@
 #define MAXPORT 7274
 #define IP "127.0.0.1"
 #define LIM 2048
-#define NMAX 128
+#define NMAX 256
 
 #define SCHEDULED 0
 #define STARTED 1
@@ -24,13 +24,14 @@
 
 // Observation struct contains observation time, celestial coords and camera name
 struct observation {
-  char stime[20],sra[15],sde[15],camname[15];
+  char stime[20],sra[15],sde[15],camname[15],startstop[10];
   time_t ptime;
   float dt;
 };
 
 int fgetline(FILE *file,char *s,int lim);
 void send_position(char *sra,char *sde,char *datadir,char *obsdir,char *camname);
+void stop_obs(char *datadir,char *obsdir,char *camname);
 time_t decode_time(char *stm);
 
 int main(int argc, char *argv[]) 
@@ -43,6 +44,7 @@ int main(int argc, char *argv[])
   struct observation obs[NMAX];
   char *env;
   char datadir[128],obsdir[128];
+	int nextobs, dtnext;
 
   // Get environment variables
   env=getenv("ST_DATADIR");
@@ -66,7 +68,7 @@ int main(int argc, char *argv[])
     i=0;
     file=fopen("schedule.txt","r");
     while (fgetline(file,line,LIM)>0) {
-      sscanf(line,"%s %s %s %s",obs[i].stime,obs[i].sra,obs[i].sde,obs[i].camname);
+      sscanf(line,"%s %s %s %s %s",obs[i].stime,obs[i].sra,obs[i].sde,obs[i].camname,obs[i].startstop);
       obs[i].ptime=decode_time(obs[i].stime);
       
       i++;
@@ -90,20 +92,35 @@ int main(int argc, char *argv[])
     // printf("%s\n",ctime(&rawtime));
 
     // Compute time differences
-    for (i=0;i<nobs;i++) 
+    for (i=0;i<nobs;i++) {
       obs[i].dt=difftime(obs[i].ptime,rawtime);
+		}
 
+		nextobs=-1;
+		dtnext=9999999;
     // Loop over observations
     for (i=0;i<nobs;i++) {
       if (obs[i].dt>0.0) {
-	printf("%4.0f %s %s %s\n",obs[i].dt,obs[i].stime,obs[i].sra,obs[i].sde);
-	break;
+				if(obs[i].dt < dtnext){
+					nextobs=i;
+					dtnext=obs[i].dt;
+				}
+//				printf("%4.0f %s %s %s %s\n",obs[i].dt,obs[i].stime,obs[i].sra,obs[i].sde,obs[i].startstop);
+//				break;
       } else if (obs[i].dt==0) {
-	printf("Slewing to %s %s\n",obs[i].sra,obs[i].sde);
-	send_position(obs[i].sra,obs[i].sde,datadir,obsdir,obs[i].camname);
+			  if(strstr(obs[i].startstop,"tart")!=NULL){
+					//printf("Slewing to %s %s\n",obs[i].sra,obs[i].sde);
+					send_position(obs[i].sra,obs[i].sde,datadir,obsdir,obs[i].camname);
+				} else if(strstr(obs[i].startstop,"top")!=NULL){
+					stop_obs(datadir,obsdir,obs[i].camname);
+				}
       }
     }
 
+		if(nextobs>=0){
+			// print next observation data if any found
+			printf("%4.0f %s %s %s %s\n",obs[nextobs].dt,obs[nextobs].stime,obs[nextobs].sra,obs[nextobs].sde,obs[nextobs].startstop);
+		}
     // Sleep
     sleep(1);
   }
@@ -160,40 +177,53 @@ void send_position(char *sra,char *sde,char *datadir,char *obsdir,char *camname)
   FILE *file;
   float ra,de;
   char camera[128],fname[128];
+  float f;
+  char s[31];
 
+  // Check if camera is fixed
+  // read complete line from data/cameras.txt describing the scheduled camera
+  read_cameras(camname,datadir,camera);  // search for camera name
+  sscanf(camera,"%s %f %f %f %f %s", s, &f, &f, &f, &f, s);
+  // Look for "fix" string to jump over slewing routines.
+  if(strstr(s,"ix")==NULL){
+  
+    // Old packet style
+    //  sprintf(packet,"<newNumberVector device='Celestron GPS' name='EQUATORIAL_EOD_COORD_REQUEST'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
 
-  // Old packet style
-  //  sprintf(packet,"<newNumberVector device='Celestron GPS' name='EQUATORIAL_EOD_COORD_REQUEST'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
+    // New packet style (as of 2013-08-20)
+    sprintf(packet,"<newNumberVector device='Celestron GPS' name='EQUATORIAL_EOD_COORD'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
 
-  // New packet style (as of 2013-08-20)
-  sprintf(packet,"<newNumberVector device='Celestron GPS' name='EQUATORIAL_EOD_COORD'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
+		printf("Slewing to %s %s\n",sra,sde);
 
-  // Send TCP packet
-  skt=socket(AF_INET,SOCK_STREAM,0);
-  addr.sin_family=AF_INET;
-  port=PORT;
-  addr.sin_port=htons(port);
-  he=gethostbyname(IP);
-  bcopy(he->h_addr,(struct in_addr *) &addr.sin_addr,he->h_length);
-  while((connect(skt,(struct sockaddr *) &addr,sizeof(addr))<0) && (port < MAXPORT)) {
-    fprintf(stderr,"Connection refused by remote host on port %04d.\n",port);
-    port++;
-    // Skip port 7265... used by some other service?
-    if(port==7265) port++;
-    fprintf(stderr,"Trying port %04d.\n",port);
-
+    // Send TCP packet
+    skt=socket(AF_INET,SOCK_STREAM,0);
+    addr.sin_family=AF_INET;
+    port=PORT;
     addr.sin_port=htons(port);
     he=gethostbyname(IP);
     bcopy(he->h_addr,(struct in_addr *) &addr.sin_addr,he->h_length);
+    while((connect(skt,(struct sockaddr *) &addr,sizeof(addr))<0) && (port < MAXPORT)) {
+      fprintf(stderr,"Connection refused by remote host on port %04d.\n",port);
+      port++;
+      // Skip port 7265... used by some other service?
+      if(port==7265) port++;
+      fprintf(stderr,"Trying port %04d.\n",port);
 
+      addr.sin_port=htons(port);
+      he=gethostbyname(IP);
+      bcopy(he->h_addr,(struct in_addr *) &addr.sin_addr,he->h_length);
+
+    }
+    if(port>=MAXPORT) return;
+
+    printf("Connected to Indi server on port %04d.\n",port);
+
+    write(skt,packet,strlen(packet));
+    close(skt); 
   }
-  if(port>=MAXPORT) return;
 
-  printf("Connected to Indi server on port %04d.\n",port);
-
-  write(skt,packet,strlen(packet));
-  close(skt); 
- 
+	printf("Starting new observation\n");
+   
   // Set restart
   sprintf(fname,"%s/control/state.txt",obsdir);
   file=fopen(fname,"w");
@@ -211,8 +241,6 @@ void send_position(char *sra,char *sde,char *datadir,char *obsdir,char *camname)
   }
 
   // Set camera
-  // camera.txt control file with complete line from data/cameras.txt describing the scheduled camera
-  read_cameras(camname,datadir,camera);  // search for camera name
   sprintf(fname,"%s/control/camera.txt",obsdir);
   file=fopen(fname,"w");
   if (file!=NULL) {
@@ -222,6 +250,34 @@ void send_position(char *sra,char *sde,char *datadir,char *obsdir,char *camname)
 
   return;
 }
+
+
+// Send stop observation signal
+void stop_obs(char *datadir,char *obsdir,char *camname)
+{
+  FILE *file;
+  char camera[128],fname[128];
+  float f;
+  char s[31];
+
+  // Retrieve Camera data
+  // read complete line from data/cameras.txt describing the scheduled camera
+  read_cameras(camname,datadir,camera);  // search for camera name
+  sscanf(camera,"%s %f %f %f %f %s", s, &f, &f, &f, &f, s);
+
+	printf("Stop observation\n");
+   
+  // Set stop
+  sprintf(fname,"%s/control/state.txt",obsdir);
+  file=fopen(fname,"w");
+  if (file!=NULL) {
+    fprintf(file,"stop");
+    fclose(file);
+  }
+
+  return;
+}
+
 
 // Decode time
 time_t decode_time(char *stm)
