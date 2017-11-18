@@ -14,6 +14,7 @@
 0433 GR  -33.9406   18.5129     10    Greg Roberts
 0434 IR  -26.1030   27.9288   1646    Ian Roberts
 0710 LS   52.3261   10.6756     85    Lutz Schindler
+0899 FM  -34.8961  -56.1227     30    Fernando Mederos
 1056 MK   57.0122   23.9833      4    Martins Keruss
 1086 NK   46.4778   30.7556     56    Nikolay Koshkin
 1244 AM   44.3932   33.9701     69    Andriy Makeyev
