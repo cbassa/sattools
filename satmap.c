@@ -574,7 +574,7 @@ int main(int argc,char *argv[])
   read_globe();
 
   // Initialize plot
-  init_plot("/xs",8,0.75);
+  init_plot("/xs",0,0.75);
   
   plot_map();
 
