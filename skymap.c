@@ -638,7 +638,7 @@ int main(int argc,char *argv[])
   }
 
 //  init_plot("/xs",10,0.75);
-  init_plot("/xs",8,0.75);
+  init_plot("/xs",0.0,0.75);
 
   plot_skymap();
 
