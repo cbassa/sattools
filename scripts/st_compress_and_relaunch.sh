@@ -89,8 +89,8 @@ while true; do
 #			pgm2fits -p $PGMDIR/img -w 720 -h 576 -s $M -n $N 
 		pgm2fits -p $PGMDIR/img -w 720 -h 576 -s $M -n $N >/dev/null
 
-		# Run viewer
-		viewer `ls -1 2*.fits | tail -n1`
+		# Run stviewer
+		stviewer `ls -1 2*.fits | tail -n1`
 		cp avg.pgm $ST_OBSDIR
 
 		# Remove files

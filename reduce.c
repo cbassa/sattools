@@ -58,7 +58,8 @@ void mjd2date(double mjd,char *date);
 void dec2sex(double x,char *s,int type);
 float linear_fit(float x[],float y[],int n,float a[],float sa[]);
 int fgetline(FILE *file,char *s,int lim);
-
+double gmst(double mjd);
+double modulo(double x,double y);
 
 // Find peak
 float find_peak(float *z,int kx,int ky,int xmin,int xmax,int ymin,int ymax,float s,int mx,int my,float *x0,float *y0)
@@ -213,7 +214,7 @@ void reduce_point(struct observation *obs,struct image img,float tmid,float x,fl
   int i,iframe,k;
   double ra,de,rx,ry;
   float dx,dy,dt;
-  double mjd;
+  double mjd,mjd1,dra;
   char nfd[32],sra[15],sde[15];
   float ax[2],ay[2];
   
@@ -224,11 +225,6 @@ void reduce_point(struct observation *obs,struct image img,float tmid,float x,fl
   ry=img.b[0]+img.b[1]*dx+img.b[2]*dy;
   reverse(img.ra0,img.de0,rx,ry,&ra,&de);
 
-  dec2sex(ra/15.0,sra,0);
-  dec2sex(de,sde,1);
-  obs->ra=ra;
-  obs->de=de;
-  
   // Transform direction
   for (i=0;i<2;i++) {
     ax[i]=obs->ax[i];
@@ -247,6 +243,17 @@ void reduce_point(struct observation *obs,struct image img,float tmid,float x,fl
   mjd=nfd2mjd(img.nfd)+(double) dt/86400.0;
   mjd2date(mjd,nfd);
   obs->mjd=mjd;
+
+  // Correct for motion
+  mjd1=img.mjd+0.5*(double) img.exptime/86400.0;
+  dra=gmst(mjd)-gmst(mjd1);
+  ra+=dra;
+
+  // Get RA/Dec
+  dec2sex(ra/15.0,sra,0);
+  dec2sex(de,sde,1);
+  obs->ra=ra;
+  obs->de=de;
   
   // Copy
   strcpy(obs->nfd,nfd);
@@ -1484,4 +1491,25 @@ int fgetline(FILE *file,char *s,int lim)
     s[i++] = c;
   s[i] = '\0';
   return i;
+}
+
+// Return x modulo y [0,y)
+double modulo(double x,double y)
+{
+  x=fmod(x,y);
+  if (x<0.0) x+=y;
+
+  return x;
+}
+
+// Greenwich Mean Sidereal Time
+double gmst(double mjd)
+{
+  double t,gmst;
+
+  t=(mjd-51544.5)/36525.0;
+
+  gmst=modulo(280.46061837+360.98564736629*(mjd-51544.5)+t*t*(0.000387933-t/38710000),360.0);
+
+  return gmst;
 }

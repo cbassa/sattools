@@ -11,7 +11,7 @@ CC = gcc
 F77 = gfortran
 
 all:
-	make addwcs angular calibrate dec2sex faketle fitsheader fitskey imgstat jpg2fits jpgstack measure pgm2fits plotfits pstrack rde2iod reduce residuals runsched satfit satid satmap satorbit sex2dec skymap tle2ole tleinfo uk2iod viewer wcsfit deproject slewto waitfor pass detect launchtle propagate fakeiod csv2tle normal posmatch posvel xyz2tle mvtle confirm allnight
+	make addwcs angular calibrate dec2sex faketle fitsheader fitskey imgstat jpg2fits jpgstack measure pgm2fits plotfits pstrack rde2iod reduce residuals runsched satfit satid satmap satorbit sex2dec skymap tle2ole tleinfo uk2iod stviewer wcsfit deproject slewto waitfor pass detect launchtle propagate fakeiod csv2tle normal posmatch posvel xyz2tle mvtle confirm allnight
 
 geolon: geolon.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o geolon geolon.o sgdp4.o satutl.o deep.o ferror.o -lm
@@ -118,8 +118,8 @@ uk2iod: uk2iod.o
 rde2iod: rde2iod.o
 	$(CC) -o rde2iod rde2iod.o -lm
 
-viewer: viewer.o
-	$(CC) -o viewer viewer.o -lm -L/usr/local/lib -lqfits
+stviewer: stviewer.o
+	$(CC) -o stviewer stviewer.o -lm -L/usr/local/lib -lqfits
 
 residuals: residuals.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o residuals residuals.o sgdp4.o satutl.o deep.o ferror.o -lm -lwcs_c

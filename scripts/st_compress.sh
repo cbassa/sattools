@@ -37,8 +37,8 @@ while true; do
 	# Remove files
 	ls -1 $PGMDIR/img*.pgm | head -n$N | awk '{printf("rm -rf %s\n",$1)}' | sh
 
-	# Run viewer
-	viewer `ls -1 2*.fits | tail -n1`
+	# Run stviewer
+	stviewer `ls -1 2*.fits | tail -n1`
 	cp avg.pgm $ST_OBSDIR
 	echo "Finished"
     fi

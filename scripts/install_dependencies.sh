@@ -2,7 +2,7 @@
 
 echo "Step 1.1: install dependencies"
 sleep 1
-apg-get update
+apt-get update
 apt-get install  ntp eog emacs gfortran libpng-dev libx11-dev libjpeg-dev libexif-dev git dos2unix sextractor
 
 echo "Step 1.2: goto /usr/local/src"
