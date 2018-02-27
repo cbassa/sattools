@@ -40,7 +40,7 @@ struct point {
 struct pass {
   int satno;
   double mjdrise,mjdmax,mjdset;
-  char line[80],skymap[LIM];
+  char line[80],skymap[LIM],radio[80];
   float length;
 } p[PASSMAX];
 
@@ -219,6 +219,7 @@ void compute_track(orbit_t orb)
 	      pt[i1].nfd,pt[i1].azi,pt[i1].alt,
 	      pt[i2].nfd+11,pt[i2].azi,pt[i2].alt,
 	      pt[i3].nfd+11,pt[i3].azi,pt[i3].alt);
+      sprintf(p[ipass].radio,"%05d %s %s %4.0f\n",orb.satno,pt[i1].nfd,pt[i3].nfd,p[ipass].length);
       sprintf(p[ipass].skymap,"skymap -c %s -i %d -s %d -t %s -l %.0f",m.tlefile,orb.satno,m.site_id,pt[i1].nfd,p[ipass].length);
 
       flag=0;
@@ -253,7 +254,7 @@ int qsort_compare_mjdrise(const void *a,const void *b)
 
 int main(int argc,char *argv[])
 {
-  int arg=0;
+  int arg=0,radio=0;
   FILE *file;
   orbit_t orb;
   int imode,quiet=0;
@@ -262,8 +263,12 @@ int main(int argc,char *argv[])
   initialize_setup();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:l:hS:A:aPqm:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:l:hS:A:aPqm:R"))!=-1) {
     switch (arg) {
+
+    case 'R':
+      radio=1;
+      break;
       
     case 't':
       strcpy(m.nfd,optarg);
@@ -369,7 +374,10 @@ int main(int argc,char *argv[])
 
   // Print passes
   for (ipass=0;ipass<npass;ipass++) {
-    printf("%s",p[ipass].line);
+    if (radio==0)
+      printf("%s",p[ipass].line);
+    else if (radio==1)
+      printf("%s",p[ipass].radio);
     if (m.plot==1)
       system(p[ipass].skymap);
   }
