@@ -64,7 +64,7 @@ int main(int argc,char *argv[])
   m.mjd=nfd2mjd(m.nfd);
   
   // Decode options
-  while ((arg=getopt(argc,argv,"t:s:S:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:s:S:h"))!=-1) {
     switch (arg) {
 
     case 't':

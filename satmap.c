@@ -175,7 +175,8 @@ void init_plot(char *psfile,float width,float aspect)
   
   cpgopen(psfile);
   cpgslw(2);
-  cpgpap(width,aspect);
+  //  cpgpap(width,aspect);
+  cpgpap(0.0,aspect);
 
   return;
 }

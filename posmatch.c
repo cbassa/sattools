@@ -79,11 +79,11 @@ double doy2mjd(int year,double doy)
 
 int main(int argc,char *argv[])
 {
-  int i,arg=0,imode,n=172800,satno,satname,satno2,imin,flag,status;
-  char catalog1[]="catalog.txt",catalog2[]="ison.txt";
+  int i,arg=0,imode,n=100,satno,satname,satno2,imin,flag,status;
+  char catalog1[]="20180121_173045_catalog.txt",catalog2[]="jsc_20180122.txt";
   FILE *file1,*file2;
   orbit_t orb1,orb2;
-  double mjd0=56908.0,mjd;
+  double mjd0=58140.0,mjd;
   xyz_t *r,*v,r0,v0,d,n1,n2;
   double dr,dv,dn,drmin,dvmin,mjdmin;
   char line0[LIM],line1[LIM],line2[LIM];

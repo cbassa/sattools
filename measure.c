@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <ctype.h>
 #include "qfits.h"
 #include "cpgplot.h"
 #include "cel.h"
@@ -53,6 +54,57 @@ struct aperture {
 struct image read_fits(char *filename,int pnum);
 int fgetline(FILE *file,char *s,int lim);
 int select_nearest(struct catalog c,float x,float y);
+
+void plot_defects(void)
+{
+  FILE *file;
+  char *env,filename[128];
+  float x,y;
+  char line[LIM];
+  
+  // Environment variables
+  env=getenv("ST_DATADIR");
+  sprintf(filename,"%s/data/defects.txt",env);
+
+  file=fopen(filename,"r");
+  if (file==NULL) {
+    fprintf(stderr,"Defects file not found!\n");
+    return;
+  }
+
+  cpgsci(7);
+  while (fgetline(file,line,LIM)>0) {
+    sscanf(line,"%f %f",&x,&y);
+
+    cpgpt1(x,y,19);
+
+  }
+  fclose(file);
+  cpgsci(1);
+  
+  return;
+}
+
+void log_defects(float x,float y)
+{
+  FILE *file;
+  char *env,filename[128];
+  
+  // Environment variables
+  env=getenv("ST_DATADIR");
+  sprintf(filename,"%s/data/defects.txt",env);
+
+  file=fopen(filename,"a");
+  if (file==NULL) {
+    fprintf(stderr,"Defects file not found!\n");
+    return;
+  }
+
+  fprintf(file,"%4.0f %4.0f\n",x,y);
+  fclose(file);
+  
+  return;
+}
 
 // Return x modulo y [0,y)
 double modulo(double x,double y)
@@ -677,12 +729,14 @@ int main(int argc,char *argv[])
 	cpgsci(1);
       }
 
+      plot_defects();
+
       redraw=0;
     }
 
     // Get cursor
     cpgcurs(&x,&y,&c);
-
+    
     // Quit
     if (c=='q')
       break;
@@ -707,6 +761,12 @@ int main(int argc,char *argv[])
       redraw=1;
     }
 
+    // Mark bad pixel
+    if (c=='t') {
+      log_defects(x,y);
+      redraw=1;
+    }
+    
     // Plot catalog
     if (c=='l') {
       if (plotcat==1)

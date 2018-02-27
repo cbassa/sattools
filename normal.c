@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <ctype.h>
 #include "cpgplot.h"
 #include "sgdp4h.h"
 #include "satutl.h"
@@ -334,10 +335,10 @@ int main(int argc,char *argv[])
   int imode,satno=0,arg,usecatalog=0,satnomin,flag=0;
   FILE *file;
   orbit_t orb;
-  xyz_t r,v,n,m,nm;
+  xyz_t r,v,n,m,nm,r0,v0,mr,mv;
   char tlefile[LIM],catalog[LIM],nfd[32];
   char line1[80],line2[80],desig[20];
-  double mjd,ra,de,dr,drmin;
+  double mjd,ra,de,dr,drmin,dmr,dmv;
   char *env;
 
   // Get environment variable
@@ -395,13 +396,10 @@ int main(int argc,char *argv[])
 
     // Propagate
     imode=init_sgdp4(&orb);
-    imode=satpos_xyz(mjd+2400000.5,&r,&v);
+    imode=satpos_xyz(mjd+2400000.5,&r0,&v0);
     
-    // Convert
-    orb=rv2el(orb.satno,mjd,r,v);
-
     // Compute normal
-    n=cross(r,v);
+    n=cross(r0,v0);
     ra=modulo(atan2(n.y,n.x)*R2D,360.0);
     de=asin(n.z/magnitude(n))*R2D;
 
@@ -422,25 +420,33 @@ int main(int argc,char *argv[])
       imode=init_sgdp4(&orb);
       imode=satpos_xyz(mjd+2400000.5,&r,&v);
       
-      // Convert
-      orb=rv2el(orb.satno,mjd,r,v);
       
       // Compute normal
       m=cross(r,v);
 
-      // Difference
+      // Normal difference
       nm.x=n.x-m.x;
       nm.y=n.y-m.y;
       nm.z=n.z-m.z;
       dr=magnitude(nm);
 
+      // Position/velocity difference
+      mr.x=r0.x-r.x;
+      mr.y=r0.y-r.y;
+      mr.z=r0.z-r.z;
+      mv.x=v0.x-v.x;
+      mv.y=v0.y-v.y;
+      mv.z=v0.z-v.z;
+      
       if (flag==0 || dr<drmin) {
 	drmin=dr;
+	dmr=magnitude(mr);
+	dmv=magnitude(mv);
 	satnomin=orb.satno;
 	flag=1;
       } 
     }
-    printf("%05d %05d %8.2f km\n",satno,satnomin,drmin);
+    printf("%05d %05d %8.2f km %8.2f km %10.6f km/s\n",satno,satnomin,drmin,dmr,dmv);
   }
 
   return 0;
