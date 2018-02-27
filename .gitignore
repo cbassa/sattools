@@ -52,6 +52,12 @@ posmatch
 posvel
 xyz2tle
 allnight
+geolon
 
 # TLE dir
 tle/
+
+# Data files
+data/frequencies.txt
+data/defects.txt
+data/sites.txt
