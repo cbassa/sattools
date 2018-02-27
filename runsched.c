@@ -94,33 +94,33 @@ int main(int argc, char *argv[])
     // Compute time differences
     for (i=0;i<nobs;i++) {
       obs[i].dt=difftime(obs[i].ptime,rawtime);
-		}
+    }
 
-		nextobs=-1;
-		dtnext=9999999;
+    nextobs=-1;
+    dtnext=9999999;
     // Loop over observations
     for (i=0;i<nobs;i++) {
       if (obs[i].dt>0.0) {
-				if(obs[i].dt < dtnext){
-					nextobs=i;
-					dtnext=obs[i].dt;
-				}
-//				printf("%4.0f %s %s %s %s\n",obs[i].dt,obs[i].stime,obs[i].sra,obs[i].sde,obs[i].startstop);
-//				break;
+	if(obs[i].dt < dtnext){
+	  nextobs=i;
+	  dtnext=obs[i].dt;
+	}
+	//				printf("%4.0f %s %s %s %s\n",obs[i].dt,obs[i].stime,obs[i].sra,obs[i].sde,obs[i].startstop);
+	//				break;
       } else if (obs[i].dt==0) {
-			  if(strstr(obs[i].startstop,"tart")!=NULL){
-					//printf("Slewing to %s %s\n",obs[i].sra,obs[i].sde);
-					send_position(obs[i].sra,obs[i].sde,datadir,obsdir,obs[i].camname);
-				} else if(strstr(obs[i].startstop,"top")!=NULL){
-					stop_obs(datadir,obsdir,obs[i].camname);
-				}
+	if(strstr(obs[i].startstop,"tart")!=NULL){
+	  //printf("Slewing to %s %s\n",obs[i].sra,obs[i].sde);
+	  send_position(obs[i].sra,obs[i].sde,datadir,obsdir,obs[i].camname);
+	} else if(strstr(obs[i].startstop,"top")!=NULL){
+	  stop_obs(datadir,obsdir,obs[i].camname);
+	}
       }
     }
-
-		if(nextobs>=0){
-			// print next observation data if any found
-			printf("%4.0f %s %s %s %s\n",obs[nextobs].dt,obs[nextobs].stime,obs[nextobs].sra,obs[nextobs].sde,obs[nextobs].startstop);
-		}
+    
+    if(nextobs>=0){
+      // print next observation data if any found
+      printf("%4.0f %s %s %s %s\n",obs[nextobs].dt,obs[nextobs].stime,obs[nextobs].sra,obs[nextobs].sde,obs[nextobs].startstop);
+    }
     // Sleep
     sleep(1);
   }
