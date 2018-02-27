@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-#include "cel.h"
+#include <ctype.h>
 #include "sgdp4h.h"
 #include <getopt.h>
 
@@ -174,7 +174,7 @@ int main(int argc,char *argv[])
     // Check for match
     if (orb.satno!=satno) {
       //    fprintf(stderr,"object %d not found in %s\n",p.satno,filename);
-      return;
+      return 0;
     }
 
     // Initialize
@@ -237,7 +237,7 @@ struct site get_site(int site_id)
   file=fopen(filename,"r");
   if (file==NULL) {
     printf("File with site information not found!\n");
-    return;
+    return s;
   }
   while (fgets(line,LIM,file)!=NULL) {
     // Skip

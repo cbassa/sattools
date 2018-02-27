@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include "qfits.h"
-#include "cpgplot.h"
-#include "cel.h"
+#include <cpgplot.h>
+#include <wcslib/cel.h>
 #include <gsl/gsl_multifit.h>
 #include <getopt.h>
 
@@ -493,41 +493,6 @@ struct catalog read_astrometric_catalog(char *filename,float mmin,float sx,float
   return c;
 }
 
-// Get a x and y from a RA and Decl
-void forward(double ra0,double de0,double ra,double de,double *x,double *y)
-{
-  int i;
-  char pcode[4]="STG";
-  double phi,theta;
-  struct celprm cel;
-  struct prjprm prj;
-
-  // Initialize Projection Parameters
-  prj.flag=0;
-  prj.r0=0.;
-  for (i=0;i<10;prj.p[i++]=0.);
-
-  // Initialize Reference Angles
-  cel.ref[0]=ra0;
-  cel.ref[1]=de0;
-  cel.ref[2]=999.;
-  cel.ref[3]=999.;
-  cel.flag=0.;
-
-  if (celset(pcode,&cel,&prj)) {
-    printf("Error in Projection (celset)\n");
-    return;
-  } else {
-    if (celfwd(pcode,ra,de,&cel,&phi,&theta,&prj,x,y)) {
-      printf("Error in Projection (celfwd)\n");
-      return;
-    }
-  }
-  *x *=3600.;
-  *y *=3600.;
-
-  return;
-}
 
 // Select nearest object
 int select_nearest(struct catalog c,float x,float y)

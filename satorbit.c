@@ -75,6 +75,7 @@ double modulo(double,double);
 void get_site(int site_id);
 void ecliptical2equatorial(double l,double b,double *ra,double *de);
 void plot_launch_sites(void);
+int fgetline(FILE *file,char *s,int lim);
 
 // Initialize setup
 void initialize_setup(void)

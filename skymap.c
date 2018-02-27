@@ -5,8 +5,8 @@
 #include <time.h>
 #include <getopt.h>
 #include <ctype.h>
-#include "cpgplot.h"
-#include "cel.h"
+#include <cpgplot.h>
+#include <wcslib/cel.h>
 #include "sgdp4h.h"
 
 #define LIM 384
@@ -149,7 +149,7 @@ void init_skymap(void)
   FILE *file;
 
   // Default Map parameters
-  m.azi0=0;
+  m.azi0=180;
   m.alt0=90.0;
   m.w=120.0;
   m.wl=180.0;
@@ -994,17 +994,12 @@ void skymap_plot_renew(void)
 // Get a x and y from an AZI, ALT
 void forward(double alpha,double delta,double *x,double *y)
 {
-  int i;
+  int i,status;
   double phi,theta;
   struct celprm cel;
-  struct prjprm prj;
-
-  // Initialize Projection Parameters
-  prj.flag=0;
-  prj.r0=0.;
-  for (i=0;i<10;prj.p[i++]=0.);
 
   // Initialize Reference Angles
+  celini(&cel);
   if (strcmp(m.orientation,"horizontal")==0) {
     cel.ref[0]=m.azi0;
     cel.ref[1]=m.alt0;
@@ -1015,17 +1010,14 @@ void forward(double alpha,double delta,double *x,double *y)
   cel.ref[2]=999.;
   cel.ref[3]=999.;
   cel.flag=0.;
+  strcpy(cel.prj.code,m.projection);
 
-  if (celset(m.projection,&cel,&prj)) {
+  if (celset(&cel)) {
     printf("Error in Projection (celset)\n");
     return;
-  } else {
-    if (celfwd(m.projection,alpha,delta,&cel,&phi,&theta,&prj,x,y)) {
-      printf("Error in Projection (celfwd)\n");
-      return;
-    }
   }
-
+  cels2x(&cel,1,0,1,1,&alpha,&delta,&phi,&theta,x,y,&status);
+  
   // Flip equatorial axis
   if (strcmp(m.orientation,"equatorial")==0)
     *x*=-1;
@@ -1036,21 +1028,16 @@ void forward(double alpha,double delta,double *x,double *y)
 // Get an AZI, ALT from x and y
 void reverse(double x,double y,double *alpha,double *delta)
 {
-  int i;
+  int i,status;
   double phi,theta;
   struct celprm cel;
-  struct prjprm prj;
 
   // Flip equatorial axis
   if (strcmp(m.orientation,"equatorial")==0)
     x*=-1;
 
-  // Initialize Projection Parameters
-  prj.flag=0;
-  prj.r0=0.;
-  for (i=0;i<10;prj.p[i++]=0.);
-
   // Initialize Reference Angless
+  celini(&cel);
   if (strcmp(m.orientation,"horizontal")==0) {
     cel.ref[0]=m.azi0;
     cel.ref[1]=m.alt0;
@@ -1061,19 +1048,16 @@ void reverse(double x,double y,double *alpha,double *delta)
   cel.ref[2]=999.;
   cel.ref[3]=999.;
   cel.flag=0.;
+  strcpy(cel.prj.code,m.projection);
 
-  if (celset(m.projection,&cel,&prj)) {
+  if (celset(&cel)) {
     printf("Error in Projection (celset)\n");
     return;
-  } else {
-    if (celrev(m.projection,x,y,&prj,&phi,&theta,&cel,alpha,delta)) {
-      printf("Error in Projection (celrev)\n");
-      return;
-    }
   }
+  celx2s(&cel,1,0,1,1,&x,&y,&phi,&theta,alpha,delta,&status);
+  
   return;
 }
-
 
 // Greenwich Mean Sidereal Time
 double gmst(double mjd)
@@ -2679,7 +2663,7 @@ int plot_skymap(void)
 
     // Polar
     if (c=='z') {
-      m.azi0=0.0;
+      m.azi0=180.0;
       m.alt0=90.0;
       m.w=120.0;
       strcpy(m.orientation,"horizontal");

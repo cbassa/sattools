@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "cel.h"
-#include "cpgplot.h"
+#include <cpgplot.h>
 #include "qfits.h"
 
 #define LIM 80

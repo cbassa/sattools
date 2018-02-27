@@ -4,7 +4,7 @@
 CFLAGS = #-O3 -Wno-unused-result
 
 # Linking flags
-LFLAGS = -lm -lcpgplot -lpgplot -lX11 -fno-backslash -lpng -L/usr/local/lib -lqfits -lwcs_c -lgsl -lgslcblas -ljpeg -lexif
+LFLAGS = -lm -lcpgplot -lpgplot -lX11 -lwcs -lgsl -lgslcblas -lpng
 
 # Compilers
 CC = gcc
@@ -61,11 +61,11 @@ posmatch: posmatch.o sgdp4.o satutl.o deep.o ferror.o
 propagate: propagate.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o propagate propagate.o sgdp4.o satutl.o deep.o ferror.o -lm
 
-detect: detect.o
-	$(F77) -o detect detect.o -lm $(LFLAGS)
+detect: detect.o forward.o reverse.o
+	$(F77) -o detect detect.o forward.o reverse.o -lm $(LFLAGS) -lqfits
 
-confirm: confirm.o
-	$(F77) -o confirm confirm.o -lm $(LFLAGS)
+confirm: confirm.o forward.o reverse.o
+	$(F77) -o confirm confirm.o forward.o reverse.o -lm $(LFLAGS) -lqfits
 
 autodetect: autodetect.o
 	$(F77) -o autodetect autodetect.o -lm $(LFLAGS)
@@ -79,14 +79,14 @@ slewto: slewto.o
 waitfor: waitfor.o
 	$(CC) -o waitfor waitfor.o -lm
 
-deproject: deproject.o
-	$(F77) -o deproject deproject.o $(LFLAGS)
+deproject: deproject.o forward.o reverse.o
+	$(F77) -o deproject deproject.o forward.o reverse.o $(LFLAGS) -ljpeg -lqfits
 
 jpgstack: jpgstack.o
 	$(CC) -o jpgstack jpgstack.o -ljpeg
 
-angular: angular.o 
-	$(CC) -o angular angular.c -lm -lwcs_c
+angular: angular.o forward.o reverse.o
+	$(CC) -o angular angular.c forward.o reverse.o -lm -lwcs
 
 dec2sex: dec2sex.o 
 	$(CC) -o dec2sex dec2sex.c -lm
@@ -94,26 +94,26 @@ dec2sex: dec2sex.o
 sex2dec: sex2dec.o 
 	$(CC) -o sex2dec sex2dec.c -lm
 
-calibrate: calibrate.o sgdp4.o satutl.o deep.o ferror.o
-	$(F77) -o calibrate calibrate.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+calibrate: calibrate.o forward.o
+	$(F77) -o calibrate calibrate.o forward.o $(LFLAGS) -lqfits
 
-measure: measure.o
-	$(F77) -o measure measure.o $(LFLAGS)
+measure: measure.o reverse.o
+	$(F77) -o measure measure.o reverse.o $(LFLAGS) -lqfits
 
 jpg2fits: jpg2fits.o
-	$(CC) -o jpg2fits jpg2fits.o -lm -L/usr/local/lib -lqfits -ljpeg
+	$(CC) -o jpg2fits jpg2fits.o -lm -lqfits -ljpeg
 
-pstrack: pstrack.o sgdp4.o satutl.o deep.o ferror.o
-	$(F77) -o pstrack pstrack.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+pstrack: pstrack.o sgdp4.o satutl.o deep.o ferror.o forward.o reverse.o
+	$(F77) -o pstrack pstrack.o sgdp4.o satutl.o deep.o ferror.o forward.o reverse.o $(LFLAGS) -lqfits
 
 faketle: faketle.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o faketle faketle.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 imgstat: imgstat.o
-	$(CC) -o imgstat imgstat.o -lm -L/usr/local/lib -lqfits
+	$(CC) -o imgstat imgstat.o -lm -lqfits
 
-satfit: satfit.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o
-	$(F77) -o satfit satfit.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o $(LFLAGS)
+satfit: satfit.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o forward.o
+	$(F77) -o satfit satfit.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o forward.o $(LFLAGS)
 
 uk2iod: uk2iod.o
 	$(CC) -o uk2iod uk2iod.o -lm
@@ -122,10 +122,10 @@ rde2iod: rde2iod.o
 	$(CC) -o rde2iod rde2iod.o -lm
 
 stviewer: stviewer.o
-	$(CC) -o stviewer stviewer.o -lm -L/usr/local/lib -lqfits
+	$(CC) -o stviewer stviewer.o -lm -lqfits
 
-residuals: residuals.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o residuals residuals.o sgdp4.o satutl.o deep.o ferror.o -lm -lwcs_c
+residuals: residuals.o sgdp4.o satutl.o deep.o ferror.o forward.o
+	$(CC) -o residuals residuals.o sgdp4.o satutl.o deep.o ferror.o forward.o -lm -lwcs
 
 tleinfo: tleinfo.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o tleinfo tleinfo.o sgdp4.o satutl.o deep.o ferror.o -lm
@@ -140,13 +140,13 @@ runsched: runsched.o
 	$(CC) -o runsched runsched.o -lm
 
 fitskey: fitskey.o
-	$(CC) -o fitskey fitskey.o -L/usr/local/lib -lqfits
+	$(CC) -o fitskey fitskey.o -lqfits
 
 fitsheader: fitsheader.o
-	$(CC) -o fitsheader fitsheader.o -L/usr/local/lib -lqfits
+	$(CC) -o fitsheader fitsheader.o -lqfits
 
-satid: satid.o sgdp4.o satutl.o deep.o ferror.o
-	$(F77) -o satid satid.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+satid: satid.o sgdp4.o satutl.o deep.o ferror.o forward.o reverse.o
+	$(F77) -o satid satid.o sgdp4.o satutl.o deep.o ferror.o forward.o reverse.o $(LFLAGS) -lqfits
 
 skymap: skymap.o sgdp4.o satutl.o deep.o ferror.o
 	$(F77) -o skymap skymap.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
@@ -154,20 +154,20 @@ skymap: skymap.o sgdp4.o satutl.o deep.o ferror.o
 pass: pass.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o pass pass.o sgdp4.o satutl.o deep.o ferror.o -lm
 
-reduce: reduce.o
-	$(F77) -o reduce reduce.o $(LFLAGS)
+reduce: reduce.o forward.o reverse.o
+	$(F77) -o reduce reduce.o forward.o reverse.o $(LFLAGS) -lqfits
 
-addwcs: addwcs.o
-	$(F77) -o addwcs addwcs.o $(LFLAGS)
+addwcs: addwcs.o forward.o reverse.o
+	$(F77) -o addwcs addwcs.o forward.o reverse.o $(LFLAGS) -lqfits
 
-wcsfit: wcsfit.o
-	$(F77) -o wcsfit wcsfit.o $(LFLAGS)
+wcsfit: wcsfit.o forward.o reverse.o
+	$(F77) -o wcsfit wcsfit.o forward.o reverse.o $(LFLAGS) -lqfits
 
-plotfits: plotfits.o
-	$(F77) -o plotfits plotfits.o $(LFLAGS)
+plotfits: plotfits.o forward.o reverse.o
+	$(F77) -o plotfits plotfits.o forward.o reverse.o $(LFLAGS) -lqfits
 
 pgm2fits: pgm2fits.o
-	$(F77) -o pgm2fits pgm2fits.o $(LFLAGS) 
+	$(F77) -o pgm2fits pgm2fits.o $(LFLAGS) -lqfits
 
 clean:
 	rm -f *.o

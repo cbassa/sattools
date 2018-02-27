@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include "qfits.h"
-#include "cpgplot.h"
-#include "cel.h"
+#include <cpgplot.h>
+#include <wcslib/cel.h>
 #include <jpeglib.h>
 #include <getopt.h>
 
@@ -323,75 +323,3 @@ void write_jpg(char *filename,struct jpeg_image img)
   return;
 }
 
-// Get a x and y from a RA and Decl
-void forward(double ra0,double de0,double ra,double de,double *x,double *y)
-{
-  int i;
-  char pcode[4]="TAN";
-  double phi,theta;
-  struct celprm cel;
-  struct prjprm prj;
-  double rx,ry;
-
-  // Initialize Projection Parameters
-  prj.flag=0;
-  prj.r0=0.;
-  for (i=0;i<10;prj.p[i++]=0.);
-
-  // Initialize Reference Angles
-  cel.ref[0]=ra0;
-  cel.ref[1]=de0;
-  cel.ref[2]=999.;
-  cel.ref[3]=999.;
-  cel.flag=0.;
-
-  if (celset(pcode,&cel,&prj)) {
-    printf("Error in Projection (celset)\n");
-    return;
-  } else {
-    if (celfwd(pcode,ra,de,&cel,&phi,&theta,&prj,&rx,&ry)) {
-      printf("Error in Projection (celfwd)\n");
-      return;
-    }
-  }
-  *x=rx*3600.;
-  *y=ry*3600.;
-
-  return;
-}
-
-// Get a RA and Decl from x and y
-void reverse(double ra0,double de0,double x,double y,double *ra,double *de)
-{
-  int i;
-  char pcode[4]="TAN";
-  double phi,theta;
-  struct celprm cel;
-  struct prjprm prj;
-
-  x/=3600.;
-  y/=3600.;
-
-  // Initialize Projection Parameters
-  prj.flag=0;
-  prj.r0=0.;
-  for (i=0;i<10;prj.p[i++]=0.);
-
-  // Initialize Reference Angles
-  cel.ref[0]=ra0;
-  cel.ref[1]=de0;
-  cel.ref[2]=999.;
-  cel.ref[3]=999.;
-  cel.flag=0.;
-
-  if (celset(pcode,&cel,&prj)) {
-    printf("Error in Projection (celset)\n");
-    return;
-  } else {
-    if (celrev(pcode,x,y,&prj,&phi,&theta,&cel,ra,de)) {
-      printf("Error in Projection (celrev)\n");
-      return;
-    }
-  }
-  return;
-}

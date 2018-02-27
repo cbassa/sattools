@@ -4,8 +4,8 @@
 #include <math.h>
 #include <ctype.h>
 #include "qfits.h"
-#include "cpgplot.h"
-#include "cel.h"
+#include <cpgplot.h>
+#include <wcslib/cel.h>
 #include <gsl/gsl_multifit.h>
 
 #define LIM 256
@@ -54,6 +54,7 @@ struct aperture {
 struct image read_fits(char *filename,int pnum);
 int fgetline(FILE *file,char *s,int lim);
 int select_nearest(struct catalog c,float x,float y);
+void reverse(double ra0,double de0,double x,double y,double *ra,double *de);
 
 void plot_defects(void)
 {
@@ -159,42 +160,6 @@ void plot_objects(char *filename)
   fclose(file);
   cpgsci(1);
 
-  return;
-}
-
-// Get a RA and Decl from x and y
-void reverse(double ra0,double de0,double x,double y,double *ra,double *de)
-{
-  int i;
-  char pcode[4]="TAN";
-  double phi,theta;
-  struct celprm cel;
-  struct prjprm prj;
-
-  x/=3600.;
-  y/=3600.;
-
-  // Initialize Projection Parameters
-  prj.flag=0;
-  prj.r0=0.;
-  for (i=0;i<10;prj.p[i++]=0.);
-
-  // Initialize Reference Angles
-  cel.ref[0]=ra0;
-  cel.ref[1]=de0;
-  cel.ref[2]=999.;
-  cel.ref[3]=999.;
-  cel.flag=0.;
-
-  if (celset(pcode,&cel,&prj)) {
-    printf("Error in Projection (celset)\n");
-    return;
-  } else {
-    if (celrev(pcode,x,y,&prj,&phi,&theta,&cel,ra,de)) {
-      printf("Error in Projection (celrev)\n");
-      return;
-    }
-  }
   return;
 }
 

@@ -2,8 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
-#include "cel.h"
-#include "cpgplot.h"
+#include <wcslib/cel.h>
+#include <cpgplot.h>
 #include "qfits.h"
 #include <gsl/gsl_multifit.h>
 
@@ -208,43 +208,6 @@ struct catalog read_catalog(char *filename)
   return c;
 }
 
-// Get a x and y from a RA and Decl
-void forward(double ra0,double de0,double ra,double de,float *x,float *y)
-{
-  int i;
-  char pcode[4]="TAN";
-  double phi,theta;
-  struct celprm cel;
-  struct prjprm prj;
-  double rx,ry;
-
-  // Initialize Projection Parameters
-  prj.flag=0;
-  prj.r0=0.;
-  for (i=0;i<10;prj.p[i++]=0.);
-
-  // Initialize Reference Angles
-  cel.ref[0]=ra0;
-  cel.ref[1]=de0;
-  cel.ref[2]=999.;
-  cel.ref[3]=999.;
-  cel.flag=0.;
-
-  if (celset(pcode,&cel,&prj)) {
-    printf("Error in Projection (celset)\n");
-    return;
-  } else {
-    if (celfwd(pcode,ra,de,&cel,&phi,&theta,&prj,&rx,&ry)) {
-      printf("Error in Projection (celfwd)\n");
-      return;
-    }
-  }
-  *x=rx*3600.;
-  *y=ry*3600.;
-
-  return;
-}
-
 // Linear 2D fit
 void lfit2d(float *x,float *y,float *z,int n,float *a)
 {
@@ -285,43 +248,6 @@ void lfit2d(float *x,float *y,float *z,int n,float *a)
   gsl_vector_free(c);
   gsl_matrix_free(cov);
 
-  return;
-}
-
-// Get a RA and Decl from x and y
-void reverse(double ra0,double de0,float x,float y,double *ra,double *de)
-{
-  int i;
-  char pcode[4]="TAN";
-  double phi,theta;
-  struct celprm cel;
-  struct prjprm prj;
-  double rx,ry;
-
-  rx=x/3600.;
-  ry=y/3600.;
-
-  // Initialize Projection Parameters
-  prj.flag=0;
-  prj.r0=0.;
-  for (i=0;i<10;prj.p[i++]=0.);
-
-  // Initialize Reference Angles
-  cel.ref[0]=ra0;
-  cel.ref[1]=de0;
-  cel.ref[2]=999.;
-  cel.ref[3]=999.;
-  cel.flag=0.;
-
-  if (celset(pcode,&cel,&prj)) {
-    printf("Error in Projection (celset)\n");
-    return;
-  } else {
-    if (celrev(pcode,rx,ry,&prj,&phi,&theta,&cel,ra,de)) {
-      printf("Error in Projection (celrev)\n");
-      return;
-    }
-  }
   return;
 }
 

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <getopt.h>
+#include <ctype.h>
 #include "sgdp4h.h"
 #include "satutl.h"
 
@@ -27,6 +28,7 @@ struct point {
   xyz_t r;
 };
 orbit_t orb;
+void versafit(int m,int n,double *a,double *da,double (*func)(double *),double dchisq,double tol,char *opt);
 
 // Dot product
 float dot(xyz_t a,xyz_t b)

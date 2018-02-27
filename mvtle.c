@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <getopt.h>
+#include <ctype.h>
 #include "sgdp4h.h"
 #include "satutl.h"
 
