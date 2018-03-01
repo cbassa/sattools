@@ -112,8 +112,8 @@ faketle: faketle.o sgdp4.o satutl.o deep.o ferror.o
 imgstat: imgstat.o
 	$(CC) -o imgstat imgstat.o -lm -lqfits
 
-satfit: satfit.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o forward.o
-	$(F77) -o satfit satfit.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o forward.o $(LFLAGS)
+satfit: satfit.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o
+	$(F77) -o satfit satfit.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o $(LFLAGS)
 
 uk2iod: uk2iod.o
 	$(CC) -o uk2iod uk2iod.o -lm
@@ -124,8 +124,8 @@ rde2iod: rde2iod.o
 stviewer: stviewer.o
 	$(CC) -o stviewer stviewer.o -lm -lqfits
 
-residuals: residuals.o sgdp4.o satutl.o deep.o ferror.o forward.o
-	$(CC) -o residuals residuals.o sgdp4.o satutl.o deep.o ferror.o forward.o -lm -lwcs
+residuals: residuals.o sgdp4.o satutl.o deep.o ferror.o
+	$(CC) -o residuals residuals.o sgdp4.o satutl.o deep.o ferror.o -lm -lwcs
 
 tleinfo: tleinfo.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o tleinfo tleinfo.o sgdp4.o satutl.o deep.o ferror.o -lm
