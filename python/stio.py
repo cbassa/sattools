@@ -3,6 +3,7 @@
 import numpy as np
 from astropy.io import fits
 from astropy.time import Time
+from astropy import wcs
 
 class observation:
     """Satellite observation"""
@@ -30,6 +31,11 @@ class observation:
         self.ymin=self.y0+self.dydt*(self.tmin-self.tmid)
         self.xmax=self.x0+self.dxdt*(self.tmax-self.tmid)
         self.ymax=self.y0+self.dydt*(self.tmax-self.tmid)
+
+        # Compute ra/dec
+        world=ff.w.wcs_pix2world(np.array([[self.x0,self.y0]]),1)
+        self.ra=world[0,0]
+        self.de=world[0,1]
         
 class satid:
     """Satellite identifications"""
@@ -109,6 +115,7 @@ class fourframe:
             self.cunit=[hdu[0].header['CUNIT1'],hdu[0].header['CUNIT2']]
             self.crres=np.array([hdu[0].header['CRRES1'],hdu[0].header['CRRES2']])
 
+        # Compute image properties
         self.sx=np.sqrt(self.cd[0,0]**2+self.cd[1,0]**2)
         self.sy=np.sqrt(self.cd[0,1]**2+self.cd[1,1]**2)
         self.wx=self.nx*self.sx
@@ -116,6 +123,14 @@ class fourframe:
         self.vmin=np.mean(self.zmax)-2.0*np.std(self.zmax)
         self.vmax=np.mean(self.zmax)+6.0*np.std(self.zmax)
 
+        # Setup WCS
+        self.w=wcs.WCS(naxis=2)
+        self.w.wcs.crpix=self.crpix
+        self.w.wcs.crval=self.crval
+        self.w.wcs.cd=self.cd
+        self.w.wcs.ctype=self.ctype
+        self.w.wcs.set_pv([(2,1,45.0)])
+        
 
     def significant(self,sigma,x0,y0,dxdt,dydt,rmin=10.0):
         """Extract significant points"""

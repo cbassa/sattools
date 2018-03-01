@@ -21,13 +21,30 @@ def pos2rel(ff,x,y):
 
     return world[0,0],world[0,1]
 
-def dec2sex(angle):
-    if angle<0.0:
+# IOD position format 2: RA/DEC = HHMMmmm+DDMMmm MX   (MX in minutes of arc)
+def format_position(ra,de):
+    ram=60.0*ra/15.0
+    rah=int(np.floor(ram/60.0))
+    ram-=60.0*rah
+    
+    des=np.sign(de)
+    dem=60.0*np.abs(de)
+    ded=int(np.floor(dem/60.0))
+    dem-=60.0*ded
+
+    if des==-1:
         sign="-"
     else:
         sign="+"
-    angle=60.0*np.abs(angle)
-    
+
+    return ("%02d%06.3f%c%02d%05.2f"%(rah,ram,sign,ded,dem)).replace(".","")
+
+# Format IOD line
+def format_iod_line(norad,cospar,site_id,t,ra,de):
+    pstr=format_position(ra,de)
+    tstr=t.replace("-","").replace("T","").replace(":","").replace(".","")
+
+    return "%05d %-9s %04d G %s 17 25 %s 37 S"%(norad,cospar,site_id,tstr,pstr)
 
 # Settings
 
@@ -78,10 +95,12 @@ for line in lines:
     x,y,t,sig=ff.significant(trksig,id.x0,id.y0,id.dxdt,id.dydt,trkrmin)
 
     # Fit tracks
-    if len(x)>ntrkmin:
+    if len(t)>ntrkmin:
         obs=observation(ff,x,y,t,sig)
 
-        obs.ra,obs.de=pos2rel(ff,obs.x0,obs.y0)
+        print("%s"%format_iod_line(id.norad,"18 555A",ff.site_id,obs.nfd,obs.ra,obs.de))
+
+        
         
         # Plot
         ppgplot.pgopen("/xs")
@@ -112,12 +131,12 @@ for line in lines:
         
         ppgplot.pgend()
 
-        plt.figure()
-        plt.plot(t,x,'.')
-        plt.plot(t,y,'.')
-        plt.plot([obs.tmin,obs.tmax],[obs.xmin,obs.xmax])
-        plt.plot([obs.tmin,obs.tmax],[obs.ymin,obs.ymax])
-        plt.show()
+#        plt.figure()
+#        plt.plot(t,x,'.')
+#        plt.plot(t,y,'.')
+#        plt.plot([obs.tmin,obs.tmax],[obs.xmin,obs.xmax])
+#        plt.plot([obs.tmin,obs.tmax],[obs.ymin,obs.ymax])
+#        plt.show()
 
         # Track and stack
     else:
