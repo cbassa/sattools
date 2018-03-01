@@ -1486,7 +1486,8 @@ double chisq(double a[])
     r=sqrt(dx*dx+dy*dy+dz*dz);
     d.p[i].rac=modulo(atan2(dy,dx)*R2D,360.0);
     d.p[i].dec=asin(dz/r)*R2D;
-      
+
+    
     // Compute offset
     forward(d.p[i].ra,d.p[i].de,d.p[i].rac,d.p[i].dec,&d.p[i].dx,&d.p[i].dy);
     d.p[i].dr=sqrt(d.p[i].dx*d.p[i].dx+d.p[i].dy*d.p[i].dy);
@@ -1937,3 +1938,30 @@ orbit_t rv2el(int satno,double mjd,xyz_t r0,xyz_t v0)
 
   return orb[i];
 }
+
+
+// Get a x and y from a RA and Decl
+void forward(double ra0,double de0,double ra,double de,double *x,double *y)
+{
+  int i,status;
+  double phi,theta;
+  struct celprm cel;
+
+  // Initialize Reference Angles
+  celini(&cel);
+  cel.ref[0]=ra0;
+  cel.ref[1]=de0;
+  cel.ref[2]=999.;
+  cel.ref[3]=999.;
+  cel.flag=0.;
+  strcpy(cel.prj.code,"STG");
+
+  if (celset(&cel)) {
+    printf("Error in Projection (celset)\n");
+    return;
+  }
+  cels2x(&cel,1,0,1,1,&ra,&de,&phi,&theta,x,y,&status);
+
+  return;
+}
+
