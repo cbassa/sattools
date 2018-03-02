@@ -13,8 +13,8 @@ class observation:
 
         # Get times
         self.tmin=np.min(t)
-        self.tmid=np.mean(t)
         self.tmax=np.max(t)
+        self.tmid=0.5*(self.tmin+self.tmax)
         self.mjd=ff.mjd+self.tmid/86400.0
         self.nfd=Time(self.mjd,format='mjd',scale='utc').isot
         
@@ -32,11 +32,15 @@ class observation:
         self.xmax=self.x0+self.dxdt*(self.tmax-self.tmid)
         self.ymax=self.y0+self.dydt*(self.tmax-self.tmid)
 
+        # Correct for rotation
+        hobs=Time(ff.mjd+0.5*ff.texp/86400.0,format='mjd',scale='utc').sidereal_time("mean",longitude=0.0).degree
+        hmid=Time(self.mjd,format='mjd',scale='utc').sidereal_time("mean",longitude=0.0).degree
+        
         # Compute ra/dec
         world=ff.w.wcs_pix2world(np.array([[self.x0,self.y0]]),1)
-        self.ra=world[0,0]
+        self.ra=world[0,0]+hobs-hmid
         self.de=world[0,1]
-        
+
 class satid:
     """Satellite identifications"""
 
