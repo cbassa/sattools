@@ -8,30 +8,17 @@ from astropy import wcs
 class observation:
     """Satellite observation"""
 
-    def __init__(self,ff,x,y,t,sig):
-        """Fit a satellite track"""
-
-        # Get times
-        self.tmin=np.min(t)
-        self.tmax=np.max(t)
-        self.tmid=0.5*(self.tmin+self.tmax)
-        self.mjd=ff.mjd+self.tmid/86400.0
-        self.nfd=Time(self.mjd,format='mjd',scale='utc').isot
-        
-        # Very simple polynomial fit; no weighting, no cleaning
-        px=np.polyfit(t-self.tmid,x,1)
-        py=np.polyfit(t-self.tmid,y,1)
+    def __init__(self,ff,mjd,x0,y0):
+        """Define an observation"""
 
         # Store
-        self.x0=px[1]
-        self.y0=py[1]
-        self.dxdt=px[0]
-        self.dydt=py[0]
-        self.xmin=self.x0+self.dxdt*(self.tmin-self.tmid)
-        self.ymin=self.y0+self.dydt*(self.tmin-self.tmid)
-        self.xmax=self.x0+self.dxdt*(self.tmax-self.tmid)
-        self.ymax=self.y0+self.dydt*(self.tmax-self.tmid)
-
+        self.mjd=mjd
+        self.x0=x0
+        self.y0=y0
+        
+        # Get times
+        self.nfd=Time(self.mjd,format='mjd',scale='utc').isot
+        
         # Correct for rotation
         hobs=Time(ff.mjd+0.5*ff.texp/86400.0,format='mjd',scale='utc').sidereal_time("mean",longitude=0.0).degree
         hmid=Time(self.mjd,format='mjd',scale='utc').sidereal_time("mean",longitude=0.0).degree
