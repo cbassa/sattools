@@ -158,9 +158,10 @@ if __name__ == '__main__':
 
 #    extract_tracks("2018-02-26T05:26:15.801.fits",trkrmin,drdtmin,trksig,ntrkmin)
     
-    files=sorted(glob.glob("2*.fits"))
+    files=sorted(glob.glob("2018-03-04T02*.fits"))
 
     for file in files:
+        print(file)
         extract_tracks(file,trkrmin,drdtmin,trksig,ntrkmin)
 
 

@@ -33,8 +33,12 @@ class observation:
         self.ymax=self.y0+self.dydt*(self.tmax-self.tmid)
 
         # Correct for rotation
-        hobs=Time(ff.mjd+0.5*ff.texp/86400.0,format='mjd',scale='utc').sidereal_time("mean",longitude=0.0).degree
-        hmid=Time(self.mjd,format='mjd',scale='utc').sidereal_time("mean",longitude=0.0).degree
+        tobs=Time(ff.mjd+0.5*ff.texp/86400.0,format='mjd',scale='utc')
+        tobs.delta_ut1_utc=0
+        hobs=tobs.sidereal_time("mean",longitude=0.0).degree
+        tmid=Time(self.mjd,format='mjd',scale='utc')
+        tmid.delta_ut1_utc=0
+        hmid=tmid.sidereal_time("mean",longitude=0.0).degree
         
         # Compute ra/dec
         world=ff.w.wcs_pix2world(np.array([[self.x0,self.y0]]),1)
