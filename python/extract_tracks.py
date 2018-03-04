@@ -162,6 +162,10 @@ def extract_tracks(fname,trkrmin,drdtmin,trksig,ntrkmin):
             tmid=0.5*(tmax+tmin)
             mjd=ff.mjd+tmid/86400.0
 
+            # Skip if no variance in time
+            if np.std(t-tmid)==0.0:
+                continue
+            
             # Very simple polynomial fit; no weighting, no cleaning
             px=np.polyfit(t-tmid,x,1)
             py=np.polyfit(t-tmid,y,1)
