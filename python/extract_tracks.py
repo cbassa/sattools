@@ -42,7 +42,7 @@ def peakfind(img,w=1.0):
     xc,yc,w=q[0],q[1],q[2]
 
     # Significance
-    sigma=(a[3]-imgavg)/imgstd
+    sigma=(a[3]-imgavg)/(imgstd+1e-9)
 
     return xc,yc,w,sigma
 
@@ -125,6 +125,10 @@ def extract_tracks(fname,trkrmin,drdtmin,trksig,ntrkmin):
     # Read four frame
     ff=fourframe(fname)
 
+    # Skip saturated frames
+    if np.sum(ff.zavg>240.0)/float(ff.nx*ff.ny)>0.95:
+        return
+        
     # Read satelite IDs
     try:
         f=open(fname+".id")
@@ -203,7 +207,12 @@ def extract_tracks(fname,trkrmin,drdtmin,trksig,ntrkmin):
             
             ppgplot.pgsch(0.8)
             ppgplot.pgmtxt("T",6.0,0.0,0.0,"UT Date: %.23s  COSPAR ID: %04d"%(ff.nfd,ff.site_id))
+            if (3600.0*ff.crres[0]<1e-3) | (3600.0*ff.crres[1]<1e-3) | (ff.crres[0]/ff.sx>2.0) | (ff.crres[1]/ff.sy>2.0):
+                ppgplot.pgsci(2)
+            else:
+                ppgplot.pgsci(1)
             ppgplot.pgmtxt("T",4.8,0.0,0.0,"R.A.: %10.5f (%4.1f'') Decl.: %10.5f (%4.1f'')"%(ff.crval[0],3600.0*ff.crres[0],ff.crval[1],3600.0*ff.crres[1]))
+            ppgplot.pgsci(1)
             ppgplot.pgmtxt("T",3.6,0.0,0.0,"FoV: %.2f\\(2218)x%.2f\\(2218) Scale: %.2f''x%.2f'' pix\\u-1\\d"%(ff.wx,ff.wy,3600.0*ff.sx,3600.0*ff.sy))
             ppgplot.pgmtxt("T",2.4,0.0,0.0,"Stat: %5.1f+-%.1f (%.1f-%.1f)"%(np.mean(ff.zmax),np.std(ff.zmax),ff.vmin,ff.vmax))
             ppgplot.pgmtxt("T",0.3,0.0,0.0,iod_line)
@@ -349,10 +358,9 @@ if __name__ == '__main__':
 
 #    extract_tracks("2018-02-26T05:26:15.801.fits",trkrmin,drdtmin,trksig,ntrkmin)
     
-    files=sorted(glob.glob("2018-03-04T02*.fits"))
+    files=sorted(glob.glob("2*.fits"))
 
     for file in files:
-        print(file)
         extract_tracks(file,trkrmin,drdtmin,trksig,ntrkmin)
 
 

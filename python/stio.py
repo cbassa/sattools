@@ -160,6 +160,14 @@ class fourframe:
         for i in range(self.nz):
             dx=int(np.round(dxdt*(self.dt[i]-tref)))
             dy=int(np.round(dydt*(self.dt[i]-tref)))
+
+            # Skip if shift larger than image
+            if np.abs(dx)>=self.nx:
+                continue
+            if np.abs(dy)>=self.ny:
+                continue
+
+            # Extract range
             if dx>=0:
                 i1min,i1max=dx,self.nx-1
                 i2min,i2max=0,self.nx-dx-1
