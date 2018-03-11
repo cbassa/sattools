@@ -219,7 +219,7 @@ void compute_track(orbit_t orb)
 	      pt[i1].nfd,pt[i1].azi,pt[i1].alt,
 	      pt[i2].nfd+11,pt[i2].azi,pt[i2].alt,
 	      pt[i3].nfd+11,pt[i3].azi,pt[i3].alt);
-      sprintf(p[ipass].radio,"%05d %s %s %4.0f\n",orb.satno,pt[i1].nfd,pt[i3].nfd,p[ipass].length);
+      sprintf(p[ipass].radio,"%05d %s %s %s %4.0f %5.1f\n",orb.satno,pt[i1].nfd,pt[i2].nfd,pt[i3].nfd,p[ipass].length,pt[i2].alt);
       sprintf(p[ipass].skymap,"skymap -c %s -i %d -s %d -t %s -l %.0f",m.tlefile,orb.satno,m.site_id,pt[i1].nfd,p[ipass].length);
 
       flag=0;
