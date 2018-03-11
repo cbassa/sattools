@@ -16,7 +16,7 @@ struct catalog {
   int n;
   float x[NMAX],y[NMAX];
   double ra[NMAX],de[NMAX];
-  float rx[NMAX],ry[NMAX];
+  double rx[NMAX],ry[NMAX];
   float xres[NMAX],yres[NMAX],res[NMAX];
   float xrms,yrms,rms;
   int usage[NMAX];
@@ -36,8 +36,8 @@ struct transformation {
   float x0,y0;
 };
 int fgetline(FILE *file,char *s,int lim);
-void forward(double ra0,double de0,double ra,double de,float *x,float *y);
-void reverse(double ra0,double de0,float x,float y,double *ra,double *de);
+void forward(double ra0,double de0,double ra,double de,double *x,double *y);
+void reverse(double ra0,double de0,double x,double y,double *ra,double *de);
 struct catalog read_catalog(char *filename);
 void lfit2d(float *x,float *y,float *z,int n,float *a);
 void add_fits_keywords(struct transformation t,char *filename);
@@ -97,7 +97,7 @@ int main(int argc,char *argv[])
   float x[NMAX],y[NMAX],rx[NMAX],ry[NMAX];
   struct image img;
   char filename[128];
-
+  
   if (argc==1) 
     strcpy(filename,"test.fits");
   else if (argc==2)
@@ -117,9 +117,9 @@ int main(int argc,char *argv[])
   for (l=0;l<10;l++) {
     for (j=0;j<5;j++) {
       // Transform
-      for (i=0;i<c.n;i++) 
+      for (i=0;i<c.n;i++) {
 	forward(t.ra0,t.de0,c.ra[i],c.de[i],&c.rx[i],&c.ry[i]);
-      
+      }
       // Select
       for (i=0,k=0;i<c.n;i++) {
 	if (c.usage[i]==1) {
