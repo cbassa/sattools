@@ -404,6 +404,21 @@ double nfd2mjd(char *date)
 
 void usage()
 {
+  printf("pass t:c:i:s:l:hS:A:aPqm:R\n\n");
+  printf("t    date/time (yyyy-mm-ddThh:mm:ss.sss) [default: now]\n");
+  printf("c    TLE catalog file [default: classfd.tle]\n");
+  printf("i    satellite ID (NORAD) [default: all]\n");
+  printf("s    site (COSPAR\n");
+  printf("l    length [default: %d s]\n",m.length);
+  printf("A    minimum satellite altitude [default: %.1f deg]\n",m.altmin);
+  printf("S    maximum solar altitude [default: %.1f deg]\n",m.saltmin);
+  printf("a    compute all passes [toggle; default: off]\n");
+  printf("P    plot passes [toggle; default: off]\n");
+  printf("m    MJD date/time\n");
+  printf("q    no header [toggle; default: off]\n");
+  printf("R    format output for radio passes [toggle; default: off]\n");
+  printf("h    this help\n");
+  
   return;
 }
 
