@@ -20,7 +20,7 @@ void reverse(double ra0,double de0,double x,double y,double *ra,double *de)
   cel.ref[2]=999.;
   cel.ref[3]=999.;
   cel.flag=0.;
-  strcpy(cel.prj.code,"TAN");
+  strcpy(cel.prj.code,"STG");
   
   if (celset(&cel)) {
     printf("Error in Projection (celset)\n");
