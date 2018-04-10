@@ -117,6 +117,8 @@ void lunpos_xyz(double mjd,xyz_t *pos,double *ra,double *de);
 void ecliptical2equatorial(double l,double b,double *ra,double *de);
 void skymap_plotsun(void);
 void skymap_plotmoon(void);
+void mjd2date_iod(double mjd,char *date);
+void dec2sex_iod(double x,char *s,int type);
 
 void usage()
 {
@@ -446,6 +448,28 @@ void plot_xyz(double mjd0,char *filename)
   cpgsci(1);
   printf("%s %6.3f %6.3f %.1f km\n",m.nfd,s.ra,s.de,s.r);
 
+  return;
+}
+
+// Write out the current position and time in IOD format
+void format_iod(double mjd,double ra,double de,int site)
+{
+  char nfd[32];
+  double mjd0,ra0,de0;
+  char sra[16],sde[16];
+
+  // Get date/time
+  mjd2date_iod(mjd,nfd);
+
+  // Precess position to J2000
+  mjd0=51544.5;
+  precess(mjd,ra,de,mjd0,&ra0,&de0);
+  dec2sex_iod(ra0/15.0,sra,0);
+  dec2sex_iod(de0,sde,1);
+
+  // Print IOD line
+  printf("99999 99 999A   %04d G %s 17 25 %s%s 37 S\n",site,nfd,sra,sde);
+  
   return;
 }
 
@@ -2617,6 +2641,11 @@ int plot_skymap(void)
       
       printf("RA: %10.4f Dec: %10.4f Azi: %10.4f Alt: %10.4f\n%f %f\n",ra,de,modulo(azi-180.0,360.0),alt,x,y);
     }
+
+    // Format IOD output
+    if (c=='I') 
+      format_iod(m.mjd,m.ra0,m.de0,m.site_id);
+    
     // Grid on/off
     if (c=='g') {
       if (m.grid==1)
@@ -2819,6 +2848,57 @@ void mjd2date(double mjd,char *date)
   return;
 }
 
+// Compute Date from Julian Day in IOD format
+void mjd2date_iod(double mjd,char *date)
+{
+  double f,jd,dday;
+  int z,alpha,a,b,c,d,e;
+  int year,month,day,hour,min;
+  float sec,x,fsec;
+
+  jd=mjd+2400000.5;
+  jd+=0.5;
+
+  z=floor(jd);
+  f=fmod(jd,1.);
+
+  if (z<2299161)
+    a=z;
+  else {
+    alpha=floor((z-1867216.25)/36524.25);
+    a=z+1+alpha-floor(alpha/4.);
+  }
+  b=a+1524;
+  c=floor((b-122.1)/365.25);
+  d=floor(365.25*c);
+  e=floor((b-d)/30.6001);
+
+  dday=b-d-floor(30.6001*e)+f;
+  if (e<14)
+    month=e-1;
+  else
+    month=e-13;
+
+  if (month>2)
+    year=c-4716;
+  else
+    year=c-4715;
+
+  day=(int) floor(dday);
+  x=24.0*(dday-day);
+  x=3600.*fabs(x)+0.0001;
+  sec=fmod(x,60.);
+  x=(x-sec)/60.;
+  min=fmod(x,60.);
+  x=(x-min)/60.;
+  hour=x;
+  fsec=1000.0*(sec-floor(sec));
+
+  sprintf(date,"%04d%02d%02d%02d%02d%02.0f%03.0f",(int) year,(int) month,(int) day,(int) hour,(int) min,floor(sec),fsec);
+
+  return;
+}
+
 // Convert Decimal into Sexagesimal
 void dec2sex(double x,char *s,int f,int len)
 {
@@ -2845,6 +2925,34 @@ void dec2sex(double x,char *s,int f,int len)
 
   return;
 }
+
+// Convert Decimal into Sexagesimal
+void dec2sex_iod(double x,char *s,int type)
+{
+  int i;
+  double sec,deg,min,fmin;
+  char sign;
+
+  sign=(x<0 ? '-' : '+');
+  x=60.*fabs(x);
+
+  min=fmod(x,60.);
+  x=(x-min)/60.;
+  //  deg=fmod(x,60.);
+  deg=x;
+  if (type==0)
+    fmin=1000.0*(min-floor(min));
+  else
+    fmin=100.0*(min-floor(min));
+
+  if (type==0)
+    sprintf(s,"%02.0f%02.0f%03.0f",deg,floor(min),fmin);
+  else
+    sprintf(s,"%c%02.0f%02.0f%02.0f",sign,deg,floor(min),fmin);
+
+  return;
+}
+
 
 // Greenwich Mean Sidereal Time
 double dgmst(double mjd)
