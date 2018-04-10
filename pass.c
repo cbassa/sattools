@@ -25,7 +25,7 @@ struct map {
   double lat,lng;
   double mjd;
   float alt,timezone;
-  float saltmin,altmin;
+  float saltmin,altmin,altmax;
   int length,all;
   char nfd[LIM],tlefile[LIM],observer[32];
   char datadir[LIM],tledir[LIM];
@@ -41,7 +41,7 @@ struct pass {
   int satno;
   double mjdrise,mjdmax,mjdset;
   char line[80],skymap[LIM],radio[80];
-  float length;
+  float length,altmax;
 } p[PASSMAX];
 
 double nfd2mjd(char *date);
@@ -214,7 +214,8 @@ void compute_track(orbit_t orb)
       p[ipass].mjdmax=pt[i2].mjd;
       p[ipass].mjdset=pt[i3].mjd;
       p[ipass].length=86400.0*(pt[i3].mjd-pt[i1].mjd);
-
+      p[ipass].altmax=pt[i2].alt;
+      
       sprintf(p[ipass].line,"%05d | %s  %3.0f/%2.0f | %.8s  %3.0f/%2.0f | %.8s  %3.0f/%2.0f | \n",orb.satno,
 	      pt[i1].nfd,pt[i1].azi,pt[i1].alt,
 	      pt[i2].nfd+11,pt[i2].azi,pt[i2].alt,
@@ -263,7 +264,7 @@ int main(int argc,char *argv[])
   initialize_setup();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:l:hS:A:aPqm:R"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:l:hS:A:aPqm:RM:"))!=-1) {
     switch (arg) {
 
     case 'R':
@@ -310,6 +311,10 @@ int main(int argc,char *argv[])
       m.altmin=atof(optarg);
       break;
 
+    case 'M':
+      m.altmax=atof(optarg);
+      break;
+      
     case 'a':
       m.all=1;
       break;
@@ -376,7 +381,7 @@ int main(int argc,char *argv[])
   for (ipass=0;ipass<npass;ipass++) {
     if (radio==0)
       printf("%s",p[ipass].line);
-    else if (radio==1)
+    else if (radio==1 && p[ipass].altmax>m.altmax)
       printf("%s",p[ipass].radio);
     if (m.plot==1)
       system(p[ipass].skymap);
@@ -511,6 +516,7 @@ void initialize_setup(void)
   m.mjd=nfd2mjd(m.nfd);
   m.saltmin=-6.0;
   m.altmin=10.0;
+  m.altmax=10.0;
   m.all=0;
   m.plot=0;
 
