@@ -7,14 +7,15 @@ import ctypes
 import multiprocessing
 from astropy.time import Time
 from astropy.io import fits
+from sun import get_sunriseset
 
 # Capture images
-def capture(buf,z1,t1,z2,t2,device,nx,ny,nz):
+def capture(buf,z1,t1,z2,t2,device,nx,ny,nz,tend):
     # Array flag
     first=True
 
-    # For ever loop
-    while True:
+    # Loop until reaching end time
+    while float(time.time())<tend:
         # Get frames
         for i in range(nz):
             # Get frame
@@ -48,7 +49,9 @@ def capture(buf,z1,t1,z2,t2,device,nx,ny,nz):
         # Swap flag
         first=not first
 
-def compress(buf,z1,t1,z2,t2,nx,ny,nz):
+    print("Exiting capture")    
+        
+def compress(buf,z1,t1,z2,t2,nx,ny,nz,tend):
     # Flag to keep track of processed buffer
     process_buf=1
 
@@ -124,8 +127,31 @@ def compress(buf,z1,t1,z2,t2,nx,ny,nz):
         hdu.writeto(fname)
         print("Compressed",fname)
 
+        # Exit on end of capture
+        if t[-1]>tend:
+            break
+
+    # Exiting
+    print("Exiting compress")
+        
  # Main function
 if __name__ == '__main__':
+    # Current time
+    tnow=float(time.time())
+    tnow=1520573400.0
+    tnow=1520510226.281413,
+    
+    # Get sunrise and sunset times
+    trise,tset=get_sunriseset(tnow,52.8344,6.3785,10,-6.0)
+
+    print(tnow,trise,tset)
+    # Wait until sunset
+    if (tset<trise) & (tnow<tset):
+        print("Waiting for sunset at %s"%time.strftime("%FT%T",time.gmtime(tset)))
+
+    sys.exit()
+
+
     # Settings
     devid=int(sys.argv[1])
     nx=720
@@ -150,26 +176,25 @@ if __name__ == '__main__':
     t2=np.ctypeslib.as_array(t2base.get_obj())
     buf=multiprocessing.Value('i',0)
 
-    pcapture=multiprocessing.Process(target=capture,args=(buf,z1,t1,z2,t2,device,nx,ny,nz))
-    pcompress=multiprocessing.Process(target=compress,args=(buf,z1,t1,z2,t2,nx,ny,nz))
+    
+    tend=float(time.time())+31.0
+    
+    # Set processes
+    pcapture=multiprocessing.Process(target=capture,args=(buf,z1,t1,z2,t2,device,nx,ny,nz,tend))
+    pcompress=multiprocessing.Process(target=compress,args=(buf,z1,t1,z2,t2,nx,ny,nz,tend))
 
+    # Start
     pcapture.start()
     pcompress.start()
-    pcapture.join()
-    pcompress.join()
-    
-#    print("Starting acquisition")
-#    for i in range(5):
-        # Capture
-#        tstart=time.time()
-#        t,z=capture(device,nx,ny,nz)
-#        print("Captured %d %dx%d frames in %.3f s"%(nz,nx,ny,time.time()-tstart))
 
-        # Compress
-#        tstart=time.time()
-#        compress(t,z)
-#        print("Compressed %d %dx%d frames in %.3f s"%(nz,nx,ny,time.time()-tstart))
-    
+    # End
+    try:
+        pcapture.join()
+        pcompress.join()
+    except KeyboardInterrupt:
+        pcapture.terminate()
+        pcompress.terminate()
+                        
     # Release device
     device.release()
 
