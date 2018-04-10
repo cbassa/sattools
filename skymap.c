@@ -2477,6 +2477,7 @@ int plot_skymap(void)
       printf(",   Decrease time by 1 step\n");
       printf(">   Increase step size\n");
       printf("<   Decrease step size\n");
+      printf("I   Create IOD measurement for current time and position\n");
       printf("P   Toggle planar search\n");
       printf("p   Toggle satellite name\n");
       printf("R   Read catalog\n");
