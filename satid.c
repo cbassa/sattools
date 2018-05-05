@@ -8,14 +8,13 @@
 #include "sgdp4h.h"
 
 #define LIM 80
-#define NMAX 256
+#define MMAX 10
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI
 #define XKMPER 6378.135 // Earth radius in km
 #define XKMPAU 149597879.691 // AU in km
 #define FLAT (1.0/298.257)
 #define STDMAG 6.0
-#define MMAX 10
 
 long Isat=0;
 long Isatsel=0;
@@ -27,6 +26,11 @@ struct map {
   char observer[32];
   int site_id;
 } m;
+struct point {
+  double mjd;
+  xyz_t obspos,sunpos;
+  double zeta,z,theta;
+} p[MMAX];
 struct image {
   char filename[64];
   int naxis,naxis1,naxis2,nframes;
@@ -39,85 +43,34 @@ struct image {
   char nfd[32];
   int cospar,tracked;
 };
-struct sat {
-  long Isat;
-  char state[10];
-  float mag;
-  double jd;
-  double dx,dy,dz;
-  double x,y,z,vx,vy,vz;
-  double rsun,rearth;
-  double psun,pearth,p,phase;
-  double r,v,ra,de;
-  double azi,alt;
-  double rx,ry;
-};
 struct image read_fits(char *filename);
-struct sat apparent_position(double mjd);
+void get_site(int site_id);
 double modulo(double,double);
 void obspos_xyz(double,xyz_t *,xyz_t *);
 void sunpos_xyz(double,xyz_t *);
 double gmst(double);
 double dgmst(double);
+void precession_angles(double mjd0,double mjd,double *zeta,double *z,double *theta);
+void initialize(struct image img);
 void forward(double ra0,double de0,double ra,double de,double *x,double *y);
 void reverse(double ra0,double de0,double x,double y,double *ra,double *de);
-
-// Precess a celestial position
-void precess(double mjd0,double ra0,double de0,double mjd,double *ra,double *de)
-{
-  double t0,t;
-  double zeta,z,theta;
-  double a,b,c;
-
-  // Angles in radians
-  ra0*=D2R;
-  de0*=D2R;
-
-  // Time in centuries
-  t0=(mjd0-51544.5)/36525.0;
-  t=(mjd-mjd0)/36525.0;
-
-  // Precession angles
-  zeta=(2306.2181+1.39656*t0-0.000139*t0*t0)*t;
-  zeta+=(0.30188-0.000344*t0)*t*t+0.017998*t*t*t;
-  zeta*=D2R/3600.0;
-  z=(2306.2181+1.39656*t0-0.000139*t0*t0)*t;
-  z+=(1.09468+0.000066*t0)*t*t+0.018203*t*t*t;
-  z*=D2R/3600.0;
-  theta=(2004.3109-0.85330*t0-0.000217*t0*t0)*t;
-  theta+=-(0.42665+0.000217*t0)*t*t-0.041833*t*t*t;
-  theta*=D2R/3600.0;
-  
-  a=cos(de0)*sin(ra0+zeta);
-  b=cos(theta)*cos(de0)*cos(ra0+zeta)-sin(theta)*sin(de0);
-  c=sin(theta)*cos(de0)*cos(ra0+zeta)+cos(theta)*sin(de0);
-
-  *ra=(atan2(a,b)+z)*R2D;
-  *de=asin(c)*R2D;
-
-  if (*ra<360.0)
-    *ra+=360.0;
-  if (*ra>360.0)
-    *ra-=360.0;
-
-  return;
-}
+struct sat apparent_position(double mjd);
 
 void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float dt,int color)
 {
   int i;
   orbit_t orb;
-  struct sat s;
   int imode,flag,textflag,sflag;
-  FILE *fp=NULL,*file;;
-  xyz_t satpos,obspos,satvel,sunpos;
-  double mjd,jd,dx,dy,dz;
-  double rx,ry,ra,de,azi,alt,r,t,d;
+  FILE *fp=NULL,*file;
+  xyz_t satpos,satvel;
   float x,y,x0,y0;
   char norad[7],satname[30],state[16];
   float isch;
-  float rsun,rearth,psun,pearth,p;
   char filename[128];
+  double dx,dy,dz,r,ra,de,d,rsun,rearth;
+  double psun,pearth,ptot;
+  double a,b,c;
+  double rx,ry;
 
   cpgqch(&isch);
 
@@ -145,43 +98,73 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
     if (imode==SGDP4_ERROR)
       continue;
 
+    // Loop over times
     for (flag=0,textflag=0,sflag=0,i=0;i<MMAX;i++) {
-      t=img.exptime*(float) i/(float) (MMAX-1);
-      mjd=mjd0+t/86400.0;
+      // Satellite position
+      satpos_xyz(p[i].mjd+2400000.5,&satpos,&satvel);
 
-      // Compute apparent position
-      s=apparent_position(mjd);
+      // Relative to observer
+      dx=satpos.x-p[i].obspos.x;  
+      dy=satpos.y-p[i].obspos.y;
+      dz=satpos.z-p[i].obspos.z;
 
+      // Celestial position
+      r=sqrt(dx*dx+dy*dy+dz*dz);
+      ra=modulo(atan2(dy,dx),2.0*M_PI);
+      de=asin(dz/r);
+
+      
+      // Correct for precession
+      a=cos(de)*sin(ra+p[i].zeta);
+      b=cos(p[i].theta)*cos(de)*cos(ra+p[i].zeta)-sin(p[i].theta)*sin(de);
+      c=sin(p[i].theta)*cos(de)*cos(ra+p[i].zeta)+cos(p[i].theta)*sin(de);
+      ra=modulo((atan2(a,b)+p[i].z)*R2D,360.0);
+      de=asin(c)*R2D;
+      
       // Adjust for stationary camera
-      if (img.tracked==0) 
-	s.ra+=gmst(img.mjd+0.5*img.exptime/86400.0)-gmst(mjd);
-
-      // Convert to rx,ry
-      r=acos(sin(img.de0*D2R)*sin(s.de*D2R)+cos(img.de0*D2R)*cos(s.de*D2R)*cos((img.ra0-s.ra)*D2R))*R2D;
+      if (img.tracked==0)
+	ra+=gmst(img.mjd+0.5*img.exptime/86400.0)-gmst(p[i].mjd);
+      
+      // Check if nearby enough
+      r=acos(sin(img.de0*D2R)*sin(de*D2R)+cos(img.de0*D2R)*cos(de*D2R)*cos((img.ra0-ra)*D2R))*R2D;
       if (r<90.0)
-	forward(img.ra0,img.de0,s.ra,s.de,&s.rx,&s.ry);
+	forward(img.ra0,img.de0,ra,de,&rx,&ry);
       else
 	continue;
 
-      // Convert image position
-      dx=s.rx-img.a[0];
-      dy=s.ry-img.b[0];
-      x=(img.b[2]*dx-img.a[2]*dy)/d+img.x0;
-      y=(img.a[1]*dy-img.b[1]*dx)/d+img.y0;
+      // Satellite position relative to the Sun
+      dx=-satpos.x+p[i].sunpos.x;  
+      dy=-satpos.y+p[i].sunpos.y;
+      dz=-satpos.z+p[i].sunpos.z;
 
-      // Visibility
-      if (s.p-s.pearth<-s.psun) {
+      // Distances
+      rsun=sqrt(dx*dx+dy*dy+dz*dz);
+      rearth=sqrt(satpos.x*satpos.x+satpos.y*satpos.y+satpos.z*satpos.z);
+
+      // Angles
+      psun=asin(696.0e3/rsun)*R2D;
+      pearth=asin(6378.135/rearth)*R2D;
+      ptot=acos((-dx*satpos.x-dy*satpos.y-dz*satpos.z)/(rsun*rearth))*R2D;
+
+      // Visibility state
+      if (ptot-pearth<-psun) {
 	cpgsls(4);
 	strcpy(state,"eclipsed");
-      } else if (s.p-s.pearth>-s.psun && s.p-s.pearth<s.psun) {
+      } else if (ptot-pearth>-psun && ptot-pearth<psun) {
 	cpgsls(2);
-	strcpy(state,"penumbra");
+	strcpy(state,"umbra");
 	sflag=1;
-      } else if (s.p-s.pearth>s.psun) {
+      } else if (ptot-pearth>psun) {
 	cpgsls(1);
 	strcpy(state,"sunlit");
 	sflag=1;
       }
+
+      // Convert image position
+      dx=rx-img.a[0];
+      dy=ry-img.b[0];
+      x=(img.b[2]*dx-img.a[2]*dy)/d+img.x0;
+      y=(img.a[1]*dy-img.b[1]*dx)/d+img.y0;
 
       // Print name if in viewport
       if (x>0.0 && x<img.naxis1 && y>0.0 && y<img.naxis2 && textflag==0) {
@@ -193,7 +176,6 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
 	cpgmove(x,y);
 	textflag=1;
       }
-
       if (i==0) {
 	x0=x;
 	y0=y;
@@ -214,7 +196,6 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
       else
 	fprintf(file,"%.23s %8.3f %8.3f %8.3f %8.3f %8.5f %s %s sunlit\n",img.nfd+1,x0,y0,x,y,img.exptime,norad,tlefile);
     }
-
   }
   fclose(fp);
   fclose(file);
@@ -223,53 +204,6 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
   return;
 }
 
-// Get observing site
-void get_site(int site_id)
-{
-  int i=0;
-  char line[LIM];
-  FILE *file;
-  int id;
-  double lat,lng;
-  float alt;
-  char abbrev[3],observer[64],filename[LIM],*env;
-
-  env=getenv("ST_DATADIR");
-  sprintf(filename,"%s/data/sites.txt",env);
-  file=fopen(filename,"r");
-  if (file==NULL) {
-    printf("File with site information not found!\n");
-    return;
-  }
-  while (fgets(line,LIM,file)!=NULL) {
-    // Skip
-    if (strstr(line,"#")!=NULL)
-      continue;
-
-    // Strip newline
-    line[strlen(line)-1]='\0';
-
-    // Read data
-    sscanf(line,"%4d %2s %lf %lf %f",
-	   &id,abbrev,&lat,&lng,&alt);
-    strcpy(observer,line+38);
-
-    // Change to km
-    alt/=1000.0;
-    
-    if (id==site_id) {
-      m.lat=lat;
-      m.lng=lng;
-      m.alt=alt;
-      m.site_id=id;
-      strcpy(m.observer,observer);
-    }
-
-  }
-  fclose(file);
-
-  return;
-}
 
 int main(int argc,char *argv[])
 {
@@ -284,11 +218,15 @@ int main(int argc,char *argv[])
   char text[128];
   char *env,filename[128];
   float sx,sy,wx,wy;
-
+  
+  // Read fits file
   img=read_fits(argv[1]);
 
   // Set site
   get_site(img.cospar);
+
+  // Initialize
+  initialize(img);
 
   // Fill buffer
   if (img.naxis==3) {
@@ -316,7 +254,6 @@ int main(int argc,char *argv[])
   sy=sqrt(img.a[2]*img.a[2]+img.b[2]*img.b[2]);
   wx=img.naxis1*sx/3600.0;
   wy=img.naxis2*sy/3600.0;
-
   
   if (argc==3)
     cpgopen(argv[2]);
@@ -369,7 +306,7 @@ int main(int argc,char *argv[])
 
   cpgend();
 
-
+  
   return 0;
 }
 
@@ -489,98 +426,55 @@ struct image read_fits(char *filename)
     }
   }
 
-
-
   return img;
 }
 
-// Computes apparent position
-struct sat apparent_position(double mjd)
+// Get observing site
+void get_site(int site_id)
 {
-  struct sat s;
-  double jd,rsun,rearth,rsat;
-  double dx,dy,dz,dvx,dvy,dvz;
-  xyz_t satpos,obspos,obsvel,satvel,sunpos;
-  double ra,de;
-  double mjd0=51544.5;
+  int i=0;
+  char line[LIM];
+  FILE *file;
+  int id;
+  double lat,lng;
+  float alt;
+  char abbrev[3],observer[64],filename[LIM],*env;
 
-  // Sat ID
-  s.Isat=Isat;
-
-  // Get Julian Date
-  jd=mjd+2400000.5;
-
-  // Get positions
-  obspos_xyz(mjd,&obspos,&obsvel);
-  satpos_xyz(jd,&satpos,&satvel);
-  sunpos_xyz(mjd,&sunpos);
-
-  // Sat positions
-  s.x=satpos.x;
-  s.y=satpos.y;
-  s.z=satpos.z;
-  s.vx=satvel.x;
-  s.vy=satvel.y;
-  s.vz=satvel.z;
-
-  // Sun position from satellite
-  dx=-satpos.x+sunpos.x;  
-  dy=-satpos.y+sunpos.y;
-  dz=-satpos.z+sunpos.z;
-
-  // Distances
-  rsun=sqrt(dx*dx+dy*dy+dz*dz);
-  rearth=sqrt(satpos.x*satpos.x+satpos.y*satpos.y+satpos.z*satpos.z);
-
-  // Angles
-  s.psun=asin(696.0e3/rsun)*R2D;
-  s.pearth=asin(6378.135/rearth)*R2D;
-  s.p=acos((-dx*satpos.x-dy*satpos.y-dz*satpos.z)/(rsun*rearth))*R2D;
-
-  // Visibility state
-  if (s.p-s.pearth<-s.psun)
-    strcpy(s.state,"eclipsed");
-  else if (s.p-s.pearth>-s.psun && s.p-s.pearth<s.psun)
-    strcpy(s.state,"umbra");
-  else if (s.p-s.pearth>s.psun)
-    strcpy(s.state,"sunlit");
-
-  // Position differences
-  dx=satpos.x-obspos.x;  
-  dy=satpos.y-obspos.y;
-  dz=satpos.z-obspos.z;
-  dvx=satvel.x-obsvel.x;
-  dvy=satvel.y-obsvel.y;
-  dvz=satvel.z-obsvel.z;
-  
-  // Celestial position
-  s.r=sqrt(dx*dx+dy*dy+dz*dz);
-  s.v=(dvx*dx+dvy*dy+dvz*dz)/s.r;
-  ra=modulo(atan2(dy,dx)*R2D,360.0);
-  de=asin(dz/s.r)*R2D;
-
-  // Precess
-  precess(mjd,ra,de,mjd0,&s.ra,&s.de);
-
-  // Phase
-  s.phase=acos(((obspos.x-satpos.x)*(sunpos.x-satpos.x)+(obspos.y-satpos.y)*(sunpos.y-satpos.y)+(obspos.z-satpos.z)*(sunpos.z-satpos.z))/(rsun*s.r))*R2D;
-	  
-  // Magnitude
-  if (strcmp(s.state,"sunlit")==0) 
-    s.mag=STDMAG-15.0+5*log10(s.r)-2.5*log10(sin(s.phase*D2R)+(M_PI-s.phase*D2R)*cos(s.phase*D2R));
-  else
-    s.mag=15;
-
-  /*     
-  // Convert and project
-  if (strcmp(m.orientation,"horizontal")==0) {
-    equatorial2horizontal(mjd,s.ra,s.de,&s.azi,&s.alt);
-    forward(s.azi,s.alt,&s.rx,&s.ry);
-  } else if (strcmp(m.orientation,"equatorial")==0) {
-    forward(s.ra,s.de,&s.rx,&s.ry);
+  env=getenv("ST_DATADIR");
+  sprintf(filename,"%s/data/sites.txt",env);
+  file=fopen(filename,"r");
+  if (file==NULL) {
+    printf("File with site information not found!\n");
+    return;
   }
-  */
-  return s;
+  while (fgets(line,LIM,file)!=NULL) {
+    // Skip
+    if (strstr(line,"#")!=NULL)
+      continue;
+
+    // Strip newline
+    line[strlen(line)-1]='\0';
+
+    // Read data
+    sscanf(line,"%4d %2s %lf %lf %f",
+	   &id,abbrev,&lat,&lng,&alt);
+    strcpy(observer,line+38);
+
+    // Change to km
+    alt/=1000.0;
+    
+    if (id==site_id) {
+      m.lat=lat;
+      m.lng=lng;
+      m.alt=alt;
+      m.site_id=id;
+      strcpy(m.observer,observer);
+    }
+
+  }
+  fclose(file);
+
+  return;
 }
 
 // Greenwich Mean Sidereal Time
@@ -593,6 +487,18 @@ double gmst(double mjd)
   gmst=modulo(280.46061837+360.98564736629*(mjd-51544.5)+t*t*(0.000387933-t/38710000),360.0);
 
   return gmst;
+}
+
+// Greenwich Mean Sidereal Time
+double dgmst(double mjd)
+{
+  double t,dgmst;
+
+  t=(mjd-51544.5)/36525.0;
+
+  dgmst=360.98564736629+t*(0.000387933-t/38710000);
+
+  return dgmst;
 }
 
 // Return x modulo y [0,y)
@@ -657,15 +563,50 @@ void sunpos_xyz(double mjd,xyz_t *pos)
   return;
 }
 
-// Greenwich Mean Sidereal Time
-double dgmst(double mjd)
+// Compute precession angles
+void precession_angles(double mjd0,double mjd,double *zeta,double *z,double *theta)
 {
-  double t,dgmst;
+  double t0,t;
 
-  t=(mjd-51544.5)/36525.0;
+  // Time in centuries
+  t0=(mjd0-51544.5)/36525.0;
+  t=(mjd-mjd0)/36525.0;
 
-  dgmst=360.98564736629+t*(0.000387933-t/38710000);
+  // Precession angles
+  *zeta=(2306.2181+1.39656*t0-0.000139*t0*t0)*t;
+  *zeta+=(0.30188-0.000344*t0)*t*t+0.017998*t*t*t;
+  *zeta*=D2R/3600.0;
+  *z=(2306.2181+1.39656*t0-0.000139*t0*t0)*t;
+  *z+=(1.09468+0.000066*t0)*t*t+0.018203*t*t*t;
+  *z*=D2R/3600.0;
+  *theta=(2004.3109-0.85330*t0-0.000217*t0*t0)*t;
+  *theta+=-(0.42665+0.000217*t0)*t*t-0.041833*t*t*t;
+  *theta*=D2R/3600.0;
+  
+  return;
+}
 
-  return dgmst;
+// Initialize observer and sun position and precession angles
+void initialize(struct image img)
+{
+  int i;
+  double t;
+  xyz_t obsvel;
+
+  // Loop over points
+  for (i=0;i<MMAX;i++) {
+    // Compute time
+    t=img.exptime*(float) i/(float) (MMAX-1);
+    p[i].mjd=img.mjd+t/86400.0;
+
+    // Compute observer and sun position
+    obspos_xyz(p[i].mjd,&p[i].obspos,&obsvel);
+    sunpos_xyz(p[i].mjd,&p[i].sunpos);
+
+    // Compute precession angles
+    precession_angles(p[i].mjd,51544.5,&p[i].zeta,&p[i].z,&p[i].theta);
+  }
+    
+  return;
 }
 
