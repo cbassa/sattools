@@ -1615,6 +1615,8 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
       continue;
     if (m.leoflag==4 && strcmp(type,"GTO")!=0)
       continue;
+    if (m.leoflag==5 && strcmp(type,"GEO")==0)
+      continue;
 
     sprintf(norad," %ld",Isat);
 
@@ -2359,6 +2361,8 @@ int plot_skymap(void)
 	    sprintf(text,"GEO");
 	  else if (m.leoflag==4)
 	    sprintf(text,"GTO");
+	  else if (m.leoflag==5)
+	    sprintf(text,"AllButGEO");
 	} else if (Isatsel>0) {
 	  sprintf(text,"%05d",(int) Isatsel);
 	} else {
@@ -2610,7 +2614,7 @@ int plot_skymap(void)
     if (c=='L') {
       if (Isatsel==0) {
 	m.leoflag++;
-	if (m.leoflag>4)
+	if (m.leoflag>5)
 	  m.leoflag=-1;
 	redraw=1;
       } else {
