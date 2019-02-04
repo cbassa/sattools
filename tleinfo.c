@@ -180,7 +180,7 @@ int main(int argc,char *argv[])
   FILE *file;
   orbit_t orb;
   float aodp,perigee,apogee,period,lng;
-  int info=0;
+  int info=0,unique=0;
   double mjd;
   char *env;
 
@@ -188,11 +188,15 @@ int main(int argc,char *argv[])
   sprintf(tlefile,"%s/bulk.tle",env);
 
   // Decode options
-  while ((arg=getopt(argc,argv,"c:i:aH1ftndb"))!=-1) {
+  while ((arg=getopt(argc,argv,"c:i:aH1ftndbu"))!=-1) {
     switch (arg) {
       
     case 'c':
       strcpy(tlefile,optarg);
+      break;
+
+    case 'u':
+      unique=1;
       break;
 
     case '1':
@@ -256,6 +260,8 @@ int main(int argc,char *argv[])
 	    printf("%.8s\n",line1+9);
 	  else
 	    printf("%s\n%s\n%s\n",line0,line1,line2);
+	  if (unique==1)
+	    break;
 	}
       }
       strcpy(line0,line1);
@@ -304,7 +310,7 @@ int main(int argc,char *argv[])
       orbit(orb,&aodp,&perigee,&apogee,&period);
       mjd=doy2mjd(orb.ep_year,orb.ep_day);
       mjd2nfd(mjd,nfd);
-      if (info==0) printf("%05d %10.4lf %8.4f %8.4f %8.4f %8.4f %8.6f %8.5f\n",orb.satno,mjd,DEG(orb.eqinc),DEG(orb.ascn),DEG(orb.argp),DEG(orb.mnan),orb.ecc,orb.rev);
+      if (info==0) printf("%05d %10.4lf %8.4f %8.4f %8.4f %8.4f %8.6f %8.5f %e\n",orb.satno,mjd,DEG(orb.eqinc),DEG(orb.ascn),DEG(orb.argp),DEG(orb.mnan),orb.ecc,orb.rev,orb.bstar);
       if (info==1) printf("%05d %6.0f x %6.0f x %6.2f %8.2f %8.6f %14.8lf\n",orb.satno,perigee,apogee,DEG(orb.eqinc),period,orb.ecc,mjd);
       if (info==2) {
 	lng=orbital_longitude_at_midnight(orb,mjd);
