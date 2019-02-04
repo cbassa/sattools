@@ -342,7 +342,7 @@ double nfd2mjd(char *date)
 
 void usage(void)
 {
-  printf("proparage c:i:t:m:e:\n\nPropagates orbital elements to a new epoch using the SGP4/SDP4 model.\nDefault operation propagates classfd.tle to now,\n\n-c  input catalog\n-i  Satellite number\n-t  New epoch (YYYY-MM-DDTHH:MM:SS)\n-m  New epoch (MJD)\n-e  New epoch (YYDDD.ddddddd)\n");
+  printf("propagate c:i:t:m:e:d:\n\nPropagates orbital elements to a new epoch using the SGP4/SDP4 model.\nDefault operation propagates classfd.tle to now,\n\n-c  input catalog\n-i  Satellite number\n-t  New epoch (YYYY-MM-DDTHH:MM:SS)\n-m  New epoch (MJD)\n-e  New epoch (YYDDD.ddddddd)\n-d  New COSPAR designation\n");
 
   return;
 }
@@ -350,13 +350,13 @@ void usage(void)
 
 int main(int argc,char *argv[])
 {
-  int imode,satno=0,arg;
+  int imode,satno=0,arg,desigflag=0;
   FILE *file;
   orbit_t orb;
   xyz_t r,v;
   char tlefile[LIM],nfd[32];
   char line1[80],line2[80],desig[20];
-  double mjd,epoch,ep_day;
+  double mjd,epoch,ep_day,bstar;
   char *env;
   int ep_year;
 
@@ -369,7 +369,7 @@ int main(int argc,char *argv[])
   mjd=nfd2mjd(nfd);
 
   // Decode options
-  while ((arg=getopt(argc,argv,"c:i:t:m:he:"))!=-1) {
+  while ((arg=getopt(argc,argv,"c:i:t:m:he:d:"))!=-1) {
     switch (arg) {
 
     case 't':
@@ -390,6 +390,11 @@ int main(int argc,char *argv[])
       mjd=doy2mjd(ep_year,ep_day);
       break;
 
+    case 'd':
+      strcpy(desig,optarg);
+      desigflag=1;
+      break;
+      
     case 'm':
       mjd=(double) atof(optarg);
       break;
@@ -419,8 +424,10 @@ int main(int argc,char *argv[])
   while (read_twoline(file,satno,&orb)==0) {
     format_tle(orb,line1,line2);
     //    printf("Input:\n%s\n%s\n",line1,line2);
-    strcpy(desig,orb.desig);
-
+    if (desigflag==0)
+      strcpy(desig,orb.desig);
+    bstar=orb.bstar;
+    
     // Propagate
     imode=init_sgdp4(&orb);
     imode=satpos_xyz(mjd+2400000.5,&r,&v);
@@ -428,7 +435,9 @@ int main(int argc,char *argv[])
     // Convert
     orb=rv2el(orb.satno,mjd,r,v);
 
+    // Copy back
     strcpy(orb.desig,desig);
+    orb.bstar=bstar;
 
     format_tle(orb,line1,line2);
     printf("%s\n%s\n",line1,line2);
