@@ -19,8 +19,33 @@ extern double SGDP4_jd0;
 
 void usage(void)
 {
-  return;
+  printf("usage: tleinfo [-c TLEFILE] [-u] [|-1|-f] [ |-n|-d] [-i SATNO] [ |-a|-b] [-H] [-h]\n\n");
+
+  printf("-c TLEFILE  The file containing orbital elements in the form of TLEs, 3 lines per object\n");
+  printf("            default: ./bulk.tle\n");
+  printf("-i SATNO    Filter only elements for objects with this satno\n");
+  printf("-u          Show only one object (MODE0 only)\n");
+
+  printf("\nSelect MODE:\n");
+  printf("            MODE0: Show TLEs, object names or COSPAR designations\n");
+  printf("-1          MODE1: Show list of elements (one line per object)\n");
+  printf("-f          MODE2: Show human-readable parameters\n\n");
+
+  printf("Select INFOTYPE\n");
+  printf("MODE0:\n");
+  printf("  default   Show the TLEs itself\n");
+  printf("  -n        Show only the name of the objects\n");
+  printf("  -d        Show only the COSPAR designation of the objects\n\n");
+  printf("MODE1:\n");
+  printf("  default   SATNO, YEAR, DOY, INCL, ASCN, ARGP, MA, ECC, MM, BSTAR\n");
+  printf("  -a        SATNO, SEMI, PERIGEE, APOGEE, INCL, PERIOD, ECC\n");
+  printf("  -b        SATNO, YEAR, DOY, INCL, ASCN, ARGP, MA, ECC, MM, floor(MJD), LNG_AT_MIDNIGHT\n\n");
+
+
+  printf("-H          Show header (MODE1 only), default: disabled\n");
+  printf("-h          Print usage\n");
 }
+
 double modulo(double x,double y);
 
 // Compute Julian Day from Date
