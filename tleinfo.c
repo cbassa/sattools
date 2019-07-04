@@ -354,15 +354,11 @@ int main(int argc,char *argv[])
     file=fopen(tlefile,"rb");
     if (file==NULL) 
       fatal_error("File open failed for reading \"%s\"",tlefile);
-    
-    if (info==0 && header==1)
-      printf("SATNO YEAR DOY     INCL    ASCN     ARGP     MA       ECC      MM\n");
-    if (info==1 && header==1)
-      printf("SATNO SEMI     PERIGEE  APOGEE    PERIOD  ECC\n");
-    
+
     // Loop over file
     while (read_twoline(file,satno,&orb)==0) 
       print_orb(&orb);
+
     fclose(file);
   }
 
