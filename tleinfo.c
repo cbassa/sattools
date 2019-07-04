@@ -276,19 +276,21 @@ int main(int argc,char *argv[])
     while (fgetline(file,line1,LIM)>0) {
       // Find TLE line
       if (line1[0]=='1') {
-	fgetline(file,line2,LIM);
-	sscanf(line1+2,"%d",&no);
-	if (satno==0 || satno==no) {
-	  if (name==1 && desig==0) 
-	    printf("%s\n",line0);
-	  else if (name==0 && desig==1)
-	    printf("%.8s\n",line1+9);
-	  else
-	    printf("%s\n%s\n%s\n",line0,line1,line2);
-	  if (unique==1)
-	    break;
-	}
+	    fgetline(file,line2,LIM);
+	    sscanf(line1+2,"%d",&no);
+
+	    if (satno==0 || satno==no) {
+	      if (name==1 && desig==0)
+	        printf("%s\n",line0);
+	      else if (name==0 && desig==1)
+	        printf("%.8s\n",line1+9);
+	      else
+	        printf("%s\n%s\n%s\n",line0,line1,line2);
+	      if (unique==1)
+	        break;
+	    }
       }
+
       strcpy(line0,line1);
     }
 
@@ -338,8 +340,8 @@ int main(int argc,char *argv[])
       if (info==0) printf("%05d %10.4lf %8.4f %8.4f %8.4f %8.4f %8.6f %8.5f %e\n",orb.satno,mjd,DEG(orb.eqinc),DEG(orb.ascn),DEG(orb.argp),DEG(orb.mnan),orb.ecc,orb.rev,orb.bstar);
       if (info==1) printf("%05d %6.0f x %6.0f x %6.2f %8.2f %8.6f %14.8lf\n",orb.satno,perigee,apogee,DEG(orb.eqinc),period,orb.ecc,mjd);
       if (info==2) {
-	lng=orbital_longitude_at_midnight(orb,mjd);
-	printf("%05d %10.4lf %8.4f %8.4f %8.4f %8.4f %8.6f %8.5f %10.4lf %8.4f\n",orb.satno,mjd,DEG(orb.eqinc),DEG(orb.ascn),DEG(orb.argp),DEG(orb.mnan),orb.ecc,orb.rev,floor(mjd),lng);
+	    lng=orbital_longitude_at_midnight(orb,mjd);
+	    printf("%05d %10.4lf %8.4f %8.4f %8.4f %8.4f %8.6f %8.5f %10.4lf %8.4f\n",orb.satno,mjd,DEG(orb.eqinc),DEG(orb.ascn),DEG(orb.argp),DEG(orb.mnan),orb.ecc,orb.rev,floor(mjd),lng);
       }
     }
     fclose(file);
