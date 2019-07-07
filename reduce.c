@@ -265,8 +265,8 @@ void reduce_point(struct observation *obs,struct image img,float tmid,float x,fl
 void compute_cuts(float *z,int *mask,int n,float *zmin,float *zmax,float lcut,float hcut)
 {
   int i,m;
-  float s1,s2;
-  float avg,std;
+  double s1,s2;
+  double avg,std;
 
   for (i=0,s1=0.0,s2=0.0,m=0;i<n;i++) {
     if (mask[i]==1) {
@@ -278,8 +278,8 @@ void compute_cuts(float *z,int *mask,int n,float *zmin,float *zmax,float lcut,fl
   avg=s1/(float) m;
   std=sqrt(s2/(float) m-avg*avg);
   
-  *zmin=avg-lcut*std;
-  *zmax=avg+hcut*std;
+  *zmin=(float) (avg-lcut*std);
+  *zmax=(float) (avg+hcut*std);
   
   return;
 }
