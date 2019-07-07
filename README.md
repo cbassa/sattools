@@ -45,3 +45,20 @@ Run notes
 * You should install NTP support on the system and configure time/date to automatically
   sinchronize to time servers.
 * Modify stget.sh for your space-track.org login and password (--post-data='identity=login&password=password')
+
+Tools
+-----
+
+* `tleinfo`: Display information about a set of TLEs.
+  Example usage:
+  - List values (SATNO, YEAR DOY, INCL, ASCN, ARGP, MA, ECC, MM) of the TLEs in the file `bulk.tle`: `tleinfo -H -1`
+  - List orbital parameters (SEMI, PERIGEE, APOGEE, PERIOD, ECC) of the TLEs in the file `bulk.tle`: `tleinfo -H -1 -a`
+  - Show human-readable info of the TLE for object 74001: `tleinfo -i 74001 -f`
+  
+* `faketle`: Calculate a TLE based on given orbit/launch parameters.
+  Example usage:
+  - Assuming a standard GTO launch from Cape Canaveral (latitude 28.5°N), GTO insertion burn (10° E, 0° N) at south-bound equator crossing +1655 seconds after launch,
+    launch at 2019-02-22T01:45:00, perigee/apogee heights 258/59998 km, the pre-launch TLE can be generated with
+    ```
+    faketle -t 2019-02-22T01:45:00 -d 1655 -q 258 -Q 59998 -I 28.5 -m 0 -w 180 -n 10
+    ```
