@@ -24,7 +24,7 @@
 
 // Observation struct contains observation time, celestial coords and camera name
 struct observation {
-  char stime[20],sra[15],sde[15],camname[15],startstop[10];
+  char stime[32],sra[32],sde[32],camname[15],startstop[10];
   time_t ptime;
   float dt;
 };
@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
   int i=0,nobs,flag=0;
   time_t rawtime,aimtime;
   struct tm *ptm,*rtm;
-  char buf[20],line[LIM],stm[20],sra[15],sde[15],pra[15],pde[15];
+  char buf[20],line[LIM],stm[20],sra[32],sde[32],pra[32],pde[32];
   FILE *file;
   struct observation obs[NMAX];
   char *env;
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 
     // Print UTC time
     ptm=gmtime(&rawtime);
-    strftime(buf,20,"%Y-%m-%dT%H:%M:%S",ptm);
+    strftime(buf,32,"%Y-%m-%dT%H:%M:%S",ptm);
 
     // Make raw time UTC to compare with scheduled time
     rawtime=mktime(ptm);
