@@ -12,8 +12,8 @@
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 
-#define PORT 7264
-#define MAXPORT 7274
+#define PORT 7624
+#define MAXPORT 7674
 #define IP "127.0.0.1"
 #define LIM 2048
 #define NMAX 256

@@ -17,7 +17,7 @@
 #define LIM 128
 #define D2R M_PI/180.0
 #define R2D 180.0/M_PI
-#define PORT 7264
+#define PORT 7624
 #define IP "127.0.0.1"
 
 struct map {
