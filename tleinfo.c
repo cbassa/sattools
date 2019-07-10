@@ -19,8 +19,33 @@ extern double SGDP4_jd0;
 
 void usage(void)
 {
-  return;
+  printf("usage: tleinfo [-c TLEFILE] [-u] [|-1|-f] [ |-n|-d] [-i SATNO] [ |-a|-b] [-H] [-h]\n\n");
+
+  printf("-c TLEFILE  The file containing orbital elements in the form of TLEs, 3 lines per object\n");
+  printf("            default: ./bulk.tle\n");
+  printf("-i SATNO    Filter only elements for objects with this satno\n");
+  printf("-u          Show only one object (MODE0 only)\n");
+
+  printf("\nSelect MODE:\n");
+  printf("            MODE0: Show TLEs, object names or COSPAR designations\n");
+  printf("-1          MODE1: Show list of elements (one line per object)\n");
+  printf("-f          MODE2: Show human-readable parameters\n\n");
+
+  printf("Select INFOTYPE\n");
+  printf("MODE0:\n");
+  printf("  default   Show the TLEs itself\n");
+  printf("  -n        Show only the name of the objects\n");
+  printf("  -d        Show only the COSPAR designation of the objects\n\n");
+  printf("MODE1:\n");
+  printf("  default   SATNO, YEAR, DOY, INCL, ASCN, ARGP, MA, ECC, MM, BSTAR\n");
+  printf("  -a        SATNO, SEMI, PERIGEE, APOGEE, INCL, PERIOD, ECC\n");
+  printf("  -b        SATNO, YEAR, DOY, INCL, ASCN, ARGP, MA, ECC, MM, floor(MJD), LNG_AT_MIDNIGHT\n\n");
+
+
+  printf("-H          Show header (MODE1 only), default: disabled\n");
+  printf("-h          Print usage\n");
 }
+
 double modulo(double x,double y);
 
 // Compute Julian Day from Date
@@ -251,19 +276,21 @@ int main(int argc,char *argv[])
     while (fgetline(file,line1,LIM)>0) {
       // Find TLE line
       if (line1[0]=='1') {
-	fgetline(file,line2,LIM);
-	sscanf(line1+2,"%d",&no);
-	if (satno==0 || satno==no) {
-	  if (name==1 && desig==0) 
-	    printf("%s\n",line0);
-	  else if (name==0 && desig==1)
-	    printf("%.8s\n",line1+9);
-	  else
-	    printf("%s\n%s\n%s\n",line0,line1,line2);
-	  if (unique==1)
-	    break;
-	}
+	    fgetline(file,line2,LIM);
+	    sscanf(line1+2,"%d",&no);
+
+	    if (satno==0 || satno==no) {
+	      if (name==1 && desig==0)
+	        printf("%s\n",line0);
+	      else if (name==0 && desig==1)
+	        printf("%.8s\n",line1+9);
+	      else
+	        printf("%s\n%s\n%s\n",line0,line1,line2);
+	      if (unique==1)
+	        break;
+	    }
       }
+
       strcpy(line0,line1);
     }
 
@@ -299,12 +326,16 @@ int main(int argc,char *argv[])
     file=fopen(tlefile,"rb");
     if (file==NULL) 
       fatal_error("File open failed for reading \"%s\"",tlefile);
-    
-    if (info==0 && header==1)
-      printf("SATNO YEAR DOY     INCL    ASCN     ARGP     MA       ECC      MM\n");
-    if (info==1 && header==1)
-      printf("SATNO SEMI     PERIGEE  APOGEE    PERIOD  ECC\n");
-    
+
+    if (header==1) {
+      if (info==0)
+        printf("SATNO YEAR DOY     INCL    ASCN     ARGP     MA       ECC      MM   BSTAR\n");
+      else if (info==1)
+        printf("SATNO SEMI     PERIGEE  APOGEE    PERIOD  ECC\n");
+      else if (info==2)
+        printf("SATNO YEAR DOY     INCL    ASCN     ARGP     MA       ECC      MM   floor(MJD) LNG_AT_MIDNIGHT\n");
+    }
+
     // Loop over file
     while (read_twoline(file,satno,&orb)==0) {
       orbit(orb,&aodp,&perigee,&apogee,&period);
@@ -313,8 +344,8 @@ int main(int argc,char *argv[])
       if (info==0) printf("%05d %10.4lf %8.4f %8.4f %8.4f %8.4f %8.6f %8.5f %e\n",orb.satno,mjd,DEG(orb.eqinc),DEG(orb.ascn),DEG(orb.argp),DEG(orb.mnan),orb.ecc,orb.rev,orb.bstar);
       if (info==1) printf("%05d %6.0f x %6.0f x %6.2f %8.2f %8.6f %14.8lf\n",orb.satno,perigee,apogee,DEG(orb.eqinc),period,orb.ecc,mjd);
       if (info==2) {
-	lng=orbital_longitude_at_midnight(orb,mjd);
-	printf("%05d %10.4lf %8.4f %8.4f %8.4f %8.4f %8.6f %8.5f %10.4lf %8.4f\n",orb.satno,mjd,DEG(orb.eqinc),DEG(orb.ascn),DEG(orb.argp),DEG(orb.mnan),orb.ecc,orb.rev,floor(mjd),lng);
+	    lng=orbital_longitude_at_midnight(orb,mjd);
+	    printf("%05d %10.4lf %8.4f %8.4f %8.4f %8.4f %8.6f %8.5f %10.4lf %8.4f\n",orb.satno,mjd,DEG(orb.eqinc),DEG(orb.ascn),DEG(orb.argp),DEG(orb.mnan),orb.ecc,orb.rev,floor(mjd),lng);
       }
     }
     fclose(file);
@@ -323,15 +354,11 @@ int main(int argc,char *argv[])
     file=fopen(tlefile,"rb");
     if (file==NULL) 
       fatal_error("File open failed for reading \"%s\"",tlefile);
-    
-    if (info==0 && header==1)
-      printf("SATNO YEAR DOY     INCL    ASCN     ARGP     MA       ECC      MM\n");
-    if (info==1 && header==1)
-      printf("SATNO SEMI     PERIGEE  APOGEE    PERIOD  ECC\n");
-    
+
     // Loop over file
     while (read_twoline(file,satno,&orb)==0) 
       print_orb(&orb);
+
     fclose(file);
   }
 

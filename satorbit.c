@@ -65,6 +65,7 @@ double nfd2mjd(char *date);
 double date2mjd(int year,int month,double day);
 void mjd2date(double mjd,char *date,int length);
 void usage();
+void interactive_usage();
 void nfd_now(char *s);
 void rotate(int axis,float angle,float *x,float *y,float *z);
 void sunpos_xyz(double mjd,xyz_t *pos,double *ra,double *de);
@@ -1069,6 +1070,13 @@ void plot_map(int plotflag)
     // Get cursor
     cpgcurs(&x,&y,&c);
 
+    // Help
+    if (c=='h') {
+      interactive_usage();
+
+      continue;
+    }
+
     // Redraw
     if (c=='r') {
       m.mjd=-1.0;
@@ -1316,7 +1324,50 @@ double nfd2mjd(char *date)
 
 void usage()
 {
-  return;
+  printf("usage: satorbit -c TLEFILE [-g DEVICE] [-t TIMESTAMP] [-s COSPARID] [-i SATNO]\n");
+  printf("                [-q] [-p XYZFILE] [-m] [-N NOTAMFILE] [-l LENGTH]\n");
+  printf("                [-L LNG] [-B LAT] [-R ZOOMSIZE] [-S ORIENTATION] [-h]\n\n");
+
+  printf("-c TLEFILE      The file containing orbital elements in the form of TLEs, 3 lines per object\n");
+  printf("-g DEVICE       PGPlot device (default: \"/xs\" --> interactive).\n");
+  printf("                If set exit the program when everything was drawn.\n");
+  printf("                default: stay in interactive mode\n");
+  printf("-t TIMESTAMP    Timestamp of the map, formatted as YYYY-mm-ddTHH:MM:SS, default: now\n");
+  printf("-s COSPARID     observation site, COSPAR ID of the observation site on which the map is centered optionally\n");
+  printf("-i SATNO        satno of the selected satellite, default: 0 (all satellites in the TLE file)\n");
+  printf("-q              launchsitesflag: If value=1 plot the launch sites as well, default: 0\n");
+  printf("-p XYZFILE      If given, plot xyz instead of track\n");
+  printf("-m              moonflag: If value=1 plot the moon as well\n");
+  printf("-N NOTAMFILE    If given, plot the NOTAM as well\n");
+  printf("-l LENGTH       Integration length in seconds, default: 60\n");
+  printf("-L LNG          map longitude\n");
+  printf("-B LAT          map latitude\n");
+  printf("-R ZOOMSIZE     Initial window size in earth radii, default: 1.2\n");
+  printf("-S ORIENTATION  map orientation: sidereal, default: terrestial\n");
+  printf("-h              Print usage\n");
+}
+
+void interactive_usage()
+{
+  printf("r    Redraw\n");
+  printf("f    Toggle footprint visibility\n");
+  printf("m    Toggle moon visibility\n");
+  printf("L    Toggle launchsite visibility\n");
+  printf("o    Switch between terrestial and sidereal orientation\n");
+  printf("c    Center map on cursor position\n");
+  printf("-    Zoom out by a factor of 1.2\n");
+  printf("+/=  Zoom in\n");
+  printf("{    decrease latitude -2\n");
+  printf("}    increase latitude +2\n");
+  printf("[    decrease longitude -2\n");
+  printf("]    increase longitude +2\n");
+  printf("<    Divide the integration length by a facor of 2\n");
+  printf(">    Multiply the integration length by a facor of 2\n");
+  printf(",    Increase time (+integration_length in seconds /(1 day))\n");
+  printf(".    Roll back the time\n");
+  printf("l    Enter the integration length in seconds\n");
+  printf("h    this interactive help\n");
+  printf("q/Q  Exit\n");
 }
 
 // Compute Date from Julian Day
