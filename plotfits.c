@@ -446,7 +446,7 @@ struct image read_fits(char *filename,int pnum)
   qfitsloader ql;
   char key[FITS_LINESZ+1] ;
   struct image img;
-  float s1,s2,avg,std;
+  double s1,s2,avg,std;
 
   // Set plane
   ql.xtnum = 0;
