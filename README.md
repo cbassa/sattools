@@ -81,3 +81,15 @@ Tools
     ```
     satorbit -i 25544 -c $ST_TLEDIR/catalog.tle
     ```
+
+* `launchtle`: This tool takes an input TLE and launchtime and then corrects
+  the epoch of the TLE for the new launch time, and adjusts the right ascension
+  of the ascending node for how much it would have changed between the old
+  and new launch time.
+  Example usage:
+  - Use the given pre-launch TLE of object 70002 (stored in prelaunch.tle) associated with
+    the original launch time of 2018-11-11T03:00:00Z to correct for the new launch time
+    at 2018-11-11T05:00:00Z and store it with a new identifier (70003 here):
+    ```
+    launchtle -c prelaunch.tle -i 70002 -t 2018-11-11T03:00:00 -T 2018-11-11T05:00:00 -I 70003
+    ```
