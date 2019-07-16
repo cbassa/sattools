@@ -14,7 +14,7 @@ cp $ST_TLEDIR/catalog.tle $ST_TLEDIR/${DATE}_catalog.txt
 
 # Get classfd
 wget http://www.prismnet.com/~mmccants/tles/classfd.zip --no-check-certificate -O $ST_TLEDIR/classfd.zip
-unzip -o $ST_TLEDIR/classfd.zip
+unzip -d $ST_TLEDIR -o $ST_TLEDIR/classfd.zip
 dos2unix $ST_TLEDIR/classfd.tle
 cp $ST_TLEDIR/classfd.tle $ST_TLEDIR/${DATE}_classfd.txt
 #mv $HOME/classfd.tle $ST_TLEDIR/classfd.tle
@@ -22,7 +22,7 @@ rm $ST_TLEDIR/classfd.zip
 
 # Get inttles
 wget http://www.prismnet.com/~mmccants/tles/inttles.zip --no-check-certificate -O $ST_TLEDIR/inttles.zip
-unzip -o $ST_TLEDIR/inttles.zip
+unzip -d $ST_TLEDIR -o $ST_TLEDIR/inttles.zip
 dos2unix $ST_TLEDIR/inttles.tle
 cp $ST_TLEDIR/inttles.tle $ST_TLEDIR/${DATE}_inttles.txt
 #mv $HOME/inttles.tle $ST_TLEDIR/inttles.tle
