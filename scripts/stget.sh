@@ -4,7 +4,7 @@
 DATE=`date +%Y%m%d_%H%M%S`
 
 # Get cookie
-wget --post-data='identity=yourlogin&password=yourpassword' --cookies=on --keep-session-cookies --save-cookies=/tmp/cookies.txt 'https://www.space-track.org/ajaxauth/login' -o /tmp/stget.log
+wget --post-data="identity=$ST_USERNAME&password=$ST_PASSWORD" --cookies=on --keep-session-cookies --save-cookies=/tmp/cookies.txt 'https://www.space-track.org/ajaxauth/login' -o /tmp/stget.log
 
 # Get data
 wget  --keep-session-cookies --load-cookies=/tmp/cookies.txt 'https://www.space-track.org/basicspacedata/query/class/tle_latest/ORDINAL/1/EPOCH/%3Enow-30/format/3le' -O $ST_TLEDIR/catalog.tle

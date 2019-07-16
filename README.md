@@ -44,7 +44,7 @@ Run notes
   and copied to /etc/udev/rules.d/
 * You should install NTP support on the system and configure time/date to automatically
   sinchronize to time servers.
-* Modify stget.sh for your space-track.org login and password (--post-data='identity=login&password=password')
+* Provide your <space-track.org> credentials for `stget.sh` via the environment variables `ST_USERNAME` and `ST_PASSWORD`
 
 Tools
 -----
