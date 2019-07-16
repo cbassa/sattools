@@ -62,3 +62,34 @@ Tools
     ```
     faketle -t 2019-02-22T01:45:00 -d 1655 -q 258 -Q 59998 -I 28.5 -m 0 -w 180 -n 10
     ```
+
+* `pass` : Calculate the next passes above a given COSPAR site.
+  Example usage:
+  - List all ISS passes (NORAD ID 25544) at Dwingeloo Telescope (COSPAR
+    site ID 9998) for the next 10 hours (3600 seconds) based on the TLE
+    in catalog.tle (drop `-a` to only show the visible passes)
+    ```
+    pass -i 25544 -s 9998 -l 36000 -c $ST_TLEDIR/catalog.tle -a
+    ```
+  - Append `-P` in order to invoke `skymap` to plot a skymap and the
+    sky track for each predicted pass
+
+* `satorbit`: Show a 3D representation of the earth, the current position,
+  footprint and orbit of the selected object
+  Example usage:
+  - Show ISS position, footprint and orbit
+    ```
+    satorbit -i 25544 -c $ST_TLEDIR/catalog.tle
+    ```
+
+* `launchtle`: This tool takes an input TLE and launchtime and then corrects
+  the epoch of the TLE for the new launch time, and adjusts the right ascension
+  of the ascending node for how much it would have changed between the old
+  and new launch time.
+  Example usage:
+  - Use the given pre-launch TLE of object 70002 (stored in prelaunch.tle) associated with
+    the original launch time of 2018-11-11T03:00:00Z to correct for the new launch time
+    at 2018-11-11T05:00:00Z and store it with a new identifier (70003 here):
+    ```
+    launchtle -c prelaunch.tle -i 70002 -t 2018-11-11T03:00:00 -T 2018-11-11T05:00:00 -I 70003
+    ```
