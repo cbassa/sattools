@@ -29,12 +29,13 @@ Install
 
 Run notes
 ---------
-* You will need to set the following environment variables to run sattools.
-	These vars are set with default values after running install_sattolls.sh.
-	`ST_COSPAR` COSPAR number
-	`ST_DATADIR` path to sattools directory
-	`ST_TLEDIR` path to TLE directory
-	`ST_OBSDIR` path to observations directory
+* You will need to set the following environment variables to run **sattools**.
+  * `ST_COSPAR` COSPAR number
+  * `ST_DATADIR` path to sattools directory
+  * `ST_TLEDIR` path to TLE directory
+  * `ST_OBSDIR` path to observations directory
+  * `ST_LOGIN` space-track.org login info (of the form `ST_LOGIN="identity=username&password=password"`)
+  These variables are set with default values after running install_sattools.sh (except `ST_LOGIN`).
 * If you have multiple capture devices you will need to add a /etc/udev/rules.d/99-server.rules file to add symlinks and use them to
   address a particular camera. Sattools will automatically select the camera that is scheduled for each observation.
   You may use a command such as 'udevadm info -a -n /dev/video0' to get your capture device attributes and
@@ -44,7 +45,6 @@ Run notes
   and copied to /etc/udev/rules.d/
 * You should install NTP support on the system and configure time/date to automatically
   sinchronize to time servers.
-* Modify stget.sh for your space-track.org login and password (--post-data='identity=login&password=password')
 
 Tools
 -----
@@ -93,3 +93,10 @@ Tools
     ```
     launchtle -c prelaunch.tle -i 70002 -t 2018-11-11T03:00:00 -T 2018-11-11T05:00:00 -I 70003
     ```
+
+* `tleupdate`: Update the local database of TLEs from various
+  sources (Space-Track, inttles and classfd.zip).
+  Usage:
+  ```
+  tleupdate
+  ```
