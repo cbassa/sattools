@@ -29,12 +29,13 @@ Install
 
 Run notes
 ---------
-* You will need to set the following environment variables to run sattools.
-	These vars are set with default values after running install_sattolls.sh.
-	`ST_COSPAR` COSPAR number
-	`ST_DATADIR` path to sattools directory
-	`ST_TLEDIR` path to TLE directory
-	`ST_OBSDIR` path to observations directory
+* You will need to set the following environment variables to run **sattools**.
+  * `ST_COSPAR` COSPAR number
+  * `ST_DATADIR` path to sattools directory
+  * `ST_TLEDIR` path to TLE directory
+  * `ST_OBSDIR` path to observations directory
+  * `ST_LOGIN` space-track.org login info (of the form `ST_LOGIN="identity=username&password=password"`)
+  These variables are set with default values after running install_sattools.sh (except `ST_LOGIN`).
 * If you have multiple capture devices you will need to add a /etc/udev/rules.d/99-server.rules file to add symlinks and use them to
   address a particular camera. Sattools will automatically select the camera that is scheduled for each observation.
   You may use a command such as 'udevadm info -a -n /dev/video0' to get your capture device attributes and
@@ -44,7 +45,6 @@ Run notes
   and copied to /etc/udev/rules.d/
 * You should install NTP support on the system and configure time/date to automatically
   sinchronize to time servers.
-* Modify stget.sh for your space-track.org login and password (--post-data='identity=login&password=password')
 
 Tools
 -----
@@ -62,3 +62,41 @@ Tools
     ```
     faketle -t 2019-02-22T01:45:00 -d 1655 -q 258 -Q 59998 -I 28.5 -m 0 -w 180 -n 10
     ```
+
+* `pass` : Calculate the next passes above a given COSPAR site.
+  Example usage:
+  - List all ISS passes (NORAD ID 25544) at Dwingeloo Telescope (COSPAR
+    site ID 9998) for the next 10 hours (3600 seconds) based on the TLE
+    in catalog.tle (drop `-a` to only show the visible passes)
+    ```
+    pass -i 25544 -s 9998 -l 36000 -c $ST_TLEDIR/catalog.tle -a
+    ```
+  - Append `-P` in order to invoke `skymap` to plot a skymap and the
+    sky track for each predicted pass
+
+* `satorbit`: Show a 3D representation of the earth, the current position,
+  footprint and orbit of the selected object
+  Example usage:
+  - Show ISS position, footprint and orbit
+    ```
+    satorbit -i 25544 -c $ST_TLEDIR/catalog.tle
+    ```
+
+* `launchtle`: This tool takes an input TLE and launchtime and then corrects
+  the epoch of the TLE for the new launch time, and adjusts the right ascension
+  of the ascending node for how much it would have changed between the old
+  and new launch time.
+  Example usage:
+  - Use the given pre-launch TLE of object 70002 (stored in prelaunch.tle) associated with
+    the original launch time of 2018-11-11T03:00:00Z to correct for the new launch time
+    at 2018-11-11T05:00:00Z and store it with a new identifier (70003 here):
+    ```
+    launchtle -c prelaunch.tle -i 70002 -t 2018-11-11T03:00:00 -T 2018-11-11T05:00:00 -I 70003
+    ```
+
+* `tleupdate`: Update the local database of TLEs from various
+  sources (Space-Track, inttles and classfd.zip).
+  Usage:
+  ```
+  tleupdate
+  ```
