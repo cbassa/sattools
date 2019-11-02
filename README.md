@@ -7,6 +7,7 @@ Installation
 ------
 
 **Requirements**
+
 The following software and libraries are required to compile `sattools`:
 * gfortran
 * gcc
@@ -22,6 +23,7 @@ The following software and libraries are required to compile `sattools`:
 On Debian/Ubuntu, these can be installed with `sudo apt install git make dos2unix sextractor wcslib-dev pgplot5 libgsl-dev gfortran libpng-dev libx11-dev libjpeg-dev libexif-dev`.
 
 **Build and install `qfits`**
+
 ```
 wget -c ftp://ftp.eso.org/pub/qfits/qfits-5.2.0.tar.gz
 gunzip -c qfits-5.2.0.tar.gz | tar xvf -
@@ -34,6 +36,7 @@ sudo make install
 ```
 
 **Clone and install `sattools`**
+
 ```
 git clone https://github.com/cbassa/sattools.git
 cd sattools
@@ -41,6 +44,7 @@ make
 ```
 
 **Setup environment variables**
+
 You will need to set the following environment variables to run **sattools**. Add these to a login file such as `.bashrc`.
 * `ST_COSPAR` COSPAR observing site number,use 9990 if you do not have one. Add your site information to `$ST_DATADIR/data/sites.txt`.
 * `ST_DATADIR` path to sattools directory (e.g. `$HOME/software/sattools`)
@@ -49,6 +53,7 @@ You will need to set the following environment variables to run **sattools**. Ad
 * `ST_LOGIN` optional space-track.org login info for TLE download (of the form `ST_LOGIN="identity=username&password=password"`)
 
 **Final configuration steps**
+
 Add the `sattools` directory with executables to your `PATH` variable. On Ubuntu this is `.profile` and should be of the form `PATH=<path_to_sattools>:$PATH`.
 
 Then reload the `.profile` file with `source $HOME/.profile`.
@@ -56,6 +61,7 @@ Then reload the `.profile` file with `source $HOME/.profile`.
 Try to download TLEs using `tleupdate`, which should now exist in your `PATH` variable.
 
 **Miscellaneous setup notes**
+
 * If you have multiple capture devices you will need to add a `/etc/udev/rules.d/99-server.rules` file to add symlinks and use them to address a particular camera. `sattools` will automatically select the camera that is scheduled for each observation.  You may use a command such as `udevadm info -a -n /dev/video0` to get your capture device attributes and use that to create the rules file. A sample rules file is available as guide in `data/`. Note that symlinks to the rules file do not work, the rules file must be modified to suit your needs and copied to `/etc/udev/rules.d/`
 * You should install NTP support on the system and configure time/date to automatically synchronize to time servers.
 
