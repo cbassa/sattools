@@ -340,6 +340,7 @@ int main(int argc,char *argv[])
   char line1[80],line2[80],desig[20];
   double mjd,ra,de,dr,drmin,dmr,dmv;
   char *env;
+  int at_epoch=0;
 
   // Get environment variable
   env=getenv("ST_TLEDIR");
@@ -350,7 +351,7 @@ int main(int argc,char *argv[])
   mjd=nfd2mjd(nfd);
 
   // Decode options
-  while ((arg=getopt(argc,argv,"C:c:i:t:m:h"))!=-1) {
+  while ((arg=getopt(argc,argv,"C:c:i:t:m:he"))!=-1) {
     switch (arg) {
 
     case 't':
@@ -371,6 +372,10 @@ int main(int argc,char *argv[])
       usecatalog=1;
       break;
 
+    case 'e':
+      at_epoch=1;
+      break;
+      
     case 'i':
       satno=atoi(optarg);
       break;
@@ -396,6 +401,8 @@ int main(int argc,char *argv[])
 
     // Propagate
     imode=init_sgdp4(&orb);
+    if (at_epoch==1)
+      mjd=SGDP4_jd0-2400000.5;
     imode=satpos_xyz(mjd+2400000.5,&r0,&v0);
     
     // Compute normal
