@@ -56,6 +56,8 @@ posvel
 xyz2tle
 allnight
 geolon
+rv2tle
+tle2rv
 
 # TLE dir
 tle/
@@ -64,3 +66,4 @@ tle/
 data/frequencies.txt
 data/defects.txt
 data/sites.txt
+data/desig.txt
