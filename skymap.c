@@ -36,7 +36,7 @@ struct map {
   double h,sra,sde,sazi,salt;
   float alt,timezone;
   float fw,fh,agelimit;
-  int level,grid,site_id,plotstars;
+  int level,grid,site_id,plotstars,plotapex;
   int leoflag,iodflag,iodpoint,visflag,planar,pssatno,psnr,xyzflag,pflag,graves;
   float psrmin,psrmax,rvis;
 } m;
@@ -123,14 +123,14 @@ void dec2sex_iod(double x,char *s,int type);
 void usage()
 {
   
-  printf("skymap t:c:i:R:D:hs:d:l:P:r:V:p:A:E:S:\n\n");
+  printf("skymap t:c:i:R:D:hs:d:l:P:r:V:p:A:E:S:L:B:H:\n\n");
   printf("t    date/time (yyyy-mm-ddThh:mm:ss.sss) [default: now]\n");
   printf("c    TLE catalog file [default: classfd.tle]\n");
   printf("i    satellite ID (NORAD) [default: all]\n");
-  printf("R    R.A.\n");
-  printf("D    Decl.\n");
-  printf("A    Azimuth\n");
-  printf("E    Elevation\n");
+  printf("R    R.A. [hh:mm:ss.sss]\n");
+  printf("D    Decl. [+dd:mm:ss.ss]\n");
+  printf("A    Azimuth (deg)\n");
+  printf("E    Elevation (deg)\n");
   printf("S    All night\n");
   printf("h    this help\n");
   printf("s    site (COSPAR)\n");
@@ -140,6 +140,9 @@ void usage()
   printf("r    planar search altitude\n");
   printf("V    altitude for visibility contours\n");
   printf("p    file with xyz positions\n");
+  printf("L    manual site longitude (deg)\n");
+  printf("B    manual site latitude (deg)\n");
+  printf("H    manual site elevation (m)\n");
 
   return;
 }
@@ -182,6 +185,7 @@ void init_skymap(void)
   m.pflag=1;
   m.graves=0;
   m.plotstars=1;
+  m.plotapex=1;
 
   // Default settings
   strcpy(m.observer,"Unknown");
@@ -545,7 +549,9 @@ void allnight(void)
 
 int main(int argc,char *argv[])
 {
-  int i,arg=0;
+  int i,arg=0,isite=0;
+  double lat,lng;
+  float alt;
 
   // Redirect stderr
   freopen("/dev/null","w",stderr);
@@ -553,7 +559,7 @@ int main(int argc,char *argv[])
   init_skymap();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:R:D:hs:d:l:P:r:V:p:A:E:S:Qa"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:R:D:hs:d:l:P:r:V:p:A:E:S:QaL:B:H:"))!=-1) {
     switch(arg) {
 
     case 't':
@@ -567,6 +573,21 @@ int main(int argc,char *argv[])
       allnight();
       break;
 
+    case 'L':
+      lng=(double) atof(optarg);
+      isite++;
+      break;
+
+    case 'B':
+      lat=(double) atof(optarg);
+      isite++;
+      break;
+
+    case 'H':
+      alt=atof(optarg);
+      isite++;
+      break;
+      
     case 'c':
       strcpy(m.tlefile,optarg);
       break;
@@ -661,6 +682,15 @@ int main(int argc,char *argv[])
     }
   }
 
+  // Set manual site
+  if (isite==3) {
+    m.lat=lat;
+    m.lng=lng;
+    m.alt=alt/1000.0;
+    m.site_id=0;
+    strcpy(m.observer,"Manual observer");
+  }
+  
   init_plot("/xs",0,0.75);
 
   plot_skymap();
@@ -1621,7 +1651,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
     if (imode==SGDP4_ERROR)
       continue;
 
-    for (flag=0,fflag=0,t=0.0;t<dt;t+=1.0) {
+    for (flag=0,fflag=0,t=0.0;t<=dt;t+=1.0) {
       mjd=mjd0+t/86400.0;
 
       // Compute apparent position
@@ -2277,11 +2307,11 @@ int plot_skymap(void)
   double ra,de,azi,alt,rx,ry;
   xyz_t sunpos;
 
-	status=read_camera(fov);
-	if (status==-1) {
-	  fov=0;
-	  status=read_camera(fov);
-	}
+  status=read_camera(fov);
+  if (status==-1) {
+    fov=0;
+    status=read_camera(fov);
+  }
 
   for (;;) {
     if (redraw>0) {
@@ -2408,17 +2438,19 @@ int plot_skymap(void)
       skymap_plotsun();
       skymap_plotmoon();
 
-      plot_apex(35786.0,0.0);
-      plot_apex(39035,63.4);
-      plot_apex(1100,63.4);
-      //      plot_apex(1100,63.4);
-      //      plot_apex(1100,123.0);
-      plot_apex(800,98.7);
-      plot_apex(1100,-63.4);
-      plot_apex(800,-98.7);
-      //      plot_apex(480.0,141.7);
-      //      plot_apex(400.0,40.0);
-      //      plot_apex(320.0,38.0);
+      if (m.plotapex==1) {
+	plot_apex(35786.0,0.0);
+	plot_apex(39035,63.4);
+	plot_apex(1100,63.4);
+	//      plot_apex(1100,63.4);
+	//      plot_apex(1100,123.0);
+	plot_apex(800,98.7);
+	plot_apex(1100,-63.4);
+	plot_apex(800,-98.7);
+	//      plot_apex(480.0,141.7);
+	//      plot_apex(400.0,40.0);
+	//      plot_apex(320.0,38.0);
+      }
       
       if (Isatsel>=0 && m.leoflag>=0)
 	skymap_plotsatellite(m.tlefile,Isatsel,m.mjd,m.length);
@@ -2489,6 +2521,7 @@ int plot_skymap(void)
       printf("E   Save observation end-time to schedule\n");
       printf("a   Select on age\n");
       printf("Q   Toggle plotting stars\n");
+      printf("x   Toggle plotting apex (GEO, HEO, NOSS)\n");
     }
 
     // Toggle plotting stars
@@ -2500,6 +2533,15 @@ int plot_skymap(void)
       redraw=1;
     }
 
+    // Toggle plotting apex
+    if (c=='x') {
+      if (m.plotapex==1)
+	m.plotapex=0;
+      else if (m.plotapex==0)
+	m.plotapex=1;
+      redraw=1;
+    }
+    
     // Cycle IOD points
     if (c=='\t') {
       m.iodpoint++;
