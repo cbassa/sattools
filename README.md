@@ -13,6 +13,9 @@ The following software and libraries are required to compile `sattools`:
 * gcc
 * make
 * git
+* wcslib-dev
+* libgsl-dev
+* pgplot5
 * libpng-dev
 * libx11-dev
 * libjpeg-dev
