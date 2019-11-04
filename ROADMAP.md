@@ -68,4 +68,5 @@ Tools | `sattools` | `stvid` | `stphot` | Purpose | Future
 
 Tool | Who | Status
 -----|-----|-------
-`skymap` | Cees | Ongoing
+`skymap` | cbassa | Ongoing
+`launchtle` | kerel | Ongoing
