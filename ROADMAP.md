@@ -32,13 +32,34 @@ Tools | `sattools` | `stvid` | `stphot` | Purpose | Future
 `imgstat` | | | | | Deprecated, replaced with `stvid` functionality
 `jpg2fits` | | | x | Convert a JPG image to FITS | Stand alone tool
 `launchtle` | x | | | Adjust a TLE to a new launch time | Stand alone tool
-`measure` | | | x | Measure satellite positions in photograhic observations | Stand alone tool
+`measure` | | | x | Measure satellite positions in photographic observations | Stand alone tool
 `mvtle` | | | | Move a TLE | Deprecated
 `normal` | | | | Compute the normal of an orbit | Deprecated
 `pass` | x | | | Compute satellite passes | Stand alone tool
 `pgm2fits` | | | | Convert individual video frames to FITS | Deprecated, replaced with `stvid` functionality
-`plotfits` | | | Manually calibrate WCS | Deprecated, replaced with `stvid` functionality
+`plotfits` | | | | Manually calibrate WCS | Deprecated, replaced with `stvid` functionality
 `posmatch` | | | | Match satellite positions | Deprecated
 `posvel` | | | | Compute satellite position and velocity | Deprecated
 `propagate` | x | | | Propagate a TLE to a new epoch | Stand alone tool
-
+`pstrack` | | | | Perform a brute force plane scan | Deprecated
+`rde2iod` | x | | | Convert positions from RDE to IOD format | Stand alone tool
+`reduce` | | x | | Measure satellite positions in photographic observations | Stand alone tool
+`residuals` | x | | | Compute residuals between IOD observations and TLEs | Stand alone tool
+`runsched` | | x | x | Control INDI controlled telescope mounts | To be replaced with `stvid`/`stphot` functionality
+`rv2tle` | x | | | Convert a position and velocity into a TLE | Stand alone tool
+`satfit` | x | | | Fit a TLE to IOD observations | Stand alone tool
+`satid` | | x | x | Compute satellite predictions for images | Deprecated, replaced with `stvid` functionality
+`satmap` | x | | | Vizualize satellite tracks on a map of Earth | Stand alone tool
+`satorbit` | x | | | Vizualize satellite orbits around a spherical Earth | Stand alone tool
+`sex2dec` | x | | | Convert sexagesimal to decimal | Stand alone tool
+`skymap` | x | | | Vizualize satellite tracks on the sky, plan observations | Stand alone tool
+`slewto` | | x | x | Control INDI controlled telescope mounts | To be replaced with `stvid`/`stphot` functionality
+`stviewer` | | | | View/plot video FITS files | Deprecated
+`tle2ole` | | | | Print TLE parameters on a single line | Deprecated
+`tle2rv` | x | | | Compute satellite position and velocity | Deprecated
+`tleinfo` | x | | | Print useful TLE info | Stand alone tool
+`tleupdate` | x | x | x | Update TLE catalogs | To be replaced by `stvid`\s `update_tle.py`
+`uk2iod` | x | | | Convert positions from UK to IOD format | Stand alone tool
+`waitfor` | | | | Wait for nearest integer second | Deprecated
+`wcsfit` | | | | Fit a WCS | Deprecated, replaced with `stvid` functionality
+`xyz2tle` | | | | | Deprecated
