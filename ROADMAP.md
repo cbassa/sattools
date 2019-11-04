@@ -63,3 +63,9 @@ Tools | `sattools` | `stvid` | `stphot` | Purpose | Future
 `waitfor` | | | | Wait for nearest integer second | Deprecated
 `wcsfit` | | | | Fit a WCS | Deprecated, replaced with `stvid` functionality
 `xyz2tle` | | | | | Deprecated
+
+## Porting status
+
+Tool | Who | Status
+-----|-----|-------
+`skymap` | Cees | Ongoing
