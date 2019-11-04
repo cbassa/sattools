@@ -11,8 +11,7 @@ class Stars:
     """Tycho2 catalog"""
 
     def __init__(self):
-#        hdu = fits.open("/home/bassa/code/c/satellite/sattools/data/tyc2.fits")
-        hdu = fits.open("/home/bassa/hip.fits")
+        hdu = fits.open("hip.fits")
 
         self.ra = hdu[1].data.field('RA')*u.deg
         self.dec = hdu[1].data.field('DEC')*u.deg
