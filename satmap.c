@@ -53,6 +53,7 @@ double nfd2mjd(char *date);
 double date2mjd(int year,int month,double day);
 void mjd2date(double mjd,char *date,int length);
 void usage();
+void interactive_usage();
 void nfd_now(char *s);
 double gmst(double);
 double dgmst(double);
@@ -490,6 +491,13 @@ void plot_map(void)
     // Get cursor
     cpgcurs(&x,&y,&c);
 
+    // Help
+    if (c=='h') {
+      interactive_usage();
+
+      continue;
+    }
+
     // Redraw
     if (c=='r') {
       m.mjd=-1.0;
@@ -695,7 +703,23 @@ double nfd2mjd(char *date)
 
 void usage()
 {
-  return;
+  printf("usage: satmap -c TLEFILE [-t TIMESTAMP] [-s COSPARID] [-i SATNO]\n");
+  printf("                [-l LENGTH] [-h]\n");
+}
+
+void interactive_usage()
+{
+  printf("Interactive help:");
+  printf("r    Redraw\n");
+  printf("\n");
+  printf("<    Divide the integration length by a facor of 2\n");
+  printf(">    Multiply the integration length by a facor of 2\n");
+  printf("\n");
+  printf(",    Increase time (+integration_length in seconds /(1 day))\n");
+  printf(".    Roll back the time\n");
+  printf("\n");
+  printf("h    this interactive help\n");
+  printf("q/Q  Exit\n");
 }
 
 // Compute Date from Julian Day
