@@ -15,19 +15,8 @@ import matplotlib.pyplot as plt
 
 from pathlib import Path
 
-from beyond.io.tle import Tle
 from beyond.dates import Date, timedelta
-
-
-def tle_from_file(filename):
-    '''
-    Returns: TLE:Tle, Object name:str
-    '''
-
-    with open(filename, 'r') as f:
-        lines = f.readlines()
-
-    return Tle(''.join(lines)), lines[0].strip()
+from utils import tle_from_file
 
 
 if __name__ == "__main__":
@@ -49,8 +38,9 @@ if __name__ == "__main__":
     prev_lon, prev_lat = None, None
     
     period = orb.infos.period
-    start = orb.date - period
-    stop = 2 * period
+    # start = orb.date - period
+    start = Date.now()
+    stop = period
     step = period / 100
     
     for point in orb.ephemeris(start=start, stop=stop, step=step):
@@ -95,7 +85,7 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(15.2, 8.2))
     ax = fig.add_subplot(111)
 
-    ax.set_title(name)
+    ax.set_title(start.datetime.strftime('%Y-%m-%dT%H:%M:%SZ'))
 
     # Plot earth
     img = Path(__file__).parent / "earth.png"
@@ -106,9 +96,12 @@ if __name__ == "__main__":
     for lons, lats in zip(longitudes, latitudes):
         ax.plot(lons, lats, 'r-')
 
-    # Plot location at epoch time 
-    lon, lat = np.degrees(orb.copy(frame='ITRF', form='spherical')[1:3])
-    ax.plot([lon], [lat], 'bo')
+    # Plot current location
+        ax.plot(lons[0], lats[0], 'bo')
+
+    # Plot location at epoch
+    # lon, lat = np.degrees(orb.copy(frame='ITRF', form='spherical')[1:3])
+    # ax.plot([lon], [lat], 'bo')
 
     ax.set_xlim([-180, 180])
     ax.set_ylim([-90, 90])
