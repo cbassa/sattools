@@ -16,3 +16,8 @@
   ```
   ./ground_track.py ../examples/sathyabamasat.txt
   ```
+
+- Calculate and plot satellite passes (requires a site.txt)
+  ```
+  ./pass.py ../examples/sathyabamasat.txt $ST_DATADIR/sites.txt -s 7300 --starttime 2019-11-06T19:30:00
+  ```
