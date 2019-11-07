@@ -1,0 +1,5 @@
+numpy
+matplotlib
+astropy
+beyond
+# git+https://github.com/cbassa/ppgplot.git@master
