@@ -13,6 +13,9 @@ The following software and libraries are required to compile `sattools`:
 * gcc
 * make
 * git
+* wcslib-dev
+* libgsl-dev
+* pgplot5
 * libpng-dev
 * libx11-dev
 * libjpeg-dev
@@ -93,6 +96,12 @@ Tools
   - Append `-P` in order to invoke `skymap` to plot a skymap and the
     sky track for each predicted pass
 
+* `satmap`: Visualize satellite tracks on a map of Earth
+  Example usage:
+  - Show the ground track of all satellites in `ST_TLEDIR/classfd.tle` (for roughly 1.3 orbits from now on)
+    ```
+    satmap
+    ```
 * `satorbit`: Show a 3D representation of the earth, the current position,
   footprint and orbit of the selected object
   Example usage:
