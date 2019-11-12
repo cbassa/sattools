@@ -12,7 +12,7 @@ FROM ubuntu:18.04
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Modify the following with your preferred COSPAR station ID
-ENV ST_COSPAR 9997
+ENV ST_COSPAR 9999
 
 # Update these directories per your preferences
 ENV HOME       /root
