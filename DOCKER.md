@@ -24,10 +24,12 @@ Mac:
     Install **XQuartz** - https://www.xquartz.org/ (can also install via brew)
     Log out/back in as directed by the installer
 
-Unix/Linux
-`sudo apt-get install docker.io`
+Unix/Linux:
+
+`sudo apt-get update && sudo apt-get install docker.io`
 
 From your X11 terminal, find your computer's IP address and authorize it for X11 connections
+
 `xauth + 192.168.1.2`
 
 # Download and build the sattools Dockerfile
