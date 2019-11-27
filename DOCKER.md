@@ -33,7 +33,7 @@ From your X11 terminal, find your computer's IP address and authorize it for X11
 `xauth + 192.168.1.2`
 
 # Download and build the sattools Dockerfile
-https://raw.githubusercontent.com/interplanetarychris/sattools/Docker/Dockerfile
+https://github.com/cbassa/sattools/blob/master/Dockerfile
 
 ## In a Terminal (Mac/Unix) or Powershell (Windows) build the Dockerfile:
 `docker build  - < Dockerfile`
