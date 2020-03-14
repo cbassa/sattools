@@ -132,6 +132,8 @@ void usage()
   printf("A    Azimuth (deg)\n");
   printf("E    Elevation (deg)\n");
   printf("S    All night\n");
+  printf("Q    hide stars\n");
+  printf("a    show MEO/GEO objects (default: LEO)\n");
   printf("h    this help\n");
   printf("s    site (COSPAR)\n");
   printf("d    IOD observations\n");
