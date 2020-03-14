@@ -147,6 +147,43 @@ void usage()
   return;
 }
 
+void interactive_usage() {
+  printf("i   Identify satellite\n");
+  printf("r   Reset satellite selection/real time\n");
+  printf("f   Select satellite\n");
+  printf("l   Set integration length\n");
+  printf("m   Measure cursor RA/Dec, Alt/Azi\n");
+  printf("g   Toggle grid (on/off)\n");
+  printf("o   Toggle orientation (horizontal/equatorial)\n");
+  printf("c   Center on cursor\n");
+  printf("z   Center on zenith\n");
+  printf("n   Center on North\n");
+  printf("s   Center on South\n");
+  printf("e   Center on East\n");
+  printf("w   Center on West\n");
+  printf("1-9 Zoom level\n");
+  printf("+   Zoom in one level\n");
+  printf("-   Zoom out one level\n");
+  printf(".   Increase time by 1 step\n");
+  printf(",   Decrease time by 1 step\n");
+  printf(">   Increase step size\n");
+  printf("<   Decrease step size\n");
+  printf("I   Create IOD measurement for current time and position\n");
+  printf("P   Toggle planar search\n");
+  printf("p   Toggle satellite name\n");
+  printf("R   Read catalog\n");
+  printf("L   Toggle satellite selection (All, LEO, HEO/GEO, none)\n");
+  printf("v   Toggle visibility contours\n");
+  printf("F   Toggle camera configuration (data/cameras.txt)\n");
+  printf("TAB Cycle IOD observations\n");
+  printf("S   Save observation position/time to schedule\n");
+  printf("E   Save observation end-time to schedule\n");
+  printf("a   Select on age\n");
+  printf("Q   Toggle plotting stars\n");
+  printf("x   Toggle plotting apex (GEO, HEO, NOSS)\n");
+  printf("q   quit\n");
+}
+
 void init_skymap(void)
 {
   int i;
@@ -2488,40 +2525,7 @@ int plot_skymap(void)
     
     // Help
     if (c=='h' || c=='H') {
-      printf("q   quit\n");
-      printf("i   Identify satellite\n");
-      printf("r   Reset satellite selection/real time\n");
-      printf("f   Select satellite\n");
-      printf("l   Set integration length\n");
-      printf("m   Measure cursor RA/Dec, Alt/Azi\n");
-      printf("g   Toggle grid (on/off)\n");
-      printf("o   Toggle orientation (horizontal/equatorial)\n");
-      printf("c   Center on cursor\n");
-      printf("z   Center on zenith\n");
-      printf("n   Center on North\n");
-      printf("s   Center on South\n");
-      printf("e   Center on East\n");
-      printf("w   Center on West\n");
-      printf("1-9 Zoom level\n");
-      printf("+   Zoom in one level\n");
-      printf("-   Zoom out one level\n");
-      printf(".   Increase time by 1 step\n");
-      printf(",   Decrease time by 1 step\n");
-      printf(">   Increase step size\n");
-      printf("<   Decrease step size\n");
-      printf("I   Create IOD measurement for current time and position\n");
-      printf("P   Toggle planar search\n");
-      printf("p   Toggle satellite name\n");
-      printf("R   Read catalog\n");
-      printf("L   Toggle satellite selection (All, LEO, HEO/GEO, none)\n");
-      printf("v   Toggle visibility contours\n");
-      printf("F   Toggle camera configuration (data/cameras.txt)\n");
-      printf("TAB Cycle IOD observations\n");
-      printf("S   Save observation position/time to schedule\n");
-      printf("E   Save observation end-time to schedule\n");
-      printf("a   Select on age\n");
-      printf("Q   Toggle plotting stars\n");
-      printf("x   Toggle plotting apex (GEO, HEO, NOSS)\n");
+      interactive_usage();
     }
 
     // Toggle plotting stars
