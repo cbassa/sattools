@@ -207,7 +207,7 @@ void mjd2date(double mjd,char *date)
   min=fmod(x,60.);
   x=(x-min)/60.;
   hour=x;
-  fsec=1000.0*(sec-floor(sec));
+  fsec=floor(1000.0*(sec-floor(sec)));
   sprintf(date,"%04d%02d%02d%02d%02d%02.0f%03.0f",(int) year,(int) month,(int) day,(int) hour,(int) min,floor(sec),fsec);
 
   return;
@@ -228,9 +228,9 @@ void dec2sex(double x,char *s,int type)
   //  deg=fmod(x,60.);
   deg=x;
   if (type==0)
-    fmin=1000.0*(min-floor(min));
+    fmin=floor(1000.0*(min-floor(min)));
   else
-    fmin=100.0*(min-floor(min));
+    fmin=floor(100.0*(min-floor(min)));
 
   if (type==0)
     sprintf(s,"%02.0f%02.0f%03.0f",deg,floor(min),fmin);
@@ -555,7 +555,7 @@ int main(int argc,char *argv[])
   double mjd,doy;
   int year;
   float frac=0.5;
-  float fx=0.5,fy=0.333;
+  float fx=0.5,fy=0.5;
   int ix=0,iy=0,istar;
   struct image *img;
   struct aperture ap;
@@ -576,7 +576,8 @@ int main(int argc,char *argv[])
 
   // Set image aspect
   fx=0.5;
-  fy=0.25*img[0].naxis1/img[0].naxis2;
+  fy=fx * img[0].naxis2/img[0].naxis1;
+  printf("%f %f\n",fx,fy);
 
   // Default observation
   obs.satno=99999;
