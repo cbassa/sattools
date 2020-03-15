@@ -17,6 +17,7 @@
 0899 FM  -34.8961  -56.1227     30    Fernando Mederos
 1056 MK   57.0122   23.9833      4    Martins Keruss
 1086 NK   46.4778   30.7556     56    Nikolay Koshkin
+1234 TS   60.1746   24.7882     24    Tomi Simola
 1244 AM   44.3932   33.9701     69    Andriy Makeyev
 1747 DD   45.7275  -72.3526    191    Daniel Deak
 1775 KF   44.6062  -75.6910    200    Kevin Fetter
@@ -29,6 +30,7 @@
 2701 TM   43.6876  -79.3924    230    Ted Molczan
 2751 BM   51.3440   -1.9849    125    Bruce MacDonald
 2756 AK   56.0907   -3.1623     25    Andy Kirkham
+3333 RS   53.4506   10.2205      0    Roland Proesch
 4353 ML   52.1541    4.4908      0    Marco Langbroek
 4354 ML   52.1168    4.5602     -2    Marco Langbroek
 4355 ML   52.1388    4.4994     -2    Marco Langbroek   
@@ -53,6 +55,7 @@
 8539 SN   39.4707  -79.3388    839    Steve Newcomb
 8597 TB  -34.9638  138.6333    100    Tony Beresford 
 8600 PC  -32.9770  151.6477     18    Paul Camilleri
+8831 CL   47.7717 -121.9040    220    Chris Lewicki
 0699 PC  -14.4733  132.2369    108    Paul Camilleri
 8730 EC   30.3086  -97.7279    150    Ed Cannon
 8739 DB   37.1133 -121.7028    282    Derek Breit
@@ -62,5 +65,10 @@
 6242 JM   42.9453   -2.8284    623    Jon Mikel
 6241 JM   42.9565   -2.8203    619    Jon Mikel
 4160 BD   51.2793    5.4768     35    Bram Dorreman
+9900 AM   52.36667   4.900       0    Amsterdam
+9901 CT  -30.1696  -70.8065   2000    CTIO
+9910 SP   37.5011   -2.4083   1200    Telescope Live Spain
+9911 AU  -34.8641  148.9763    350    Telescope Live Australia
+9997 CL   47.7717 -121.9040    220    Chris Lewicki
 9998 DT   52.8119    6.3961     10    Dwingeloo telescoop
 9999 GR   47.348     5.5151    100    Graves

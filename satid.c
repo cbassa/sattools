@@ -259,7 +259,7 @@ int main(int argc,char *argv[])
     cpgopen(argv[2]);
   else
     cpgopen("/xs");
-  cpgpap(0.,1.0);
+  cpgpap(14.,1.0);
   cpgsvp(0.1,0.95,0.1,0.8);
 
   cpgsch(0.8);
