@@ -71,6 +71,13 @@ Try to download TLEs using `tleupdate`, which should now exist in your `PATH` va
 Tools
 -----
 
+* `skymap`: Vizualize satellites on a map of the sky. 
+  Example usage:
+  - Compute and plot the path of a satellite (NORAD ID 43145), using a TLE from an input file (`$ST_TLEDIR/classfd.tle`) for a site (COSPAR ID 4171) at a date/time (2019-12-01T17:42:00) while looking at a particular RA/Dec (`01h00m00s`, `+30d00m00s`).
+  ```
+  skymap -s 4171 -t 2019-12-01T17:42:00 -c $ST_TLEDIR/classfd.tle -i 43145 -R 01:00:00 -D 30:00:00
+  ```
+
 * `tleinfo`: Display information about a set of TLEs.
   Example usage:
   - List values (SATNO, YEAR DOY, INCL, ASCN, ARGP, MA, ECC, MM) of the TLEs in the file `bulk.tle`: `tleinfo -H -1`
