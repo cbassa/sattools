@@ -14,7 +14,7 @@
 struct image {
   char filename[64];
   int naxis1,naxis2,naxis3,nframes;
-  float *zavg,*zstd,*zmax,*znum,*zd;
+  float *zavg,*zstd,*zmax,*znum,*zd,*zsig;
   int *mask;
   char nfd[32];
   double ra0,de0;
@@ -27,7 +27,7 @@ struct image {
 struct selection {
   int state,fit;
   float x0,y0,x1,y1;
-  float w,zmin;
+  float w,zmin,zmax;
   float a,ca,sa,r;
   float tmid,tmin,tmax,ax[2],sax[2],ay[2],say[2],chi2x,chi2y;
 };
@@ -351,6 +351,31 @@ void apply_mask(struct image *img,struct selection s)
       x=s.ca*dx+s.sa*dy;
       y=-s.sa*dx+s.ca*dy;
       if (x>=0.0 && x<=s.r && y>-s.w && y<s.w && img->zmax[k]>s.zmin) {
+	img->mask[k]=1;
+      } else {
+	img->mask[k]=0;
+      }
+    }
+  }
+  
+  return;
+}
+
+void apply_mask_sigma(struct image *img,struct selection s)
+{
+  int i,j,k;
+  float x,y,dx,dy;
+
+  for (i=0;i<img->naxis1;i++) {
+    for (j=0;j<img->naxis2;j++) {
+      k=i+img->naxis1*j;
+      if (img->mask[k]==0)
+	continue;
+      dx=(float) i-s.x0;
+      dy=(float) j-s.y0;
+      x=s.ca*dx+s.sa*dy;
+      y=-s.sa*dx+s.ca*dy;
+      if (x>=0.0 && x<=s.r && y>-s.w && y<s.w && img->zsig[k]>s.zmin) {
 	img->mask[k]=1;
       } else {
 	img->mask[k]=0;
@@ -753,7 +778,8 @@ int main(int argc,char *argv[])
   // Default selection
   s.state=0;
   s.w=10;
-  s.zmin=0;
+  s.zmin=5.0;
+  s.zmax=20.0;
   s.fit=0;
 
   // Set cospas
@@ -781,7 +807,7 @@ int main(int argc,char *argv[])
 	if (layer==2) z[i]=img.zmax[i]*img.mask[i];
 	if (layer==3) z[i]=img.znum[i]*img.mask[i];
 	if (layer==4) z[i]=img.zd[i]*img.mask[i];
-	if (layer==5) z[i]=(img.zmax[i]-img.zavg[i])/img.zstd[i];
+	if (layer==5) z[i]=img.zsig[i]*img.mask[i];
       }
       
       if (layer==0) compute_cuts(img.zavg,img.mask,img.naxis1*img.naxis2,&zmin,&zmax,lcut,hcut);
@@ -789,8 +815,8 @@ int main(int argc,char *argv[])
       if (layer==2) compute_cuts(img.zmax,img.mask,img.naxis1*img.naxis2,&zmin,&zmax,lcut,hcut);
       if (layer==4) compute_cuts(img.zd,img.mask,img.naxis1*img.naxis2,&zmin,&zmax,lcut,hcut);
       if (layer==5) {
-	zmin=5.0;
-	zmax=20.0;
+	zmin=s.zmin;
+	zmax=s.zmax;
       }
 
       if (layer==0) cpgimag(img.zavg,img.naxis1,img.naxis2,1,img.naxis1,1,img.naxis2,zmin,zmax,tr);
@@ -1011,8 +1037,8 @@ int main(int argc,char *argv[])
       s.sa=sin(s.a);
       s.r=sqrt(pow(s.x0-s.x1,2)+pow(s.y0-s.y1,2));
       s.state=2;
-      apply_mask(&img,s);
-      s.zmin=zmin;
+      apply_mask_sigma(&img,s);
+      //s.zmin=zmin;
       redraw=1;
       continue;
     }
@@ -1027,14 +1053,16 @@ int main(int argc,char *argv[])
 
     // Change level
     if (c=='+' || c=='=') {
-      s.zmin+=1.0;
-      apply_mask(&img,s);
+      s.zmin*=1.01;
+      printf("%.4f\n",s.zmin);
+      apply_mask_sigma(&img,s);
       redraw=1;
       continue;
     }
     if (c=='-') {
-      s.zmin-=1.0;
-      apply_mask(&img,s);
+      s.zmin/=1.01;
+      printf("%.4f\n",s.zmin);
+      apply_mask_sigma(&img,s);
       redraw=1;
       continue;
     }
@@ -1150,6 +1178,7 @@ int main(int argc,char *argv[])
   free(img.zmax);
   free(img.znum);
   free(img.zd);
+  free(img.zsig);
 
   return 0;
 }
@@ -1211,6 +1240,7 @@ struct image read_fits(char *filename)
   img.znum=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
   img.zd=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
   img.mask=(int *) malloc(sizeof(int)*img.naxis1*img.naxis2);
+  img.zsig=(float *) malloc(sizeof(float)*img.naxis1*img.naxis2);
   for (i=0;i<img.naxis1*img.naxis2;i++) 
     img.zd[i]=0.0;
 
@@ -1247,6 +1277,10 @@ struct image read_fits(char *filename)
   // Compute scaled
   for (i=0;i<img.naxis1*img.naxis2;i++) 
     img.mask[i]=1;
+
+  // Compute sigma
+  for (i=0;i<img.naxis1*img.naxis2;i++) 
+    img.zsig[i]=(img.zmax[i]-img.zavg[i])/img.zstd[i];
 
   return img;
 }
