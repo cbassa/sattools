@@ -19,11 +19,12 @@ extern double SGDP4_jd0;
 
 void usage(void)
 {
-  printf("usage: tleinfo [-c TLEFILE] [-u] [|-1|-f] [ |-n|-d] [-i SATNO] [ |-a|-b] [-H] [-h]\n\n");
+  printf("usage: tleinfo [-c TLEFILE] [-u] [|-1|-f] [ |-n|-d] [-i SATNO] [-I INTLDESG ] [ |-a|-b] [-H] [-h]\n\n");
 
   printf("-c TLEFILE  The file containing orbital elements in the form of TLEs, 3 lines per object\n");
   printf("            default: ./bulk.tle\n");
-  printf("-i SATNO    Filter only elements for objects with this satno\n");
+  printf("-i SATNO    Filter only elements for objects with this NORAD catalog identifier\n");
+  printf("-I INTLDESG Filter only elements for objects with this international designator\n");
   printf("-u          Show only one object (MODE0 only)\n");
 
   printf("\nSelect MODE:\n");
@@ -199,9 +200,9 @@ float orbital_longitude_at_midnight(orbit_t orb,double mjd0)
 
 int main(int argc,char *argv[])
 {
-  int arg=0,satno=0,header=0,oneline=0,no,name=0,desig=0;
+  int arg=0,satno=0,header=0,oneline=0,no,name=0,desig=0,has_intldesg=0;
   char tlefile[LIM];
-  char line0[LIM],line1[LIM],line2[LIM],nfd[32];
+  char line0[LIM],line1[LIM],line2[LIM],nfd[32],intldesg[16]="",desg[16]="";
   FILE *file;
   orbit_t orb;
   float aodp,perigee,apogee,period,lng;
@@ -213,7 +214,7 @@ int main(int argc,char *argv[])
   sprintf(tlefile,"%s/bulk.tle",env);
 
   // Decode options
-  while ((arg=getopt(argc,argv,"c:i:aH1ftndbu"))!=-1) {
+  while ((arg=getopt(argc,argv,"c:i:I:aH1ftndbu"))!=-1) {
     switch (arg) {
       
     case 'c':
@@ -244,6 +245,11 @@ int main(int argc,char *argv[])
       satno=atoi(optarg);
       break;
 
+    case 'I':
+      strcpy(intldesg,optarg);
+      has_intldesg=1;
+      break;
+      
     case 'a':
       info=1;
       break;
@@ -276,21 +282,25 @@ int main(int argc,char *argv[])
     while (fgetline(file,line1,LIM)>0) {
       // Find TLE line
       if (line1[0]=='1') {
-	    fgetline(file,line2,LIM);
-	    sscanf(line1+2,"%d",&no);
-
-	    if (satno==0 || satno==no) {
-	      if (name==1 && desig==0)
-	        printf("%s\n",line0);
-	      else if (name==0 && desig==1)
-	        printf("%.8s\n",line1+9);
-	      else
-	        printf("%s\n%s\n%s\n",line0,line1,line2);
-	      if (unique==1)
-	        break;
-	    }
+	fgetline(file,line2,LIM);
+	sscanf(line1+2,"%d",&no);
+	sscanf(line1+9,"%s",&desg);
+	
+	if ((satno==0 || satno==no) && (has_intldesg==0)) {
+	  if (name==1 && desig==0)
+	    printf("%s\n",line0);
+	  else if (name==0 && desig==1)
+	    printf("%.8s\n",line1+9);
+	  else
+	    printf("%s\n%s\n%s\n",line0,line1,line2);
+	  if (unique==1)
+	    break;
+	} else if (has_intldesg==1) {
+	  if (strcmp(desg,intldesg)==0) {
+	    printf("%s\n%s\n%s\n",line0,line1,line2);
+	  }
+	}
       }
-
       strcpy(line0,line1);
     }
 
