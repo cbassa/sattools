@@ -30,7 +30,7 @@ On Debian/Ubuntu, these can be installed with `sudo apt install git make dos2uni
 ```
 wget -c ftp://ftp.eso.org/pub/qfits/qfits-5.2.0.tar.gz
 gunzip -c qfits-5.2.0.tar.gz | tar xvf -
-qfits-5.2.0
+cd qfits-5.2.0
 chmod +w src/xmemory.c
 sed -i -e "s/swapfd = open(fname, O_RDWR | O_CREAT);/swapfd = open(fname, O_RDWR | O_CREAT, 0644);/g" src/xmemory.c
 ./configure
