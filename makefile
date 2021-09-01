@@ -35,7 +35,7 @@ mvtle: mvtle.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o mvtle mvtle.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 rv2tle: rv2tle.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o rv2tle rv2tle.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+	$(F77) -o rv2tle rv2tle.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
 
 xyz2tle: xyz2tle.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o
 	$(CC) -o xyz2tle xyz2tle.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o -lm
