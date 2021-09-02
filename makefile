@@ -26,16 +26,16 @@ selectiod: selectiod.o
 	$(CC) -o selectiod selectiod.o -lm
 
 planscan: planscan.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o planscan planscan.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)	
+	$(CC) -o planscan planscan.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 tle2rv: tle2rv.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o tle2rv tle2rv.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)	
+	$(CC) -o tle2rv tle2rv.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 mvtle: mvtle.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o mvtle mvtle.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 rv2tle: rv2tle.o sgdp4.o satutl.o deep.o ferror.o
-	$(F77) -o rv2tle rv2tle.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+	$(CC) -o rv2tle rv2tle.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 xyz2tle: xyz2tle.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o
 	$(CC) -o xyz2tle xyz2tle.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o -lm
@@ -53,7 +53,7 @@ normal: normal.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o normal normal.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 vadd: vadd.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o vadd vadd.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+	$(CC) -o vadd vadd.o sgdp4.o satutl.o deep.o ferror.o -lm
 
 posmatch: posmatch.o sgdp4.o satutl.o deep.o ferror.o
 	$(CC) -o posmatch posmatch.o sgdp4.o satutl.o deep.o ferror.o -lm
