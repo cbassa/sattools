@@ -647,6 +647,7 @@ int main(int argc,char *argv[])
       m.leoflag=0;
       read_iod(m.iodfile,m.iodpoint);
       m.iodflag=1;
+      m.level=6;
       break;
 
     case 'l':
@@ -1664,7 +1665,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
   char norad[7],satname[30],date[24];;
   float isch;
   float rsun,rearth,psun,pearth,p;
-  int priority[]={24680,28888,15071,26934,37348,5678,5679,5680,5681,5682,8818,8835,8836,8884,10502,10529,10544,10594,11720,11731,11732,11745,13791,13844,13845,13874,39232};
+  int priority[]={28888,37348,39232,43941,48247};
   char type[8];
 
   // Open TLE file
@@ -1743,7 +1744,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
       // In field of view
       if (fabs(x)<m.fw && fabs(y)<m.fh && fflag==0) {
 	mjd2date(mjd,date);
-	printf("%.19s %05ld %6.1f %7.1f d %9.2f km\n",date,Isat,s.mag,s.age,s.r);
+	printf("%.19s %05ld %6.1f %7.1f d %9.2f km %6.2f deg\n",date,Isat,s.mag,s.age,s.r,s.phase);
 	fflag=1;
       }
 
