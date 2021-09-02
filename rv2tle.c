@@ -323,6 +323,15 @@ double nfd2mjd(char *date)
 
 void usage(void)
 {
+  printf("Usage: rv2tle -p XYZFILE [- i NORADID] [-d COSPARID] [-g] [-h]\n\n");
+  printf("Arguments:\n");
+  printf("-p XYZFILE    File with cartesian position and velocity vector\n");
+  printf("              Format: '{mjd} {x} {y} {z} {vx} {vy} {vz}'\n");
+  printf("              Units: position in  km, velocity in km/s\n");
+  printf("-i NORADID    Satellite Catalog Number (NORAD ID), default: 99000\n");
+  printf("-d COSPARID   International Designator (COSPAR ID), default: 14999A\n");
+  printf("-g            Use non-standard / GMAT's Modified Julian Date\n");
+  printf("-h            This help\n");
 
   return;
 }
@@ -352,7 +361,7 @@ int main(int argc,char *argv[])
   char *env;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"p:i:d:g"))!=-1) {
+  while ((arg=getopt(argc,argv,"p:i:d:gh"))!=-1) {
     switch (arg) {
 
     case 'p':
@@ -367,13 +376,13 @@ int main(int argc,char *argv[])
       strcpy(desig,optarg);
       break;
 
+    case 'g':
+      gmat=1;
+      break;
+
     case 'h':
       usage();
       return 0;
-      break;
-
-    case 'g':
-      gmat=1;
       break;
 
     default:
@@ -387,7 +396,7 @@ int main(int argc,char *argv[])
   file=fopen(xyzfile,"r");
   while (fgetline(file,line,LIM)>0) {
     sscanf(line,"%lf %lf %lf %lf %lf %lf %lf",&mjd,&r.x,&r.y,&r.z,&v.x,&v.y,&v.z);
-      
+
     // Convert to MJD
     if (gmat==1)
       mjd+=29999.5;

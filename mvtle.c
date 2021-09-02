@@ -55,6 +55,20 @@ void format_tle(orbit_t orb,char *line1,char *line2)
   return;
 }
 
+void usage(void)
+{
+  // while ((arg=getopt(argc,argv,"c:i:I:D:N:h"))!=-1) {
+  printf("Usage: mvtle -i OLD_NORAD_ID -I NEW_NORAD_ID -d COSPAR_ID [-N SATELLITE_NAME] [-h]\n\n");
+  printf("Arguments:\n");
+  printf("-i OLD_NORAD_ID     Old Satellite Catalog Number (NORAD ID)\n");
+  printf("-i NEW_NORAD_ID     New Satellite Catalog Number (NORAD ID)\n");
+  printf("-d COSPAR_ID        International Designator (COSPAR ID)\n");
+  printf("-N SATELLITE_NAME   (New) Satellite Name / TLE Line 0, default: ''\n");
+  printf("-h                  This help\n");
+
+  return;
+}
+
 int main(int argc,char *argv[])
 {
   int arg=0;
@@ -65,7 +79,7 @@ int main(int argc,char *argv[])
   FILE *file;
 
   // Decode options
-  while ((arg=getopt(argc,argv,"c:i:I:D:N:"))!=-1) {
+  while ((arg=getopt(argc,argv,"c:i:I:D:N:h"))!=-1) {
     switch (arg) {
       
     case 'c':
@@ -89,10 +103,12 @@ int main(int argc,char *argv[])
       break;
 
     case 'h':
+      usage();
       return 0;
       break;
 
     default:
+      usage();
       return 0;
     }
   }
