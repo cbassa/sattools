@@ -188,10 +188,10 @@ void send_position(char *sra,char *sde,char *datadir,char *obsdir,char *camname)
   if(strstr(s,"ix")==NULL){
   
     // Old packet style
-    //  sprintf(packet,"<newNumberVector device='Celestron GPS' name='EQUATORIAL_EOD_COORD_REQUEST'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
+    //  sprintf(packet,"<newNumberVector device='iEQ' name='EQUATORIAL_EOD_COORD_REQUEST'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
 
     // New packet style (as of 2013-08-20)
-    sprintf(packet,"<newNumberVector device='Celestron GPS' name='EQUATORIAL_EOD_COORD'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
+    sprintf(packet,"<newNumberVector device='iEQ' name='EQUATORIAL_EOD_COORD'><oneNumber name='RA'>%s</oneNumber><oneNumber name='DEC'>%s</oneNumber></newNumberVector>",sra,sde);
 
 		printf("Slewing to %s %s\n",sra,sde);
 
