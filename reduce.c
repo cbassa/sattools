@@ -730,7 +730,9 @@ int main(int argc,char *argv[])
   int year;
   char *env;
   float sigma,xa,ya;
-
+  FILE *file;
+  char filename[128];
+  
   env=getenv("ST_COSPAR");
 
   // Default observation
@@ -863,6 +865,14 @@ int main(int argc,char *argv[])
 
     // Get cursor
     cpgcurs(&x,&y,&c);
+
+    // Log as bad and quit
+    if (c=='Q') {
+      sprintf(filename,"%s.bad",argv[1]);
+      file=fopen(filename,"w");
+      fclose(file);
+      break;
+    }
 
     // Quit
     if (c=='q')
