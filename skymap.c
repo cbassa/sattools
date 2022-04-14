@@ -49,7 +49,7 @@ struct sat {
   double x,y,z,vx,vy,vz;
   double rsun,rearth,h;
   double psun,pearth,p,phase;
-  double r,v,ra,de;
+  double r,v,ra,de,vang;
   double azi,alt,salt;
   double rx,ry;
   double rg,vg,azig,altg,rag,deg;
@@ -603,7 +603,7 @@ int main(int argc,char *argv[])
   float alt;
 
   // Redirect stderr
-  freopen("/dev/null","w",stderr);
+  freopen("/tmp/stderr.txt","w",stderr);
 
   init_skymap();
 
@@ -1707,6 +1707,10 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
       // Compute apparent position
       s=apparent_position(mjd);
 
+      // Skip bogus positions
+      if (s.h>300000)
+	continue;
+      
       if (m.agelimit>0 && s.age<m.agelimit)
 	continue;
 
@@ -1864,7 +1868,7 @@ struct sat apparent_position(double mjd)
 {
   struct sat s;
   double jd,rsun,rearth,rsat;
-  double dx,dy,dz,dvx,dvy,dvz;
+  double dx,dy,dz,dvx,dvy,dvz,vtot;
   xyz_t satpos,obspos,obsvel,satvel,sunpos,grvpos,grvvel;
   double sra,sde,azi;
 
@@ -1929,6 +1933,10 @@ struct sat apparent_position(double mjd)
   s.ra=modulo(atan2(dy,dx)*R2D,360.0);
   s.de=asin(dz/s.r)*R2D;
 
+  // Angular velocity
+  vtot=sqrt(dvx*dvx+dvy*dvy+dvz*dvz);
+  s.vang=sqrt(vtot*vtot-s.v*s.v)/s.r*R2D;
+  
   // Phase
   s.phase=acos(((obspos.x-satpos.x)*(sunpos.x-satpos.x)+(obspos.y-satpos.y)*(sunpos.y-satpos.y)+(obspos.z-satpos.z)*(sunpos.z-satpos.z))/(rsun*s.r))*R2D;
 	  
@@ -2247,7 +2255,7 @@ long identify_satellite(char *filename,int satno,double mjd,float rx,float ry)
   printf("R.A.: %s  Decl.: %s (J2000)\n",sra,sde);
   printf("Azi.: %.1f Alt.: %.1f\n\n",modulo(smin.azi-180.0,360.0),smin.alt);
 
-  printf("Phase: %.2f\nMagnitude: %.2f\n",smin.phase,smin.mag);
+  printf("Phase: %.2f\nMagnitude: %.2f\nAngular velocity: %.4f (deg/s)\n",smin.phase,smin.mag,smin.vang);
   
   return Isatmin;
 }

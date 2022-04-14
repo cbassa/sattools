@@ -103,6 +103,11 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
       // Satellite position
       satpos_xyz(p[i].mjd+2400000.5,&satpos,&satvel);
 
+      // Check on radius
+      r=sqrt(satpos.x*satpos.x+satpos.y*satpos.y+satpos.z*satpos.z);
+      if (r>300000)
+      	continue;
+      
       // Relative to observer
       dx=satpos.x-p[i].obspos.x;  
       dy=satpos.y-p[i].obspos.y;
