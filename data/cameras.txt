@@ -1,7 +1,9 @@
 # List of available cameras field of view 
 # Camera mnemonic (Camera/Optics), field width (deg), field height (deg)
-1600_55 18.3  13.9
 1600_85 11.83 8.67
+1600_85 8.67 11.83
+174_55  11.57 7.27
+1600_55 18.3  13.9
 W50H     7.21  5.31 
 D85V     9.97 14.96
 FULL    360  240
