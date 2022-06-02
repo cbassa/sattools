@@ -37,6 +37,7 @@ sed -i -e "s/swapfd = open(fname, O_RDWR | O_CREAT);/swapfd = open(fname, O_RDWR
 make
 sudo make install
 ```
+The `qfits` code can also be obtained from https://spacecruft.org/spacecruft/qfits
 
 **Clone and install `sattools`**
 
