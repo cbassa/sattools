@@ -1851,11 +1851,11 @@ void nfd_now(char *s)
 // nfd2mjd
 double nfd2mjd(char *date)
 {
-  int year,month,day,hour,min,sec;
-  double mjd,dday;
+  int year,month,day,hour,min;
+  double mjd,dday,sec;
 
-  sscanf(date,"%04d-%02d-%02dT%02d:%02d:%02d",&year,&month,&day,&hour,&min,&sec);
-  dday=day+hour/24.0+min/1440.0+sec/86400.0;
+  sscanf(date,"%04d-%02d-%02dT%02d:%02d:%lf",&year,&month,&day,&hour,&min,&sec);
+  dday=(double) day+(double) hour/24.0+(double) min/1440.0+sec/86400.0;
 
   mjd=date2mjd(year,month,dday);
 
