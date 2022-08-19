@@ -264,6 +264,10 @@ void init_skymap(void)
   // Read LR coefficients
   sprintf(filename,"%s/data/moonLR.dat",m.datadir);
   file=fopen(filename,"r");
+  if (file==NULL) {
+    printf("Failed to open %s\n",filename);
+    exit(1);
+  }
   for (i=0;i<60;i++)
     fscanf(file,"%d %d %d %d %lf %lf",&clr[i].nd,&clr[i].nm,&clr[i].nm1,&clr[i].nf,&clr[i].sa,&clr[i].ca);
   fclose(file);
@@ -271,6 +275,10 @@ void init_skymap(void)
   // Read B coefficients
   sprintf(filename,"%s/data/moonB.dat",m.datadir);
   file=fopen(filename,"r");
+  if (file==NULL) {
+    printf("Failed to open %s\n",filename);
+    exit(1);
+  }
   for (i=0;i<60;i++)
     fscanf(file,"%d %d %d %d %lf",&cb[i].nd,&cb[i].nm,&cb[i].nm1,&cb[i].nf,&cb[i].sa);
   fclose(file);
@@ -292,8 +300,8 @@ void get_site(int site_id)
   sprintf(filename,"%s/data/sites.txt",m.datadir);
   file=fopen(filename,"r");
   if (file==NULL) {
-    printf("File with site information not found!\n");
-    return;
+    printf("Failed to open %s\n",filename);
+    exit(1);
   }
   while (fgets(line,LIM,file)!=NULL) {
     // Skip
@@ -333,6 +341,10 @@ void read_iod(char *filename,int iobs)
   struct observation obs;
 
   file=fopen(filename,"r");
+  if (file==NULL) {
+    printf("Failed to open %s\n",filename);
+    exit(1);
+  }
   // Read data
   while (fgets(line,LIM,file)!=NULL) {
     if (strlen(line)<10)
@@ -417,6 +429,15 @@ void plot_xyz(double mjd0,char *filename)
   char line[LIM];
 
   file=fopen(filename,"r");
+  if (file==NULL) {
+    printf("Failed to open %s\n",filename);
+    exit(1);
+  }
+  
+  if (file==NULL) {
+    printf("%s not found!\n",filename);
+    return;
+  }
   while (fgetline(file,line,LIM)>0) {
     sscanf(line,"%lf %lf %lf %lf",&mjd,&satpos.x,&satpos.y,&satpos.z);
     if (mjd>mjd0)
@@ -1433,8 +1454,8 @@ void skymap_plotconstellations(char *filename)
   // Loop over file
   file=fopen(filename,"r");
   if (file==NULL) {
-    printf("Const file not found\n");
-    exit(1);
+    printf("%s not found!\n",filename);
+    return;
   }
     
   for (i=0;fgetline(file,line,LIM)>0;i++) {
@@ -1670,8 +1691,10 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
 
   // Open TLE file
   fp=fopen(filename,"rb");
-  if (fp==NULL)
-    fatal_error("File open failed for reading %s\n",filename);
+  if (fp==NULL) {
+    printf("Failed to open TLE catalog %s\n",filename);
+    exit(1);
+  }
 
   // Read TLEs
   while (read_twoline(fp,satno,&orb)==0) {
@@ -2004,8 +2027,10 @@ void planar_search(char *filename,int satno,float rmin,float rmax,int nr,int gra
 
   // Open TLE file
   fp=fopen(filename,"rb");
-  if (fp==NULL)
-    fatal_error("File open failed for reading %s\n",filename);
+  if (fp==NULL) {
+    printf("Failed to open TLE catalog %s\n",filename);
+    exit(1);
+  }
 
   // Read TLEs
   while (read_twoline(fp,satno,&orb)==0) {
@@ -2171,9 +2196,10 @@ int print_tle(char *filename,int satno)
 
   // Open TLE file
   fp=fopen(filename,"rb");
-  if (fp==NULL)
-    fatal_error("File open failed for reading %s\n",filename);
-
+  if (fp==NULL) {
+    printf("Failed to open TLE catalog %s\n",filename);
+    exit(1);
+  }
   // Read TLEs
   while (fgetline(fp,line,LIM)>0) {
     sscanf(line+2,"%ld",&Isat);
@@ -2207,8 +2233,10 @@ long identify_satellite(char *filename,int satno,double mjd,float rx,float ry)
 
   // Open TLE file
   fp=fopen(filename,"rb");
-  if (fp==NULL)
-    fatal_error("File open failed for reading %s\n",filename);
+  if (fp==NULL) {
+    printf("Failed to open TLE catalog %s\n",filename);
+    exit(1);
+  }
 
   // Read TLEs
   while (read_twoline(fp,satno,&orb)==0) {
@@ -2327,7 +2355,7 @@ int read_camera(int no)
   sprintf(filename,"%s/data/cameras.txt",m.datadir);
   file=fopen(filename,"r");
   if (file==NULL) {
-    printf("File with camera information not found!\n");
+    printf("Failed to open %s\n",filename);
     return -1;
   }
   while (fgets(line,LIM,file)!=NULL) {
@@ -3235,6 +3263,11 @@ void plot_iod(char *filename)
   cpgsci(2);
   cpgsch(0.8);
   file=fopen(filename,"r");
+  if (file==NULL) {
+    printf("Failed to open %s\n",filename);
+    return;
+  }
+  
   // Read data
   while (fgets(line,LIM,file)!=NULL) {
     if (strstr(line,"#")==NULL) {
