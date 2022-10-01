@@ -33,6 +33,7 @@ struct map {
   long satno;
   double l0,b0,h0;
   double lat,lng;
+  double rra,rde;
   double mjd;
   float alt,timezone;
   int length;
@@ -40,7 +41,7 @@ struct map {
   char nfd[LIM],tlefile[LIM],observer[32];
   char datadir[LIM],tledir[LIM],notamfile[LIM],xyzfile[LIM];
   int site_id,notamflag,xyzflag,moonflag,launchsitesflag;
-  int plotfootprint;
+  int plotfootprint,plotreflection;
   float w;
 } m;
 struct globe {
@@ -99,6 +100,9 @@ void initialize_setup(void)
   m.moonflag=0;
   m.launchsitesflag=0;
   m.plotfootprint=1;
+  m.plotreflection=0;
+  m.rra=0.0;
+  m.rde=0.0;
 
   // Default settings
   strcpy(m.observer,"Unknown");
@@ -215,6 +219,123 @@ void plot_footprint(struct sat s)
       flag=0;
   }
 
+  return;
+}
+
+void plot_reflection(struct sat s)
+{
+  double r,rsun,sra,sde,dp;
+  double a,b,c,dmin,rmin;
+  xyz_t sunpos,h,ex,ey,ez,usun,unorm,uref,d,obspos,tmp;
+  float x0,y0,z0;
+  int isci;
+
+  // Skip if satellite in shadow
+  if (s.p<s.psun)
+    return;
+  
+  // Get positions
+  sunpos_xyz(m.mjd,&sunpos,&sra,&sde);
+
+  // Position difference
+  usun.x=sunpos.x - s.x;
+  usun.y=sunpos.y - s.y;
+  usun.z=sunpos.z - s.z;
+  rsun=sqrt(usun.x*usun.x+usun.y*usun.y+usun.z*usun.z);
+  usun.x /= rsun;
+  usun.y /= rsun;
+  usun.z /= rsun;
+  
+  // Y unit vector
+  h.x = s.y * s.vz - s.z * s.vy;
+  h.y = s.z * s.vx - s.x * s.vz;
+  h.z = s.x * s.vy - s.y * s.vx;
+
+  // Normalize
+  r = sqrt(h.x*h.x+h.y*h.y+h.z*h.z);
+  h.x /= r;
+  h.y /= r;
+  h.z /= r;  
+
+  // Y unit vector
+  ey.x = -h.x;
+  ey.y = -h.y;
+  ey.z = -h.z;  
+  
+  // Z unit vector
+  ez.x = -s.x / s.r;
+  ez.y = -s.y / s.r;
+  ez.z = -s.z / s.r;
+
+  // X unit vector
+  ex.x = ey.y * ez.z - ey.z * ez.y;
+  ex.y = ey.z * ez.x - ey.x * ez.z;
+  ex.z = ey.x * ez.y - ey.y * ez.x;
+
+  // Normal vector in LVLH
+  sra = m.rra * M_PI / 180;
+  sde = m.rde * M_PI / 180;
+  tmp.x = cos(sra) * cos(sde);
+  tmp.y = sin(sra) * cos(sde);
+  tmp.z = sin(sde);
+  
+  // Unit vector of normal
+  unorm.x = ex.x * tmp.x + ey.x * tmp.y + ez.x * tmp.z;
+  unorm.y = ex.y * tmp.x + ey.y * tmp.y + ez.y * tmp.z;
+  unorm.z = ex.z * tmp.x + ey.z * tmp.y + ez.z * tmp.z;  
+
+  // Reflected vector
+  dp=unorm.x*usun.x+unorm.y*usun.y+unorm.z*usun.z;
+  uref.x = 2 * dp * unorm.x - usun.x;
+  uref.y = 2 * dp * unorm.y - usun.y;
+  uref.z = 2 * dp * unorm.z - usun.z;  
+
+  // Quadratic coefficients
+  a = uref.x*uref.x+uref.y*uref.y+uref.z*uref.z;
+  b = 2 * (uref.x*s.x+uref.y*s.y+uref.z*s.z);
+  c = s.r*s.r-XKMPER*XKMPER;
+
+  // Minimum distance
+  dmin=-0.5*b/a;
+  rmin=a*dmin*(dmin+b)+c;
+  
+  // Exit if no roots
+  if (rmin>0)
+    return;
+
+  // Find root
+  dmin=0.5*(-b-sqrt(b*b-4*a*c))/a;
+
+  if (dmin < 0)
+    return;
+  
+  // Location
+  obspos.x=s.x+dmin*uref.x;
+  obspos.y=s.y+dmin*uref.y;
+  obspos.z=s.z+dmin*uref.z;
+
+  sra=atan2(obspos.y,obspos.x)*R2D;
+  sra=modulo(sra-gmst(m.mjd),360);
+  sde=asin(obspos.z/XKMPER)*R2D;
+
+  // Convert
+  z0=cos(sra*D2R)*cos(sde*D2R)*XKMPER;
+  x0=sin(sra*D2R)*cos(sde*D2R)*XKMPER;
+  y0=sin(sde*D2R)*XKMPER;
+
+  rotate(1,m.l0,&x0,&y0,&z0);
+  rotate(0,m.b0,&x0,&y0,&z0);    
+  
+  cpgqci(&isci);
+  cpgsci(8);
+
+  // Plot reflection
+  if (z0>0.0) 
+    cpgpt1(x0,y0,4);
+
+
+  cpgsci(isci);
+  
   return;
 }
 
@@ -358,6 +479,8 @@ void plot_track(void)
       if (i==0) {
 	if (m.plotfootprint==1)
 	  plot_footprint(s);
+	if (m.plotreflection==2)
+	  plot_reflection(s);
 	if (!(sqrt(x*x+y*y)<XKMPER && z<0.0)) {
 	  sprintf(norad," %ld",Isat);
 	  cpgsch(0.6);
@@ -1207,7 +1330,7 @@ int main(int argc,char *argv[])
   initialize_setup();
 
   // Decode options
-  while ((arg=getopt(argc,argv,"t:c:i:s:l:hN:p:mL:B:R:Sqg:"))!=-1) {
+  while ((arg=getopt(argc,argv,"t:c:i:s:l:hN:p:mL:B:r:Sqg:R:D:"))!=-1) {
     switch (arg) {
 
     case 'g':
@@ -1253,7 +1376,7 @@ int main(int argc,char *argv[])
       m.lat=atof(optarg);
       break;
 
-    case 'R':
+    case 'r':
       m.w=atof(optarg);
       break;
 
@@ -1266,6 +1389,16 @@ int main(int argc,char *argv[])
       m.xyzflag=1;
       break;
 
+    case 'R':
+      m.rra=atof(optarg);
+      m.plotreflection++;
+      break;
+	
+    case 'D':
+      m.rde=atof(optarg);
+      m.plotreflection++;
+      break;
+      
     case 'm':
       m.moonflag=1;
       break;
@@ -1327,23 +1460,30 @@ void usage()
   printf("usage: satorbit -c TLEFILE [-g DEVICE] [-t TIMESTAMP] [-s COSPARID] [-i SATNO]\n");
   printf("                [-q] [-p XYZFILE] [-m] [-N NOTAMFILE] [-l LENGTH]\n");
   printf("                [-L LNG] [-B LAT] [-R ZOOMSIZE] [-S ORIENTATION] [-h]\n\n");
-
-  printf("-c TLEFILE      The file containing orbital elements in the form of TLEs, 3 lines per object\n");
+  printf("-c TLEFILE      TLE file with orbital elements (3 lines per object)\n");
+  printf("-t TIMESTAMP    Timestamp [YYYY-mm-ddTHH:MM:SS], default: now\n");
+  printf("-i SATNO        NORAD catalog ID of the selected satellite, default: 0\n");
+  printf("                (all satellites in the TLE file)\n");
+  printf("-l LENGTH       Integration length [seconds], default: 60\n");
   printf("-g DEVICE       PGPlot device (default: \"/xs\" --> interactive).\n");
   printf("                If set exit the program when everything was drawn.\n");
   printf("                default: stay in interactive mode\n");
-  printf("-t TIMESTAMP    Timestamp of the map, formatted as YYYY-mm-ddTHH:MM:SS, default: now\n");
-  printf("-s COSPARID     observation site, COSPAR ID of the observation site on which the map is centered optionally\n");
-  printf("-i SATNO        satno of the selected satellite, default: 0 (all satellites in the TLE file)\n");
-  printf("-q              launchsitesflag: If value=1 plot the launch sites as well, default: 0\n");
-  printf("-p XYZFILE      If given, plot xyz instead of track\n");
-  printf("-m              moonflag: If value=1 plot the moon as well\n");
-  printf("-N NOTAMFILE    If given, plot the NOTAM as well\n");
-  printf("-l LENGTH       Integration length in seconds, default: 60\n");
-  printf("-L LNG          map longitude\n");
-  printf("-B LAT          map latitude\n");
-  printf("-R ZOOMSIZE     Initial window size in earth radii, default: 1.2\n");
-  printf("-S ORIENTATION  map orientation: sidereal, default: terrestial\n");
+  printf("\nToggles:\n");
+  printf("-q              Plot launch sites\n");
+  printf("-m              Plot Moon and lunar antipode\n");
+  printf("\nPlot auxiliary data:\n");
+  printf("-p XYZFILE      Plot XYZ track from file (MJD X Y Z [km in J2000] per line)\n");
+  printf("-N NOTAMFILE    Plot NOTAM (lat lon [decimal deg] per line)\n");
+  printf("\nMap centering:\n");
+  printf("-s COSPARID     COSPAR ID of the observation site on which the map is centered\n");
+  printf("-L LNG          Longitude to center on [deg]\n");
+  printf("-B LAT          Latitude to center on [deg]\n");
+  printf("-r ZOOMSIZE     Initial window size in earth radii, default: 1.2\n");
+  printf("-S ORIENTATION  Map orientation: sidereal, default: terrestial\n");
+  printf("\nSpecular reflection locations:\n");
+  printf("-R RA           RA of reflecting normal [deg] (LVLH; 0 deg towards\n");
+  printf("                velocity vector)\n");
+  printf("-D DEC          Dec of reflecting normal [deg] (LVLH; 90 deg towards nadir)\n"); 
   printf("-h              Print usage\n");
 }
 
