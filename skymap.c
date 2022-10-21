@@ -366,7 +366,7 @@ void read_iod(char *filename,int iobs)
   m.ra0=obs.ra;
   m.de0=obs.de;
   strcpy(m.orientation,"equatorial");
-  m.level=4;
+  m.level=6;
 
   return;
 }
@@ -1686,7 +1686,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
   char norad[7],satname[30],date[24];;
   float isch;
   float rsun,rearth,psun,pearth,p;
-  int priority[]={28888,37348,39232,43941,48247};
+  int priority[]={28888,37348,39232,43941,48247,53883};
   char type[8];
 
   // Open TLE file
@@ -1701,11 +1701,11 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
     Isat=orb.satno;
     imode=init_sgdp4(&orb);
 
-    if (orb.rev>=10.0)
+    if (orb.rev>=8.0)
       strcpy(type,"LEO");
-    else if (orb.rev<10.0 && orb.eqinc*R2D>50.0 && orb.ecc>0.5)
+    else if (orb.rev<8.0 && orb.eqinc*R2D>50.0 && orb.ecc>0.5)
       strcpy(type,"HEO");
-    else if (orb.rev<10.0 && orb.eqinc*R2D<=50.0 && orb.ecc>0.5)
+    else if (orb.rev<8.0 && orb.eqinc*R2D<=50.0 && orb.ecc>0.5)
       strcpy(type,"GTO");
     else 
       strcpy(type,"GEO");
