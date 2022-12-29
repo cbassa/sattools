@@ -40,7 +40,7 @@ struct point {
 struct pass {
   int satno;
   double mjdrise,mjdmax,mjdset;
-  char line[80],skymap[LIM],radio[80];
+  char line[92],skymap[LIM],radio[80];
   float length,altmax;
 } p[PASSMAX];
 
@@ -216,7 +216,7 @@ void compute_track(orbit_t orb)
       p[ipass].length=86400.0*(pt[i3].mjd-pt[i1].mjd);
       p[ipass].altmax=pt[i2].alt;
       
-      sprintf(p[ipass].line,"%05d | %s  %3.0f/%2.0f | %.8s  %3.0f/%2.0f | %.8s  %3.0f/%2.0f | \n",orb.satno,
+      sprintf(p[ipass].line,"%05d |%s %5.1f/%4.1f |%.8s %5.1f/%4.1f |%.8s %5.1f/%4.1f\n",orb.satno,
 	      pt[i1].nfd,pt[i1].azi,pt[i1].alt,
 	      pt[i2].nfd+11,pt[i2].azi,pt[i2].alt,
 	      pt[i3].nfd+11,pt[i3].azi,pt[i3].alt);
