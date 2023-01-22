@@ -754,14 +754,18 @@ int main(int argc,char *argv[])
   }
 
   // Set manual site
-  if (isite==3) {
-    m.lat=lat;
-    m.lng=lng;
-    m.alt=alt/1000.0;
-    m.site_id=0;
-    strcpy(m.observer,"Manual observer");
+  if (isite == 3) {
+      m.lat = lat;
+      m.lng = lng;
+      m.alt = alt / 1000.0;
+      m.site_id = 0;
+      strcpy (m.observer, "Manual observer");
+  } else if (isite != 0) {
+      printf("ERROR: Can't use manual site location, missing some coordinates.");
+      printf("Make sure to define latittude, longitude and elevation!");
+      exit(1);
   }
-  
+
   init_plot("/xs",0,0.75);
 
   plot_skymap();
