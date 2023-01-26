@@ -202,7 +202,7 @@ int main(int argc,char *argv[])
   }
 
   // Object found?
-  if (orb.rev<10.0) {
+  if (orb.rev<4.0) {
     fprintf(stderr,"ERROR: Object %d is not in a LEO orbit.\n",satno);
     return -1;
   }
