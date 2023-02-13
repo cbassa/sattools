@@ -765,7 +765,7 @@ int main(int argc,char *argv[])
   sprintf(obs.desig,"%02d%03.0lfA",year-2000,doy+500);
 
   cpgopen("/xs");
-  cpgpap(0.,1.0);
+  //  cpgpap(0.,1.0);
   //cpgpap(7,0.75);
   cpgask(0);
   cpgsch(0.8);
@@ -791,7 +791,7 @@ int main(int argc,char *argv[])
     if (redraw==1) {
       cpgeras();
       
-      cpgsvp(0.1,0.95,0.1,0.95);
+      cpgsvp(0.1,0.95,0.1,0.8);
       cpgwnad(xmin,xmax,ymin,ymax);
       cpglab("x (pix)","y (pix)"," ");
       cpgsfs(2);
