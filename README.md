@@ -58,7 +58,7 @@ You will need to set the following environment variables to run **sattools**. Ad
 
 **Final configuration steps**
 
-Add the `sattools` directory with executables to your `PATH` variable. On Ubuntu this is `.profile` and should be of the form `PATH=<path_to_sattools>:$PATH`.
+Add the `sattools` directory with executables to your `PATH` variable. On Ubuntu this is `.profile` and should be of the form `PATH=<path_to_sattools>/bin:$PATH`.
 
 Then reload the `.profile` file with `source $HOME/.profile`.
 
