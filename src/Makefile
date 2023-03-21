@@ -2,7 +2,7 @@
 CFLAGS = -O3 -Wno-unused-result
 
 # Linking flags
-LFLAGS = -lm -lcpgplot -lpgplot -lX11 -lwcs -lgsl -lgslcblas -lpng -lgiza -L../qfits/lib
+LFLAGS = -lm -lcpgplot -lpgplot -lX11 -lwcs -lgsl -lgslcblas -lpng 
 
 # Compilers
 CC = gcc
