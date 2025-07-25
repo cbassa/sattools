@@ -175,14 +175,14 @@ void format_tle(orbit_t orb,char *line1,char *line2)
     else if (line1[i]=='-')
       csum++;
   }
-  sprintf(line1,"%s%d",line1,csum%10);
+  line1[strlen(line1) - 1] = '0' + (csum % 10);
   for (i=0,csum=0;i<strlen(line2);i++) {
     if (isdigit(line2[i]))
       csum+=line2[i]-'0';
     else if (line2[i]=='-')
       csum++;
   }
-  sprintf(line2,"%s%d",line2,csum%10);
+  line2[strlen(line2) - 1] = '0' + (csum % 10);
 
   return;
 }
