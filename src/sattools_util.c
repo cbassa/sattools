@@ -7,7 +7,9 @@
 #include "elset.h"
 #include "sattools_util.h"
 
+#include <ctype.h>
 #include <stdarg.h>
+#include <string.h>
 
 /* The SGP4 library reports errors through fatal_error(), and its own
  * version exits. The sattools tools report the error and carry on (they
@@ -44,4 +46,16 @@ int format_tle_report(const orbit_t *orb, char line1[70], char line2[70])
     fprintf(stderr, "Elements of object %d do not fit in a TLE\n", orb->satno);
 
   return -1;
+}
+
+long parse_satno(const char *s)
+{
+  while (isspace((unsigned char)*s))
+    s++;
+
+  // Five characters with a leading letter: alpha-5
+  if (strlen(s)==5 && isalpha((unsigned char)s[0]))
+    return alpha5_to_number(s);
+
+  return atol(s);
 }

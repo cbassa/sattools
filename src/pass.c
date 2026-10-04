@@ -6,6 +6,7 @@
 #include <time.h>
 #include "sgdp4h.h"
 #include "elset.h"
+#include "sattools_util.h"
 
 #define LIM 128
 #define D2R M_PI/180.0
@@ -291,7 +292,7 @@ int main(int argc,char *argv[])
       break;
 
     case 'i':
-      m.satno=atoi(optarg);
+      m.satno=parse_satno(optarg);
       break;
 
     case 'l':

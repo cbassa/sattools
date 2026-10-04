@@ -530,7 +530,7 @@ int main(int argc,char *argv[])
       break;
 
     case 'i':
-      satno=atoi(optarg);
+      satno=parse_satno(optarg);
       break;
 
     case 't':

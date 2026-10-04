@@ -7,6 +7,7 @@
 #include "cpgplot.h"
 #include "sgdp4h.h"
 #include "elset.h"
+#include "sattools_util.h"
 
 #define LIM 80
 #define NMAX 1024
@@ -562,7 +563,7 @@ int main(int argc,char *argv[])
       break;
 
     case 'i':
-      m.satno=atoi(optarg);
+      m.satno=parse_satno(optarg);
       break;
 
     case 'l':

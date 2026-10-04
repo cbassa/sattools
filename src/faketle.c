@@ -83,7 +83,7 @@ int main(int argc,char *argv[])
       break;
 
     case 'i':
-      orb.satno=atoi(optarg);
+      orb.satno=parse_satno(optarg);
       break;
 
     case 'w':

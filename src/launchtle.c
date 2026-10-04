@@ -191,11 +191,11 @@ int main(int argc,char *argv[])
       break;
 
     case 'i':
-      satno=atoi(optarg);
+      satno=parse_satno(optarg);
       break;
 
     case 'I':
-      satno1=atoi(optarg);
+      satno1=parse_satno(optarg);
       break;
 
     case 'd':

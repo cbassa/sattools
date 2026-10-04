@@ -9,6 +9,7 @@
 #include <wcslib/cel.h>
 #include "sgdp4h.h"
 #include "elset.h"
+#include "sattools_util.h"
 
 #define LIM 384
 #define NMAX 256
@@ -687,7 +688,7 @@ int main(int argc,char *argv[])
       
     case 'P':
       m.planar=1;
-      m.pssatno=atoi(optarg);
+      m.pssatno=parse_satno(optarg);
       m.psrmin=300;
       m.psrmax=1000;
       m.psnr=8;
