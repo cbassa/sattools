@@ -337,7 +337,7 @@ void track_plot_track(char *tlefile,long satno,double mjd0)
   long imode;
   int isci;
   float isch;
-  char norad[7];
+  char norad[16];
   struct sat s;
 
   cpgqci(&isci);

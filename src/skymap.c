@@ -1685,7 +1685,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
   double mjd,jd,dx,dy,dz;
   double rx,ry,ra,de,azi,alt,r,t;
   float x,y;
-  char norad[7],satname[30],date[24];;
+  char norad[16],satname[30],date[24];;
   float isch;
   float rsun,rearth,psun,pearth,p;
   int priority[]={28888,37348,39232,43941,48247,53883};

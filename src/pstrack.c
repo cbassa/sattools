@@ -166,7 +166,7 @@ orbit_t find_tle(char *tlefile,struct image img,int satno)
   double mjd,jd,dx,dy,dz;
   double rx,ry,ra,de,azi,alt,r,t,d;
   float x[MMAX],y[MMAX],x0,y0;
-  char norad[7],satname[30];
+  char norad[16],satname[30];
   float isch;
   float rsun,rearth,psun,pearth,p;
   char filename[128];
@@ -222,7 +222,7 @@ struct track plot_satellite(orbit_t orb,struct image img)
   double mjd,jd,dx,dy,dz;
   double rx,ry,ra,de,azi,alt,r,t,d;
   float x[MMAX],y[MMAX];
-  char norad[7],satname[30];
+  char norad[16],satname[30];
   float isch;
   float rsun,rearth,psun,pearth,p;
   char filename[128];

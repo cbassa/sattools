@@ -65,7 +65,7 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
   FILE *fp=NULL,*file;
   xyz_t satpos,satvel;
   float x,y,x0,y0;
-  char norad[7],satname[30],state[16];
+  char norad[16],satname[30],state[16];
   float isch;
   char filename[128];
   double dx,dy,dz,r,ra,de,d,rsun,rearth;
