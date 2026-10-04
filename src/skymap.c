@@ -8,6 +8,7 @@
 #include <cpgplot.h>
 #include <wcslib/cel.h>
 #include "sgdp4h.h"
+#include "elset.h"
 
 #define LIM 384
 #define NMAX 256
@@ -1697,7 +1698,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
   }
 
   // Read TLEs
-  while (read_twoline(fp,satno,&orb)==0) {
+  while (read_elset(fp,satno,&orb,NULL)==0) {
     Isat=orb.satno;
     imode=init_sgdp4(&orb);
 
@@ -2033,7 +2034,7 @@ void planar_search(char *filename,int satno,float rmin,float rmax,int nr,int gra
   }
 
   // Read TLEs
-  while (read_twoline(fp,satno,&orb)==0) {
+  while (read_elset(fp,satno,&orb,NULL)==0) {
     Isat=orb.satno;
     imode=init_sgdp4(&orb);
 
@@ -2239,7 +2240,7 @@ long identify_satellite(char *filename,int satno,double mjd,float rx,float ry)
   }
 
   // Read TLEs
-  while (read_twoline(fp,satno,&orb)==0) {
+  while (read_elset(fp,satno,&orb,NULL)==0) {
     Isat=orb.satno;
     imode=init_sgdp4(&orb);
 

@@ -1,5 +1,10 @@
+# SGP4/SDP4 library (git submodule) and sattools' additions to it
+SGP4DIR = ../extern/dundee_sgp4
+SGP4LIB = $(SGP4DIR)/libsgdp4.a
+SGP4 = sattools_util.o $(SGP4LIB)
+
 # Compiling flags
-CFLAGS = -O3 -Wno-unused-result
+CFLAGS = -O3 -Wno-unused-result -I$(SGP4DIR)
 
 # Linking flags
 LFLAGS = -lm -lcpgplot -lpgplot -lX11 -lwcs -lgsl -lgslcblas -lpng 
@@ -8,14 +13,14 @@ LFLAGS = -lm -lcpgplot -lpgplot -lX11 -lwcs -lgsl -lgslcblas -lpng
 CC = gcc
 F77 = gfortran
 
-all:
+all: check-sgp4
 	make addwcs angular calibrate dec2sex faketle fitsheader fitskey imgstat jpg2fits jpgstack measure pgm2fits plotfits pstrack rde2iod reduce residuals runsched satfit satid satmap satorbit sex2dec skymap tle2ole tleinfo uk2iod stviewer wcsfit deproject slewto waitfor pass detect launchtle propagate fakeiod csv2tle normal posmatch posvel xyz2tle mvtle confirm allnight
 
-lite:
+lite: check-sgp4
 	make faketle residuals satfit satmap satorbit tleinfo uk2iod pass launchtle propagate skymap allnight
 
-geolon: geolon.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/geolon geolon.o sgdp4.o satutl.o deep.o ferror.o -lm
+geolon: geolon.o $(SGP4)
+	$(CC) -o ../bin/geolon geolon.o $(SGP4) -lm
 
 allnight: allnight.o
 	$(CC) -o ../bin/allnight allnight.o -lm
@@ -23,41 +28,41 @@ allnight: allnight.o
 selectiod: selectiod.o
 	$(CC) -o ../bin/selectiod selectiod.o -lm
 
-planscan: planscan.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/planscan planscan.o sgdp4.o satutl.o deep.o ferror.o -lm
+planscan: planscan.o $(SGP4)
+	$(CC) -o ../bin/planscan planscan.o $(SGP4) -lm
 
-tle2rv: tle2rv.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/tle2rv tle2rv.o sgdp4.o satutl.o deep.o ferror.o -lm
+tle2rv: tle2rv.o $(SGP4)
+	$(CC) -o ../bin/tle2rv tle2rv.o $(SGP4) -lm
 
-mvtle: mvtle.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/mvtle mvtle.o sgdp4.o satutl.o deep.o ferror.o -lm
+mvtle: mvtle.o $(SGP4)
+	$(CC) -o ../bin/mvtle mvtle.o $(SGP4) -lm
 
-rv2tle: rv2tle.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/rv2tle rv2tle.o sgdp4.o satutl.o deep.o ferror.o -lm
+rv2tle: rv2tle.o $(SGP4)
+	$(CC) -o ../bin/rv2tle rv2tle.o $(SGP4) -lm
 
-xyz2tle: xyz2tle.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o
-	$(CC) -o ../bin/xyz2tle xyz2tle.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o -lm
+xyz2tle: xyz2tle.o versafit.o dsmin.o simplex.o $(SGP4)
+	$(CC) -o ../bin/xyz2tle xyz2tle.o versafit.o dsmin.o simplex.o $(SGP4) -lm
 
-csv2tle: csv2tle.o satutl.o ferror.o
-	$(CC) -o ../bin/csv2tle csv2tle.o satutl.o ferror.o -lm
+csv2tle: csv2tle.o $(SGP4)
+	$(CC) -o ../bin/csv2tle csv2tle.o $(SGP4) -lm
 
-fakeiod: fakeiod.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/fakeiod fakeiod.o sgdp4.o satutl.o deep.o ferror.o -lm
+fakeiod: fakeiod.o $(SGP4)
+	$(CC) -o ../bin/fakeiod fakeiod.o $(SGP4) -lm
 
-posvel: posvel.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/posvel posvel.o sgdp4.o satutl.o deep.o ferror.o -lm
+posvel: posvel.o $(SGP4)
+	$(CC) -o ../bin/posvel posvel.o $(SGP4) -lm
 
-normal: normal.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/normal normal.o sgdp4.o satutl.o deep.o ferror.o -lm
+normal: normal.o $(SGP4)
+	$(CC) -o ../bin/normal normal.o $(SGP4) -lm
 
-vadd: vadd.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/vadd vadd.o sgdp4.o satutl.o deep.o ferror.o -lm
+vadd: vadd.o $(SGP4)
+	$(CC) -o ../bin/vadd vadd.o $(SGP4) -lm
 
-posmatch: posmatch.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/posmatch posmatch.o sgdp4.o satutl.o deep.o ferror.o -lm
+posmatch: posmatch.o $(SGP4)
+	$(CC) -o ../bin/posmatch posmatch.o $(SGP4) -lm
 
-propagate: propagate.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/propagate propagate.o sgdp4.o satutl.o deep.o ferror.o -lm
+propagate: propagate.o $(SGP4)
+	$(CC) -o ../bin/propagate propagate.o $(SGP4) -lm
 
 detect: detect.o forward.o reverse.o
 	$(F77) -o ../bin/detect detect.o forward.o reverse.o -lm $(LFLAGS) -lqfits
@@ -68,8 +73,8 @@ confirm: confirm.o forward.o reverse.o
 autodetect: autodetect.o
 	$(F77) -o ../bin/autodetect autodetect.o -lm $(LFLAGS)
 
-launchtle: launchtle.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/launchtle launchtle.o sgdp4.o satutl.o deep.o ferror.o -lm
+launchtle: launchtle.o $(SGP4)
+	$(CC) -o ../bin/launchtle launchtle.o $(SGP4) -lm
 
 slewto: slewto.o
 	$(CC) -o ../bin/slewto slewto.o -lm
@@ -101,17 +106,17 @@ measure: measure.o reverse.o
 jpg2fits: jpg2fits.o
 	$(CC) -o ../bin/jpg2fits jpg2fits.o -lm -lqfits -ljpeg
 
-pstrack: pstrack.o sgdp4.o satutl.o deep.o ferror.o forward.o reverse.o
-	$(F77) -o ../bin/pstrack pstrack.o sgdp4.o satutl.o deep.o ferror.o forward.o reverse.o $(LFLAGS) -lqfits
+pstrack: pstrack.o forward.o reverse.o $(SGP4)
+	$(F77) -o ../bin/pstrack pstrack.o forward.o reverse.o $(SGP4) $(LFLAGS) -lqfits
 
-faketle: faketle.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/faketle faketle.o sgdp4.o satutl.o deep.o ferror.o -lm
+faketle: faketle.o $(SGP4)
+	$(CC) -o ../bin/faketle faketle.o $(SGP4) -lm
 
 imgstat: imgstat.o
 	$(CC) -o ../bin/imgstat imgstat.o -lm -lqfits
 
-satfit: satfit.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o
-	$(F77) -o ../bin/satfit satfit.o sgdp4.o satutl.o deep.o ferror.o versafit.o dsmin.o simplex.o $(LFLAGS)
+satfit: satfit.o versafit.o dsmin.o simplex.o $(SGP4)
+	$(F77) -o ../bin/satfit satfit.o versafit.o dsmin.o simplex.o $(SGP4) $(LFLAGS)
 
 uk2iod: uk2iod.o
 	$(CC) -o ../bin/uk2iod uk2iod.o -lm
@@ -122,17 +127,17 @@ rde2iod: rde2iod.o
 stviewer: stviewer.o
 	$(CC) -o ../bin/stviewer stviewer.o -lm -lqfits
 
-residuals: residuals.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/residuals residuals.o sgdp4.o satutl.o deep.o ferror.o -lm -lwcs
+residuals: residuals.o $(SGP4)
+	$(CC) -o ../bin/residuals residuals.o $(SGP4) -lm -lwcs
 
-tleinfo: tleinfo.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/tleinfo tleinfo.o sgdp4.o satutl.o deep.o ferror.o -lm
+tleinfo: tleinfo.o $(SGP4)
+	$(CC) -o ../bin/tleinfo tleinfo.o $(SGP4) -lm
 
-satmap: satmap.o sgdp4.o satutl.o deep.o ferror.o
-	$(F77) -o ../bin/satmap satmap.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+satmap: satmap.o $(SGP4)
+	$(F77) -o ../bin/satmap satmap.o $(SGP4) $(LFLAGS)
 
-satorbit: satorbit.o sgdp4.o satutl.o deep.o ferror.o
-	$(F77) -o ../bin/satorbit satorbit.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+satorbit: satorbit.o $(SGP4)
+	$(F77) -o ../bin/satorbit satorbit.o $(SGP4) $(LFLAGS)
 
 runsched: runsched.o
 	$(CC) -o ../bin/runsched runsched.o -lm
@@ -146,14 +151,14 @@ fitskey: fitskey.o
 fitsheader: fitsheader.o
 	$(CC) -o ../bin/fitsheader fitsheader.o -lqfits
 
-satid: satid.o sgdp4.o satutl.o deep.o ferror.o forward.o reverse.o
-	$(F77) -o ../bin/satid satid.o sgdp4.o satutl.o deep.o ferror.o forward.o reverse.o $(LFLAGS) -lqfits
+satid: satid.o forward.o reverse.o $(SGP4)
+	$(F77) -o ../bin/satid satid.o forward.o reverse.o $(SGP4) $(LFLAGS) -lqfits
 
-skymap: skymap.o sgdp4.o satutl.o deep.o ferror.o
-	$(F77) -o ../bin/skymap skymap.o sgdp4.o satutl.o deep.o ferror.o $(LFLAGS)
+skymap: skymap.o $(SGP4)
+	$(F77) -o ../bin/skymap skymap.o $(SGP4) $(LFLAGS)
 
-pass: pass.o sgdp4.o satutl.o deep.o ferror.o
-	$(CC) -o ../bin/pass pass.o sgdp4.o satutl.o deep.o ferror.o -lm
+pass: pass.o $(SGP4)
+	$(CC) -o ../bin/pass pass.o $(SGP4) -lm
 
 reduce: reduce.o forward.o reverse.o
 	$(F77) -o ../bin/reduce reduce.o forward.o reverse.o $(LFLAGS) -lqfits
@@ -174,3 +179,15 @@ clean:
 	rm -f *.o
 	rm -f *~
 	rm -f ../bin/*
+	-$(MAKE) -C $(SGP4DIR) clean
+
+# SGP4/SDP4 library and element set readers, from the dundee_sgp4 submodule
+$(SGP4LIB): FORCE
+	$(MAKE) -C $(SGP4DIR) lib CC="$(CC)"
+
+check-sgp4:
+	@test -f $(SGP4DIR)/sgdp4h.h || { echo "extern/dundee_sgp4 is empty: run 'git submodule update --init'"; exit 1; }
+
+FORCE:
+
+.PHONY: all lite clean check-sgp4 FORCE

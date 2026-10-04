@@ -6,6 +6,7 @@
 #include <cpgplot.h>
 #include "qfits.h"
 #include "sgdp4h.h"
+#include "elset.h"
 
 #define LIM 80
 #define MMAX 10
@@ -89,7 +90,7 @@ void plot_satellites(char *tlefile,struct image img,long satno,double mjd0,float
   file=fopen(filename,"a");
 
   // Read TLEs
-  while (read_twoline(fp,satno,&orb)==0) {
+  while (read_elset(fp,satno,&orb,NULL)==0) {
     Isat=orb.satno;
     imode=init_sgdp4(&orb);
 

@@ -6,6 +6,7 @@
 #include <cpgplot.h>
 #include "qfits.h"
 #include "sgdp4h.h"
+#include "elset.h"
 
 #define LIM 80
 #define NMAX 256
@@ -178,12 +179,12 @@ orbit_t find_tle(char *tlefile,struct image img,int satno)
 
   // Read TLEs
   if (satno!=0) {
-    read_twoline(fp,satno,&orb);
+    read_elset(fp,satno,&orb,NULL);
     fclose(fp);
     return orb;
   }
 
-  read_twoline(fp,0,&orb);
+  read_elset(fp,0,&orb,NULL);
   fclose(fp);
 
   for (i=0,mnan=0.0;mnan<360.0;mnan+=0.01,i++) {

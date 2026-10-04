@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <time.h>
 #include "sgdp4h.h"
+#include "elset.h"
 
 #define LIM 128
 #define D2R M_PI/180.0
@@ -185,7 +186,7 @@ int main(int argc,char *argv[])
   }
 
   // Read TLE
-  while (read_twoline(fp,satno,&orb)==0) {
+  while (read_elset(fp,satno,&orb,NULL)==0) {
     Isat=orb.satno;
     imode=init_sgdp4(&orb);
 

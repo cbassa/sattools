@@ -4,6 +4,7 @@
 #include <math.h>
 #include "cpgplot.h"
 #include "sgdp4h.h"
+#include "elset.h"
 #include "satutl.h"
 #include <getopt.h>
 
@@ -194,7 +195,7 @@ int main(int argc,char *argv[])
 
   // Open file
   file=fopen(tlefile,"r");
-  while (read_twoline(file,satno,&orb)==0) {
+  while (read_elset(file,satno,&orb,NULL)==0) {
     // Propagate
     imode=init_sgdp4(&orb);
 

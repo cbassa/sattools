@@ -6,6 +6,7 @@
 #include <getopt.h>
 #include "cpgplot.h"
 #include "sgdp4h.h"
+#include "elset.h"
 
 #define LIM 80
 #define NMAX 1024
@@ -347,7 +348,7 @@ void track_plot_track(char *tlefile,long satno,double mjd0)
     fatal_error("File open failed for reading \"%s\"", tlefile);
   }
   
-  while(read_twoline(fp, satno, &orb) == 0) {
+  while(read_elset(fp,satno,&orb,NULL) == 0) {
     //    print_orb(&orb);
     
     Isat = orb.satno;

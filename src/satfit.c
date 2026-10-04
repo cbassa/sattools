@@ -6,6 +6,8 @@
 #include <cpgplot.h>
 #include <wcslib/cel.h>
 #include "sgdp4h.h"
+#include "elset.h"
+#include "sattools_util.h"
 #include <getopt.h>
 
 #define LIM 80
@@ -66,7 +68,6 @@ struct data read_data(char *iodfname,char *dopfname);
 void versafit(int m,int n,double *a,double *da,double (*func)(double *),double dchisq,double tol,char *opt);
 double chisq(double a[]);
 orbit_t read_tle(char *filename,int satno);
-void format_tle(orbit_t orb,char *line1,char *line2);
 void highlight(float x0,float y0,float x,float y,int flag);
 void time_range(double *mjdmin,double *mjdmax,int flag);
 void print_tle(orbit_t orb,char *filename);
@@ -178,8 +179,8 @@ void period_search(void)
 	fit(orb,ia);
     }
 
-    format_tle(orb,line1,line2);
-    printf("%s\n%s\n# %d revs, %f revs/day, %f\n",line1,line2,nrev,nrev/dt,d.rms);
+    if (format_tle_report(&orb,line1,line2)==0)
+      printf("%s\n%s\n# %d revs, %f revs/day, %f\n",line1,line2,nrev,nrev/dt,d.rms);
   }
 
 
@@ -240,8 +241,8 @@ int ewsearch(void)
       printf("%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
       fprintf(file,"%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
       
-      format_tle(orb,line1,line2);
-      fprintf(tlefile,"OBJ\n%s\n%s\n",line1,line2);
+      if (format_tle_report(&orb,line1,line2)==0)
+        fprintf(tlefile,"OBJ\n%s\n%s\n",line1,line2);
       mjd2date(mjdmin,&year,&month,&day);
       fprintf(tlefile,"# %4d%02d%05.2lf-",year,month,day);
       mjd2date(mjdmax,&year,&month,&day);
@@ -310,8 +311,8 @@ int revsearch(void)
     printf("%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
     fprintf(file,"%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
 
-    format_tle(orb,line1,line2);
-    fprintf(tlefile,"OBJ\n%s\n%s\n",line1,line2);
+    if (format_tle_report(&orb,line1,line2)==0)
+      fprintf(tlefile,"OBJ\n%s\n%s\n",line1,line2);
     mjd2date(mjdmin,&year,&month,&day);
     fprintf(tlefile,"# %4d%02d%05.2lf-",year,month,day);
     mjd2date(mjdmax,&year,&month,&day);
@@ -638,7 +639,7 @@ int main(int argc,char *argv[])
       satno=0;
 
     // Loop over file
-    while (read_twoline(file,satno,&orb)==0) {
+    while (read_elset(file,satno,&orb,NULL)==0) {
       orb0=orb;
       adjust_fit(2);
       fit(orb,ia);
@@ -740,7 +741,7 @@ int main(int argc,char *argv[])
 
       if (satno>0) {
 	// Plot tle
-	format_tle(orb,line1,line2);
+	format_tle_report(&orb,line1,line2);
 	cpgmtxt("T",2.0,0.0,0.0,line1);
 	cpgmtxt("T",1.0,0.0,0.0,line2);
       }
@@ -1525,7 +1526,7 @@ orbit_t read_tle(char *filename,int satno)
     fatal_error("Failed to open %s\n",filename);
 
   // Read TLE
-  read_twoline(file,satno,&orb);
+  read_elset(file,satno,&orb,NULL);
   fclose(file);
 
   return orb;
@@ -1582,41 +1583,6 @@ void mjd2date(double mjd,int *year,int *month,double *day)
     *year=c-4716;
   else
     *year=c-4715;
-
-  return;
-}
-
-// Format TLE
-void format_tle(orbit_t orb,char *line1,char *line2)
-{
-  int i,csum;
-  char sbstar[]=" 00000-0",bstar[13];
-
-  // Format Bstar term
-  if (fabs(orb.bstar)>1e-9) {
-    sprintf(bstar,"%11.4e",10*orb.bstar);
-    sbstar[0] = bstar[0];  sbstar[1] = bstar[1];  sbstar[2] = bstar[3];  sbstar[3] = bstar[4];
-    sbstar[4] = bstar[5];  sbstar[5] = bstar[6];  sbstar[6] = bstar[8];  sbstar[7] = bstar[10];  sbstar[8] = '\0';
-  }
-  // Print lines
-  sprintf(line1,"1 %05dU %-8s %2d%012.8f  .00000000  00000-0 %8s 0    0",orb.satno,orb.desig,orb.ep_year-2000,orb.ep_day,sbstar);
-  sprintf(line2,"2 %05d %8.4f %8.4f %07.0f %8.4f %8.4f %11.8f    0",orb.satno,DEG(orb.eqinc),DEG(orb.ascn),1E7*orb.ecc,DEG(orb.argp),DEG(orb.mnan),orb.rev);
-
-  // Compute checksums
-  for (i=0,csum=0;i<strlen(line1);i++) {
-    if (isdigit(line1[i]))
-      csum+=line1[i]-'0';
-    else if (line1[i]=='-')
-      csum++;
-  }
-  sprintf(line1,"%s%d",line1,csum%10);
-  for (i=0,csum=0;i<strlen(line2);i++) {
-    if (isdigit(line2[i]))
-      csum+=line2[i]-'0';
-    else if (line2[i]=='-')
-      csum++;
-  }
-  sprintf(line2,"%s%d",line2,csum%10);
 
   return;
 }
@@ -1687,8 +1653,8 @@ void print_tle(orbit_t orb,char *filename)
 
   // Write TLE
   file=fopen(filename,"a");
-  format_tle(orb,line1,line2);
-  fprintf(file,"OBJ\n%s\n%s\n",line1,line2);
+  if (format_tle_report(&orb,line1,line2)==0)
+    fprintf(file,"OBJ\n%s\n%s\n",line1,line2);
 
   mjd2date(mjdmin,&year,&month,&day);
   fprintf(file,"# %4d%02d%05.2lf-",year,month,day);

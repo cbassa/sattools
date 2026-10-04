@@ -4,6 +4,7 @@
 #include <math.h>
 #include <ctype.h>
 #include "sgdp4h.h"
+#include "elset.h"
 #include <getopt.h>
 
 #define LIM 256
@@ -167,7 +168,7 @@ int main(int argc,char *argv[])
     
     // Read TLE
     do {
-      status=read_twoline(file,satno,&orb);
+      status=read_elset(file,satno,&orb,NULL);
     } while (doy2mjd(orb.ep_year,orb.ep_day)<mjd && status!=-1);
     fclose(file);
 

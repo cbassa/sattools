@@ -4,6 +4,7 @@
 #include <math.h>
 #include <getopt.h>
 #include "sgdp4h.h"
+#include "elset.h"
 #include "satutl.h"
 
 #define LIM 128
@@ -347,7 +348,7 @@ int main(int argc,char *argv[])
     }
 
     // Loop over file
-    while (read_twoline(file,satno,&orb)==0) {
+    while (read_elset(file,satno,&orb,NULL)==0) {
       orbit(orb,&aodp,&perigee,&apogee,&period);
       mjd=doy2mjd(orb.ep_year,orb.ep_day);
       mjd2nfd(mjd,nfd);
@@ -366,7 +367,7 @@ int main(int argc,char *argv[])
       fatal_error("File open failed for reading \"%s\"",tlefile);
 
     // Loop over file
-    while (read_twoline(file,satno,&orb)==0) 
+    while (read_elset(file,satno,&orb,NULL)==0) 
       print_orb(&orb);
 
     fclose(file);

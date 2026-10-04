@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "sgdp4h.h"
+#include "elset.h"
 #include "satutl.h"
 #include <getopt.h>
 
@@ -100,7 +101,7 @@ int main(int argc,char *argv[])
   file2=fopen(catalog2,"r");
 
   // Loop over classfd catalog
-  while (read_twoline(file1,0,&orb1)==0) {
+  while (read_elset(file1,0,&orb1,NULL)==0) {
     // Compute positions
     imode=init_sgdp4(&orb1);
     for (i=0;i<n;i++) 
@@ -109,7 +110,7 @@ int main(int argc,char *argv[])
     // Loop over ISON catalog
     flag=0;
     rewind(file2);
-    while (read_twoline(file2,0,&orb2)==0) {
+    while (read_elset(file2,0,&orb2,NULL)==0) {
       mjd=doy2mjd(orb2.ep_year,orb2.ep_day);
 
       imode=init_sgdp4(&orb2);
@@ -139,7 +140,7 @@ int main(int argc,char *argv[])
 
     // Compute normals
     rewind(file2);
-    read_twoline(file2,satno,&orb2);
+    read_elset(file2,satno,&orb2,NULL);
     mjd=doy2mjd(orb2.ep_year,orb2.ep_day);
     imode=init_sgdp4(&orb2);
     satpos_xyz(mjd+2400000.5,&r0,&v0);
