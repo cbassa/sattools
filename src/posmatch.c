@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "sgdp4h.h"
+#include "elset.h"
 #include "satutl.h"
 #include <getopt.h>
 
@@ -79,14 +80,14 @@ double doy2mjd(int year,double doy)
 
 int main(int argc,char *argv[])
 {
-  int i,arg=0,imode,n=100,satno,satname,satno2,imin,flag,status;
+  int i,arg=0,imode,n=100,satno,satname=0,imin,flag,status;
   char catalog1[]="20180121_173045_catalog.txt",catalog2[]="jsc_20180122.txt";
   FILE *file1,*file2;
   orbit_t orb1,orb2;
   double mjd0=58140.0,mjd;
   xyz_t *r,*v,r0,v0,d,n1,n2;
   double dr,dv,dn,drmin,dvmin,mjdmin;
-  char line0[LIM],line1[LIM],line2[LIM];
+  char name[ST_SIZE];
 
   // Reroute stderr
   freopen("/tmp/stderr.txt","w",stderr);
@@ -100,7 +101,7 @@ int main(int argc,char *argv[])
   file2=fopen(catalog2,"r");
 
   // Loop over classfd catalog
-  while (read_twoline(file1,0,&orb1)==0) {
+  while (read_elset(file1,0,&orb1,NULL)==0) {
     // Compute positions
     imode=init_sgdp4(&orb1);
     for (i=0;i<n;i++) 
@@ -109,7 +110,7 @@ int main(int argc,char *argv[])
     // Loop over ISON catalog
     flag=0;
     rewind(file2);
-    while (read_twoline(file2,0,&orb2)==0) {
+    while (read_elset(file2,0,&orb2,NULL)==0) {
       mjd=doy2mjd(orb2.ep_year,orb2.ep_day);
 
       imode=init_sgdp4(&orb2);
@@ -139,7 +140,7 @@ int main(int argc,char *argv[])
 
     // Compute normals
     rewind(file2);
-    read_twoline(file2,satno,&orb2);
+    read_elset(file2,satno,&orb2,NULL);
     mjd=doy2mjd(orb2.ep_year,orb2.ep_day);
     imode=init_sgdp4(&orb2);
     satpos_xyz(mjd+2400000.5,&r0,&v0);
@@ -150,16 +151,10 @@ int main(int argc,char *argv[])
     d.z=n1.z-n2.z;
     dn=sqrt(d.x*d.x+d.y*d.y+d.z*d.z);
 
-    // Find object name
+    // Find object name ("SO <number>" in the ISON catalog)
     rewind(file2);
-    while (fgetline(file2,line0,LIM)>0) {
-      fgetline(file2,line1,LIM);
-      fgetline(file2,line2,LIM);
-      sscanf(line1,"1 %d",&satno2);
-      if (satno==satno2) {
-	sscanf(line0,"SO %d",&satname);
-      }
-    }
+    if (read_elset(file2,satno,&orb2,name)==0)
+      sscanf(name,"SO %d",&satname);
 
     //    printf("%05d %05d %8.2f km %9.5f km/s %6.0lf s %8.0f km\n",orb1.satno,satno,drmin,dvmin,(mjd0+(double) imin/86400.0-mjd)*86400,dn);
     printf("%6d %05d %s | %5d %8.2f km %9.5f km/s %6.0lf s %8.0f km\n",satname,orb1.satno,orb1.desig,satno,drmin,dvmin,(mjd0+(double) imin/86400.0-mjd)*86400,dn);

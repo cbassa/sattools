@@ -5,6 +5,8 @@
 #include <getopt.h>
 #include <time.h>
 #include "sgdp4h.h"
+#include "elset.h"
+#include "sattools_util.h"
 
 #define LIM 128
 #define D2R M_PI/180.0
@@ -290,7 +292,7 @@ int main(int argc,char *argv[])
       break;
 
     case 'i':
-      m.satno=atoi(optarg);
+      m.satno=parse_satno(optarg);
       break;
 
     case 'l':
@@ -353,7 +355,7 @@ int main(int argc,char *argv[])
     fatal_error("File open failed for reading %s\n",m.tlefile);
 
   // Loop over objects
-  while (read_twoline(file,m.satno,&orb)==0) {
+  while (read_elset(file,m.satno,&orb,NULL)==0) {
     Isat=orb.satno;
     imode=init_sgdp4(&orb);
 

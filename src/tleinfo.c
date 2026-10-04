@@ -4,6 +4,9 @@
 #include <math.h>
 #include <getopt.h>
 #include "sgdp4h.h"
+#include "elset.h"
+#include "omm.h"
+#include "sattools_util.h"
 #include "satutl.h"
 
 #define LIM 128
@@ -198,11 +201,37 @@ float orbital_longitude_at_midnight(orbit_t orb,double mjd0)
   return modulo(K.theta*R2D,360.0);
 }
 
+// Is the file an OMM (JSON, XML, KVN or CSV) rather than TLEs?
+int is_omm_file(char *filename)
+{
+  char line[OMM_LINE_SIZE],*p;
+  FILE *file;
+  int enc=OMM_NONE;
+
+  file=fopen(filename,"rb");
+  if (file==NULL)
+    return 0;
+  while (fgets(line,sizeof(line),file)!=NULL) {
+    // Skip a UTF-8 byte order mark, then blank lines
+    p=line;
+    if ((unsigned char) p[0]==0xEF && (unsigned char) p[1]==0xBB && (unsigned char) p[2]==0xBF)
+      p+=3;
+    if (strspn(p," \t\r\n")==strlen(p))
+      continue;
+    enc=omm_detect(p);
+    break;
+  }
+  fclose(file);
+
+  return enc!=OMM_NONE;
+}
+
 int main(int argc,char *argv[])
 {
   int arg=0,satno=0,header=0,oneline=0,no,name=0,desig=0,has_intldesg=0;
   char tlefile[LIM];
   char line0[LIM],line1[LIM],line2[LIM],nfd[32],intldesg[16]="",desg[16]="";
+  char satname[ST_SIZE];
   FILE *file;
   orbit_t orb;
   float aodp,perigee,apogee,period,lng;
@@ -242,7 +271,7 @@ int main(int argc,char *argv[])
       break;
 
     case 'i':
-      satno=atoi(optarg);
+      satno=parse_satno(optarg);
       break;
 
     case 'I':
@@ -273,18 +302,37 @@ int main(int argc,char *argv[])
     }
   }
 
-  if (oneline==0) {
+  if (oneline==0 && is_omm_file(tlefile)) {
+    // OMM input: show the element sets as TLEs
+    file=fopen(tlefile,"rb");
+    if (file==NULL)
+      fatal_error("File open failed for reading \"%s\"",tlefile);
+
+    while (read_elset(file,satno,&orb,satname)==0) {
+      if (has_intldesg==1 && strcmp(orb.desig,intldesg)!=0)
+	continue;
+      if (name==1 && desig==0 && has_intldesg==0)
+	printf("%s\n",satname);
+      else if (name==0 && desig==1 && has_intldesg==0)
+	printf("%-8s\n",orb.desig);
+      else if (format_tle_report(&orb,line1,line2)==0)
+	printf("%s\n%s\n%s\n",satname,line1,line2);
+      if (unique==1 && has_intldesg==0)
+	break;
+    }
+    fclose(file);
+  } else if (oneline==0) {
     // Open file
     file=fopen(tlefile,"rb");
-    if (file==NULL) 
+    if (file==NULL)
       fatal_error("File open failed for reading \"%s\"",tlefile);
 
     while (fgetline(file,line1,LIM)>0) {
       // Find TLE line
       if (line1[0]=='1') {
 	fgetline(file,line2,LIM);
-	sscanf(line1+2,"%d",&no);
-	sscanf(line1+9,"%s",&desg);
+	no=alpha5_to_number(line1+2);
+	sscanf(line1+9,"%s",desg);
 	
 	if ((satno==0 || satno==no) && (has_intldesg==0)) {
 	  if (name==1 && desig==0)
@@ -347,7 +395,7 @@ int main(int argc,char *argv[])
     }
 
     // Loop over file
-    while (read_twoline(file,satno,&orb)==0) {
+    while (read_elset(file,satno,&orb,NULL)==0) {
       orbit(orb,&aodp,&perigee,&apogee,&period);
       mjd=doy2mjd(orb.ep_year,orb.ep_day);
       mjd2nfd(mjd,nfd);
@@ -366,7 +414,7 @@ int main(int argc,char *argv[])
       fatal_error("File open failed for reading \"%s\"",tlefile);
 
     // Loop over file
-    while (read_twoline(file,satno,&orb)==0) 
+    while (read_elset(file,satno,&orb,NULL)==0) 
       print_orb(&orb);
 
     fclose(file);

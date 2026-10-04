@@ -5,6 +5,8 @@
 #include <ctype.h>
 #include <wcslib/cel.h>
 #include "sgdp4h.h"
+#include "elset.h"
+#include "sattools_util.h"
 #include <getopt.h>
 
 #define LIM 80
@@ -68,9 +70,9 @@ void compute_residual(char *filename,struct point p,int satno)
 
   // Read TLE
   if (satno==0)
-    read_twoline(file,p.satno,&orb);
+    read_elset(file,p.satno,&orb,NULL);
   else
-    read_twoline(file,satno,&orb);
+    read_elset(file,satno,&orb,NULL);
   fclose(file);
 
   // Check for match
@@ -169,7 +171,7 @@ int main(int argc,char *argv[])
       break;
 
     case 'i':
-      satno=atoi(optarg);
+      satno=parse_satno(optarg);
       break;
 
     case 'c':

@@ -14,3 +14,4 @@ clean:
 	rm -f src/*.o
 	rm -f src/*~
 	rm -rf bin
+	-$(MAKE) -C extern/dundee_sgp4 clean

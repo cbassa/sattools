@@ -6,6 +6,8 @@
 #include <getopt.h>
 #include "cpgplot.h"
 #include "sgdp4h.h"
+#include "elset.h"
+#include "sattools_util.h"
 
 #define LIM 128
 #define NMAX 1024
@@ -406,7 +408,7 @@ void plot_track(void)
   long imode;
   int isci;
   float isch;
-  char norad[7];
+  char norad[16];
   struct sat s;
   float rmin,rmax;
   float xmin,ymin,zmin,xmax,ymax,zmax;
@@ -423,7 +425,7 @@ void plot_track(void)
     fatal_error("File open failed for reading \"%s\"",m.tlefile);
   }
   
-  while (read_twoline(fp,m.satno,&orb) == 0) {
+  while (read_elset(fp,m.satno,&orb,NULL) == 0) {
     //    print_orb(&orb);
     
     Isat=orb.satno;
@@ -530,7 +532,7 @@ void plot_xyz(void)
   long imode;
   int isci;
   float isch;
-  char norad[7],line[LIM],nfd[32];
+  char norad[16],line[LIM],nfd[32];
   struct sat s;
   double rsun,rearth;
   double dx,dy,dz,sra,sde;
@@ -1352,7 +1354,7 @@ int main(int argc,char *argv[])
       break;
 
     case 'i':
-      m.satno=atoi(optarg);
+      m.satno=parse_satno(optarg);
       break;
 
     case 'q':

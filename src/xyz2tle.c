@@ -5,6 +5,8 @@
 #include <getopt.h>
 #include <ctype.h>
 #include "sgdp4h.h"
+#include "elset.h"
+#include "sattools_util.h"
 #include "satutl.h"
 
 
@@ -99,41 +101,6 @@ int fgetline(FILE *file,char *s,int lim)
     s[i++] = c;
   s[i] = '\0';
   return i;
-}
-
-// Format TLE
-void format_tle(orbit_t orb,char *line1,char *line2)
-{
-  int i,csum;
-  char sbstar[]=" 00000-0",bstar[13];
-
-  // Format Bstar term
-  if (fabs(orb.bstar)>1e-9) {
-    sprintf(bstar,"%11.4e",10*orb.bstar);
-    sbstar[0] = bstar[0];  sbstar[1] = bstar[1];  sbstar[2] = bstar[3];  sbstar[3] = bstar[4];
-    sbstar[4] = bstar[5];  sbstar[5] = bstar[6];  sbstar[6] = bstar[8];  sbstar[7] = bstar[10];  sbstar[8] = '\0';
-  }
-  // Print lines
-  sprintf(line1,"1 %05dU %-8s %2d%012.8f  .00000000  00000-0 %8s 0    0",orb.satno,orb.desig,orb.ep_year-2000,orb.ep_day,sbstar);
-  sprintf(line2,"2 %05d %8.4f %8.4f %07.0f %8.4f %8.4f %11.8f%5ld",orb.satno,DEG(orb.eqinc),DEG(orb.ascn),1E7*orb.ecc,DEG(orb.argp),DEG(orb.mnan),orb.rev,orb.norb);
-
-  // Compute checksums
-  for (i=0,csum=0;i<strlen(line1);i++) {
-    if (isdigit(line1[i]))
-      csum+=line1[i]-'0';
-    else if (line1[i]=='-')
-      csum++;
-  }
-  sprintf(line1,"%s%d",line1,csum%10);
-  for (i=0,csum=0;i<strlen(line2);i++) {
-    if (isdigit(line2[i]))
-      csum+=line2[i]-'0';
-    else if (line2[i]=='-')
-      csum++;
-  }
-  sprintf(line2,"%s%d",line2,csum%10);
-
-  return;
 }
 
 // Precess a celestial position
@@ -246,7 +213,7 @@ orbit_t read_tle(char *filename,int satno)
     fatal_error("Failed to open %s\n",filename);
 
   // Read TLE
-  read_twoline(file,satno,&orb);
+  read_elset(file,satno,&orb,NULL);
   fclose(file);
 
   return orb;
@@ -398,6 +365,9 @@ orbit_t classel(int ep_year,double ep_day,xyz_t r,xyz_t v)
   xyz_t h,e,kk,nn;
   orbit_t orb;
 
+  // Start from zero: fields not computed here must not be left undefined
+  memset(&orb,0,sizeof(orb));
+
   r.x/=XKMPER;
   r.y/=XKMPER;
   r.z/=XKMPER;
@@ -492,6 +462,7 @@ orbit_t rv2el(int satno,double mjd,xyz_t r0,xyz_t v0)
     orb1[i]=classel(ep_year,ep_day,r,v);
 
     // Adjust
+    orb[i+1]=orb[i];
     orb[i+1].rev=orb[i].rev+orb[0].rev-orb1[i].rev;
     orb[i+1].ascn=orb[i].ascn+orb[0].ascn-orb1[i].ascn;
     orb[i+1].argp=orb[i].argp+orb[0].argp-orb1[i].argp;
@@ -600,7 +571,7 @@ int main(int argc,char *argv[])
       break;
 
     case 'i':
-      satno=atoi(optarg);
+      satno=parse_satno(optarg);
       break;
 
     case 'n':
@@ -696,7 +667,10 @@ int main(int argc,char *argv[])
   apogee=sma*(1.0+orb.ecc)-XKMPER;
   
   // Format TLE
-  format_tle(orb,line1,line2);
+  if (format_tle_report(&orb,line1,line2)!=0) {
+    fclose(file);
+    return 1;
+  }
 
   fprintf(file,"SO %6d                      %4.1f             %7.0fkm  x%7.0fkm\n%s\n%s\n# %d positions, %.1f km rms\n",satname,mag+dm,perigee,apogee,line1,line2,d.nsel,d.rms);
   printf("SO %6d                      %4.1f             %7.0fkm  x%7.0fkm\n%s\n%s\n# %d positions, %.1f km rms\n",satname,mag+dm,perigee,apogee,line1,line2,d.nsel,d.rms);

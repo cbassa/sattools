@@ -8,6 +8,8 @@
 #include <cpgplot.h>
 #include <wcslib/cel.h>
 #include "sgdp4h.h"
+#include "elset.h"
+#include "sattools_util.h"
 
 #define LIM 384
 #define NMAX 256
@@ -680,13 +682,13 @@ int main(int argc,char *argv[])
       break;
 
     case 'i':
-      Isatsel=atoi(optarg);
+      Isatsel=parse_satno(optarg);
       m.leoflag=0;
       break;
       
     case 'P':
       m.planar=1;
-      m.pssatno=atoi(optarg);
+      m.pssatno=parse_satno(optarg);
       m.psrmin=300;
       m.psrmax=1000;
       m.psnr=8;
@@ -1683,7 +1685,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
   double mjd,jd,dx,dy,dz;
   double rx,ry,ra,de,azi,alt,r,t;
   float x,y;
-  char norad[7],satname[30],date[24];;
+  char norad[16],satname[30],date[24];;
   float isch;
   float rsun,rearth,psun,pearth,p;
   int priority[]={28888,37348,39232,43941,48247,53883};
@@ -1697,7 +1699,7 @@ void skymap_plotsatellite(char *filename,int satno,double mjd0,double dt)
   }
 
   // Read TLEs
-  while (read_twoline(fp,satno,&orb)==0) {
+  while (read_elset(fp,satno,&orb,NULL)==0) {
     Isat=orb.satno;
     imode=init_sgdp4(&orb);
 
@@ -2033,7 +2035,7 @@ void planar_search(char *filename,int satno,float rmin,float rmax,int nr,int gra
   }
 
   // Read TLEs
-  while (read_twoline(fp,satno,&orb)==0) {
+  while (read_elset(fp,satno,&orb,NULL)==0) {
     Isat=orb.satno;
     imode=init_sgdp4(&orb);
 
@@ -2186,12 +2188,12 @@ void planar_search(char *filename,int satno,float rmin,float rmax,int nr,int gra
 }
 
 // Print TLE
-int print_tle(char *filename,int satno) 
+int print_tle(char *filename,int satno)
 {
   FILE *fp;
   struct sat s;
   orbit_t orb;
-  char line[LIM],pline[LIM];
+  char line1[70],line2[70],satname[ST_SIZE];
   int flag=0;
 
   // Open TLE file
@@ -2200,17 +2202,11 @@ int print_tle(char *filename,int satno)
     printf("Failed to open TLE catalog %s\n",filename);
     exit(1);
   }
-  // Read TLEs
-  while (fgetline(fp,line,LIM)>0) {
-    sscanf(line+2,"%ld",&Isat);
-    if (line[0]=='1' && (long) Isat==satno) {
-      printf("\n%s%s",pline,line);
-      fgetline(fp,line,LIM);
-      printf("%s\n",line);
-      flag=1;
-    }
-
-    strcpy(pline,line);
+  // Find the elements (TLE or OMM) and show them as a TLE
+  while (read_elset(fp,satno,&orb,satname)==0) {
+    if (format_tle_report(&orb,line1,line2)==0)
+      printf("\n%s\n%s\n%s\n",satname,line1,line2);
+    flag=1;
   }
   fclose(fp);
 
@@ -2239,7 +2235,7 @@ long identify_satellite(char *filename,int satno,double mjd,float rx,float ry)
   }
 
   // Read TLEs
-  while (read_twoline(fp,satno,&orb)==0) {
+  while (read_elset(fp,satno,&orb,NULL)==0) {
     Isat=orb.satno;
     imode=init_sgdp4(&orb);
 

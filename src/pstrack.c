@@ -6,6 +6,8 @@
 #include <cpgplot.h>
 #include "qfits.h"
 #include "sgdp4h.h"
+#include "elset.h"
+#include "sattools_util.h"
 
 #define LIM 80
 #define NMAX 256
@@ -165,7 +167,7 @@ orbit_t find_tle(char *tlefile,struct image img,int satno)
   double mjd,jd,dx,dy,dz;
   double rx,ry,ra,de,azi,alt,r,t,d;
   float x[MMAX],y[MMAX],x0,y0;
-  char norad[7],satname[30];
+  char norad[16],satname[30];
   float isch;
   float rsun,rearth,psun,pearth,p;
   char filename[128];
@@ -178,12 +180,12 @@ orbit_t find_tle(char *tlefile,struct image img,int satno)
 
   // Read TLEs
   if (satno!=0) {
-    read_twoline(fp,satno,&orb);
+    read_elset(fp,satno,&orb,NULL);
     fclose(fp);
     return orb;
   }
 
-  read_twoline(fp,0,&orb);
+  read_elset(fp,0,&orb,NULL);
   fclose(fp);
 
   for (i=0,mnan=0.0;mnan<360.0;mnan+=0.01,i++) {
@@ -221,7 +223,7 @@ struct track plot_satellite(orbit_t orb,struct image img)
   double mjd,jd,dx,dy,dz;
   double rx,ry,ra,de,azi,alt,r,t,d;
   float x[MMAX],y[MMAX];
-  char norad[7],satname[30];
+  char norad[16],satname[30];
   float isch;
   float rsun,rearth,psun,pearth,p;
   char filename[128];
@@ -361,7 +363,7 @@ int main(int argc,char *argv[])
   get_site(img.cospar);
 
   if (argc==5)
-    satno=atoi(argv[4]);
+    satno=parse_satno(argv[4]);
 
   // Find closest orbit
   orb=find_tle(argv[2],img,satno);
