@@ -1785,6 +1785,9 @@ orbit_t classel(int ep_year,double ep_day,xyz_t r,xyz_t v)
   xyz_t h,e,kk,nn;
   orbit_t orb;
 
+  // Start from zero: fields not computed here must not be left undefined
+  memset(&orb,0,sizeof(orb));
+
   r.x/=XKMPER;
   r.y/=XKMPER;
   r.z/=XKMPER;
@@ -1879,6 +1882,7 @@ orbit_t rv2el(int satno,double mjd,xyz_t r0,xyz_t v0)
     orb1[i]=classel(ep_year,ep_day,r,v);
 
     // Adjust
+    orb[i+1]=orb[i];
     orb[i+1].rev=orb[i].rev+orb[0].rev-orb1[i].rev;
     orb[i+1].ascn=orb[i].ascn+orb[0].ascn-orb1[i].ascn;
     orb[i+1].argp=orb[i].argp+orb[0].argp-orb1[i].argp;
