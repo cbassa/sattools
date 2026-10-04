@@ -42,10 +42,16 @@ The `qfits` code can also be obtained from https://spacecruft.org/spacecruft/qfi
 **Clone and install `sattools`**
 
 ```
-git clone https://github.com/cbassa/sattools.git
+git clone --recursive https://github.com/cbassa/sattools.git
 cd sattools
 make
 ```
+
+The SGP4/SDP4 propagator and the element set readers come from the [dundee_sgp4](https://gitlab.com/pierros/dundee_sgp4) submodule in `extern/dundee_sgp4`, shared with [strf](https://github.com/cbassa/strf). In an existing clone, fetch it with `git submodule update --init`.
+
+**Element set formats**
+
+The tools read two- and three-line element sets (catalog numbers above 99999 in alpha-5, e.g. `A0000` for 100000) and CCSDS OMM files in JSON, XML, KVN or CSV, as served by CelesTrak and Space-Track; the format is detected automatically. Catalog numbers given with `-i` may be plain (`100000`) or alpha-5 (`A0000`). TLEs are written with alpha-5 numbers up to 339999; `faketle` writes OMM (KVN) beyond that.
 
 **Setup environment variables**
 
