@@ -2188,12 +2188,12 @@ void planar_search(char *filename,int satno,float rmin,float rmax,int nr,int gra
 }
 
 // Print TLE
-int print_tle(char *filename,int satno) 
+int print_tle(char *filename,int satno)
 {
   FILE *fp;
   struct sat s;
   orbit_t orb;
-  char line[LIM],pline[LIM];
+  char line1[70],line2[70],satname[ST_SIZE];
   int flag=0;
 
   // Open TLE file
@@ -2202,17 +2202,11 @@ int print_tle(char *filename,int satno)
     printf("Failed to open TLE catalog %s\n",filename);
     exit(1);
   }
-  // Read TLEs
-  while (fgetline(fp,line,LIM)>0) {
-    sscanf(line+2,"%ld",&Isat);
-    if (line[0]=='1' && (long) Isat==satno) {
-      printf("\n%s%s",pline,line);
-      fgetline(fp,line,LIM);
-      printf("%s\n",line);
-      flag=1;
-    }
-
-    strcpy(pline,line);
+  // Find the elements (TLE or OMM) and show them as a TLE
+  while (read_elset(fp,satno,&orb,satname)==0) {
+    if (format_tle_report(&orb,line1,line2)==0)
+      printf("\n%s\n%s\n%s\n",satname,line1,line2);
+    flag=1;
   }
   fclose(fp);
 
