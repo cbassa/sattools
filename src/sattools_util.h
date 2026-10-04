@@ -17,4 +17,10 @@ long parse_satno(const char *s);
  * TLE when it fails. Returns 0 or -1. */
 int format_tle_report(const orbit_t *orb, char line1[70], char line2[70]);
 
+/* format_tle_report() for elements a tool computed itself (a fit, a
+ * launch time shift): the derivatives and the orbit number are written as
+ * zero, as the tools' own writers always did, since the values of the
+ * starting element set do not carry over. */
+int format_fitted_tle(const orbit_t *orb, char line1[70], char line2[70]);
+
 #endif /* _SATTOOLS_UTIL_H */

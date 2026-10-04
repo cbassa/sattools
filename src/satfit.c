@@ -179,7 +179,7 @@ void period_search(void)
 	fit(orb,ia);
     }
 
-    if (format_tle_report(&orb,line1,line2)==0)
+    if (format_fitted_tle(&orb,line1,line2)==0)
       printf("%s\n%s\n# %d revs, %f revs/day, %f\n",line1,line2,nrev,nrev/dt,d.rms);
   }
 
@@ -241,7 +241,7 @@ int ewsearch(void)
       printf("%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
       fprintf(file,"%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
       
-      if (format_tle_report(&orb,line1,line2)==0)
+      if (format_fitted_tle(&orb,line1,line2)==0)
         fprintf(tlefile,"OBJ\n%s\n%s\n",line1,line2);
       mjd2date(mjdmin,&year,&month,&day);
       fprintf(tlefile,"# %4d%02d%05.2lf-",year,month,day);
@@ -311,7 +311,7 @@ int revsearch(void)
     printf("%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
     fprintf(file,"%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
 
-    if (format_tle_report(&orb,line1,line2)==0)
+    if (format_fitted_tle(&orb,line1,line2)==0)
       fprintf(tlefile,"OBJ\n%s\n%s\n",line1,line2);
     mjd2date(mjdmin,&year,&month,&day);
     fprintf(tlefile,"# %4d%02d%05.2lf-",year,month,day);
@@ -741,7 +741,7 @@ int main(int argc,char *argv[])
 
       if (satno>0) {
 	// Plot tle
-	format_tle_report(&orb,line1,line2);
+	format_fitted_tle(&orb,line1,line2);
 	cpgmtxt("T",2.0,0.0,0.0,line1);
 	cpgmtxt("T",1.0,0.0,0.0,line2);
       }
@@ -1653,7 +1653,7 @@ void print_tle(orbit_t orb,char *filename)
 
   // Write TLE
   file=fopen(filename,"a");
-  if (format_tle_report(&orb,line1,line2)==0)
+  if (format_fitted_tle(&orb,line1,line2)==0)
     fprintf(file,"OBJ\n%s\n%s\n",line1,line2);
 
   mjd2date(mjdmin,&year,&month,&day);

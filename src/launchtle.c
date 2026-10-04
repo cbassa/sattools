@@ -239,7 +239,7 @@ int main(int argc,char *argv[])
   orb.satno=satno1;
 
   // Print output
-  if (format_tle_report(&orb,line1,line2)!=0) return 1;
+  if (format_fitted_tle(&orb,line1,line2)!=0) return 1;
   printf("%s\n%s\n",line1,line2);
 
   return 0;

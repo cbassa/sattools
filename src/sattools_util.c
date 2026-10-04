@@ -48,6 +48,17 @@ int format_tle_report(const orbit_t *orb, char line1[70], char line2[70])
   return -1;
 }
 
+int format_fitted_tle(const orbit_t *orb, char line1[70], char line2[70])
+{
+  orbit_t fitted=*orb;
+
+  fitted.ndot2=0.0;
+  fitted.nddot6=0.0;
+  fitted.norb=0;
+
+  return format_tle_report(&fitted,line1,line2);
+}
+
 long parse_satno(const char *s)
 {
   const char *p=s;
