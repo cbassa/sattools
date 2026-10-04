@@ -188,7 +188,7 @@ orbit_t classel(int ep_year,double ep_day,xyz_t r,xyz_t v)
 orbit_t rv2el(int satno,double mjd,xyz_t r0,xyz_t v0)
 {
   int i,imode;
-  orbit_t orb[5],orb1[5];
+  orbit_t orb[6],orb1[6];
   xyz_t r,v;
   kep_t kep;
   char line1[70],line2[70];
