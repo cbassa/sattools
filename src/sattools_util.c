@@ -50,12 +50,23 @@ int format_tle_report(const orbit_t *orb, char line1[70], char line2[70])
 
 long parse_satno(const char *s)
 {
-  while (isspace((unsigned char)*s))
-    s++;
+  const char *p=s;
+  long n=-1;
 
-  // Five characters with a leading letter: alpha-5
-  if (strlen(s)==5 && isalpha((unsigned char)s[0]))
-    return alpha5_to_number(s);
+  while (isspace((unsigned char)*p))
+    p++;
 
-  return atol(s);
+  // Five characters with a leading letter: alpha-5; otherwise digits only
+  if (strlen(p)==5 && isalpha((unsigned char)p[0]))
+    n=alpha5_to_number(p);
+  else if (*p!='\0' && strspn(p,"0123456789")==strlen(p))
+    n=atol(p);
+
+  // An invalid number must not fall back to 0 or -1, which mean "all"
+  if (n<0) {
+    fprintf(stderr,"Invalid catalog number \"%s\": use digits (101234) or alpha-5 (A1234)\n",s);
+    exit(1);
+  }
+
+  return n;
 }

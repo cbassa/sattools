@@ -682,7 +682,7 @@ int main(int argc,char *argv[])
       break;
 
     case 'i':
-      Isatsel=atoi(optarg);
+      Isatsel=parse_satno(optarg);
       m.leoflag=0;
       break;
       

@@ -7,6 +7,7 @@
 #include "qfits.h"
 #include "sgdp4h.h"
 #include "elset.h"
+#include "sattools_util.h"
 
 #define LIM 80
 #define NMAX 256
@@ -362,7 +363,7 @@ int main(int argc,char *argv[])
   get_site(img.cospar);
 
   if (argc==5)
-    satno=atoi(argv[4]);
+    satno=parse_satno(argv[4]);
 
   // Find closest orbit
   orb=find_tle(argv[2],img,satno);

@@ -9,7 +9,8 @@
 #include "sgdp4h.h"
 
 /* Catalogue number from the command line: plain (101234) or alpha-5
- * (A1234). Returns -1 for an alpha-5-looking string that is not valid. */
+ * (A1234). Anything else ends the program with a message, so that a typo
+ * cannot turn into 0 or -1 ("all objects" for most tools). */
 long parse_satno(const char *s);
 
 /* format_tle(), saying on stderr why the elements cannot be written as a
