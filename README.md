@@ -51,7 +51,7 @@ The SGP4/SDP4 propagator and the element set readers come from the [dundee_sgp4]
 
 **Element set formats**
 
-The tools read two- and three-line element sets (catalog numbers above 99999 in alpha-5, e.g. `A0000` for 100000) and CCSDS OMM files in JSON, XML, KVN or CSV, as served by CelesTrak and Space-Track; the format is detected automatically. Catalog numbers given with `-i` may be plain (`100000`) or alpha-5 (`A0000`). TLEs are written with alpha-5 numbers up to 339999; `faketle` writes OMM (KVN) beyond that.
+The tools that read element sets (all those that propagate orbits) take two- and three-line element sets (catalog numbers above 99999 in alpha-5, e.g. `A0000` for 100000) and CCSDS OMM files in JSON, XML, KVN or CSV, as served by CelesTrak and Space-Track; the format is detected automatically. Catalog numbers given with `-i` may be plain (`100000`) or alpha-5 (`A0000`). TLEs are written with alpha-5 numbers up to 339999; `faketle` writes OMM (KVN) beyond that.
 
 **Setup environment variables**
 
