@@ -2,9 +2,13 @@
 SGP4DIR = ../extern/dundee_sgp4
 SGP4LIB = $(SGP4DIR)/libsgdp4.a
 SGP4 = sattools_util.o $(SGP4LIB)
+SGP4HDRS = $(SGP4DIR)/sgdp4h.h $(SGP4DIR)/satutl.h $(SGP4DIR)/elset.h $(SGP4DIR)/alpha5.h $(SGP4DIR)/omm.h
+
+# Library include path, kept out of CFLAGS so that overriding CFLAGS keeps it
+override CPPFLAGS += -I$(SGP4DIR)
 
 # Compiling flags
-CFLAGS = -O3 -Wno-unused-result -I$(SGP4DIR)
+CFLAGS = -O3 -Wno-unused-result
 
 # Linking flags
 LFLAGS = -lm -lcpgplot -lpgplot -lX11 -lwcs -lgsl -lgslcblas -lpng 
@@ -13,10 +17,10 @@ LFLAGS = -lm -lcpgplot -lpgplot -lX11 -lwcs -lgsl -lgslcblas -lpng
 CC = gcc
 F77 = gfortran
 
-all: check-sgp4
+all:
 	make addwcs angular calibrate dec2sex faketle fitsheader fitskey imgstat jpg2fits jpgstack measure pgm2fits plotfits pstrack rde2iod reduce residuals runsched satfit satid satmap satorbit sex2dec skymap tle2ole tleinfo uk2iod stviewer wcsfit deproject slewto waitfor pass detect launchtle propagate fakeiod csv2tle normal posmatch posvel xyz2tle mvtle confirm allnight
 
-lite: check-sgp4
+lite:
 	make faketle residuals satfit satmap satorbit tleinfo uk2iod pass launchtle propagate skymap allnight
 
 geolon: geolon.o $(SGP4)
@@ -185,9 +189,13 @@ clean:
 $(SGP4LIB): FORCE
 	$(MAKE) -C $(SGP4DIR) lib CC="$(CC)"
 
-check-sgp4:
-	@test -f $(SGP4DIR)/sgdp4h.h || { echo "extern/dundee_sgp4 is empty: run 'git submodule update --init'"; exit 1; }
+# Every object depends on the library headers (rebuilt when the submodule
+# changes); a missing header means the submodule is not checked out
+$(patsubst %.c,%.o,$(wildcard *.c)): $(SGP4HDRS)
+
+$(SGP4HDRS):
+	@echo "extern/dundee_sgp4 is empty: run 'git submodule update --init'"; exit 1
 
 FORCE:
 
-.PHONY: all lite clean check-sgp4 FORCE
+.PHONY: all lite clean FORCE
