@@ -204,7 +204,7 @@ float orbital_longitude_at_midnight(orbit_t orb,double mjd0)
 // Is the file an OMM (JSON, XML, KVN or CSV) rather than TLEs?
 int is_omm_file(char *filename)
 {
-  char line[OMM_LINE_SIZE];
+  char line[OMM_LINE_SIZE],*p;
   FILE *file;
   int enc=OMM_NONE;
 
@@ -212,10 +212,13 @@ int is_omm_file(char *filename)
   if (file==NULL)
     return 0;
   while (fgets(line,sizeof(line),file)!=NULL) {
-    if (strspn(line," \t\r\n")==strlen(line))
+    // Skip a UTF-8 byte order mark, then blank lines
+    p=line;
+    if ((unsigned char) p[0]==0xEF && (unsigned char) p[1]==0xBB && (unsigned char) p[2]==0xBF)
+      p+=3;
+    if (strspn(p," \t\r\n")==strlen(p))
       continue;
-    // Skip a UTF-8 byte order mark
-    enc=omm_detect((unsigned char) line[0]==0xEF ? line+3 : line);
+    enc=omm_detect(p);
     break;
   }
   fclose(file);
