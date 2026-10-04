@@ -123,6 +123,11 @@ int main(int argc,char *argv[])
     orb.bstar=0.0;
   orbit(orb,&aodp,&perigee,&apogee,&period);
 
+  // Beyond alpha-5: write the elements as OMM instead
+  if (orb.satno>ALPHA5_MAX) {
+    write_omm_kvn(stdout,&orb,NULL);
+    return 0;
+  }
   if (format_tle_report(&orb,line1,line2)!=0) return 1;
   printf("%s\n%s\n",line1,line2);
 
