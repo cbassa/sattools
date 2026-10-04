@@ -408,7 +408,7 @@ void plot_track(void)
   long imode;
   int isci;
   float isch;
-  char norad[7];
+  char norad[16];
   struct sat s;
   float rmin,rmax;
   float xmin,ymin,zmin,xmax,ymax,zmax;
@@ -532,7 +532,7 @@ void plot_xyz(void)
   long imode;
   int isci;
   float isch;
-  char norad[7],line[LIM],nfd[32];
+  char norad[16],line[LIM],nfd[32];
   struct sat s;
   double rsun,rearth;
   double dx,dy,dz,sra,sde;
