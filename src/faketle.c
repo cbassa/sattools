@@ -50,6 +50,8 @@ int main(int argc,char *argv[])
   int arg=0;
   double mjd,dh;
 
+  memset(&orb,0,sizeof(orb));
+
   // Initialize
   orb.satno=99999;
   orb.eqinc=0.0;

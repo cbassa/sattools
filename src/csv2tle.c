@@ -33,6 +33,8 @@ void convert(char *line)
   double e,v;
   float perigee,apogee;
 
+  memset(&orb,0,sizeof(orb));
+
   dm=5.0*log10(1000.0/40000.0);
 
   // Read line
