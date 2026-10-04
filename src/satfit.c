@@ -241,12 +241,13 @@ int ewsearch(void)
       printf("%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
       fprintf(file,"%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
       
-      if (format_fitted_tle(&orb,line1,line2)==0)
+      if (format_fitted_tle(&orb,line1,line2)==0) {
         fprintf(tlefile,"OBJ\n%s\n%s\n",line1,line2);
-      mjd2date(mjdmin,&year,&month,&day);
-      fprintf(tlefile,"# %4d%02d%05.2lf-",year,month,day);
-      mjd2date(mjdmax,&year,&month,&day);
-      fprintf(tlefile,"%4d%02d%05.2lf, %d measurements, %.5lf deg rms\n",year,month,day,d.n,d.rms);
+        mjd2date(mjdmin,&year,&month,&day);
+        fprintf(tlefile,"# %4d%02d%05.2lf-",year,month,day);
+        mjd2date(mjdmax,&year,&month,&day);
+        fprintf(tlefile,"%4d%02d%05.2lf, %d measurements, %.5lf deg rms\n",year,month,day,d.n,d.rms);
+      }
     }
     fprintf(file,"\n");
   }
@@ -311,12 +312,13 @@ int revsearch(void)
     printf("%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
     fprintf(file,"%8.5lf %8.6lf %8.3lf %8.3lf %8.3lf %8.3lf %8.5lf\n",orb.rev,orb.ecc,orb.argp*R2D,orb.ascn*R2D,orb.mnan*R2D,orb.eqinc*R2D,d.rms);
 
-    if (format_fitted_tle(&orb,line1,line2)==0)
+    if (format_fitted_tle(&orb,line1,line2)==0) {
       fprintf(tlefile,"OBJ\n%s\n%s\n",line1,line2);
-    mjd2date(mjdmin,&year,&month,&day);
-    fprintf(tlefile,"# %4d%02d%05.2lf-",year,month,day);
-    mjd2date(mjdmax,&year,&month,&day);
-    fprintf(tlefile,"%4d%02d%05.2lf, %d measurements, %.5lf deg rms\n",year,month,day,d.n,d.rms);
+      mjd2date(mjdmin,&year,&month,&day);
+      fprintf(tlefile,"# %4d%02d%05.2lf-",year,month,day);
+      mjd2date(mjdmax,&year,&month,&day);
+      fprintf(tlefile,"%4d%02d%05.2lf, %d measurements, %.5lf deg rms\n",year,month,day,d.n,d.rms);
+    }
   }
   fclose(file);
   fclose(tlefile);
@@ -1652,9 +1654,10 @@ void print_tle(orbit_t orb,char *filename)
   }
 
   // Write TLE
+  if (format_fitted_tle(&orb,line1,line2)!=0)
+    return;
   file=fopen(filename,"a");
-  if (format_fitted_tle(&orb,line1,line2)==0)
-    fprintf(file,"OBJ\n%s\n%s\n",line1,line2);
+  fprintf(file,"OBJ\n%s\n%s\n",line1,line2);
 
   mjd2date(mjdmin,&year,&month,&day);
   fprintf(file,"# %4d%02d%05.2lf-",year,month,day);
