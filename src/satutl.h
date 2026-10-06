@@ -16,6 +16,8 @@ void read_kb(char *buf);
 int  read_twoline(FILE *fp, long satno, orbit_t *orb);
 void *vector(size_t num, size_t size);
 void print_orb(orbit_t *orb);
+void tle_checksum(char* line);
+void format_tle(orbit_t orb, char *line1, char *line2);
 
 /** aries.c **/
 double gha_aries(double jd);
