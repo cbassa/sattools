@@ -6,6 +6,7 @@
 #include "sgdp4h.h"
 
 #include <ctype.h>
+#include <string.h>
 
 static char *st_start(char *buf);
 static long i_read(char *str, int start, int stop);
@@ -222,6 +223,49 @@ void print_orb(orbit_t *orb)
   printf("# Second derivative of mean motion = %e\n",orb->nddot6);
   printf("# BSTAR drag = %.4e\n", orb->bstar);
   printf("# Orbit number = %ld\n", orb->norb);
+}
+
+/* ==================================================================
+   Compute & append checksum to TLE line.
+   ================================================================== */
+
+void tle_checksum(char* line)
+{
+  int csum = 0;
+  const size_t len = strlen(line);
+  for (size_t i=0; i<len; i++) {
+    if (isdigit(line[i]))
+      csum += line[i] - '0';
+    else if (line[i] == '-')
+      csum++;
+  }
+  line[len] = '0' + csum % 10;
+  line[len+1] = '\0';
+}
+
+/* ==================================================================
+   Format orbit as TLE lines, including checksums.
+   ================================================================== */
+
+void format_tle(orbit_t orb,char *line1,char *line2)
+{
+  char sbstar[]=" 00000-0",bstar[13];
+
+  // Format Bstar term
+  if (fabs(orb.bstar)>1e-9) {
+    sprintf(bstar,"%11.4e",10*orb.bstar);
+    sbstar[0] = bstar[0];  sbstar[1] = bstar[1];  sbstar[2] = bstar[3];  sbstar[3] = bstar[4];
+    sbstar[4] = bstar[5];  sbstar[5] = bstar[6];  sbstar[6] = bstar[8];  sbstar[7] = bstar[10];  sbstar[8] = '\0';
+  }
+  // Print lines
+  sprintf(line1,"1 %05dU %-8s %2d%012.8f  .00000000  00000-0 %8s 0    0",orb.satno,orb.desig,orb.ep_year-2000,orb.ep_day,sbstar);
+  sprintf(line2,"2 %05d %8.4f %8.4f %07.0f %8.4f %8.4f %11.8f%5ld",orb.satno,DEG(orb.eqinc),DEG(orb.ascn),1E7*orb.ecc,DEG(orb.argp),DEG(orb.mnan),orb.rev,orb.norb);
+
+  // Compute checksums
+  tle_checksum(line1);
+  tle_checksum(line2);
+
+  return;
 }
 
 /* ====================================================================== */
